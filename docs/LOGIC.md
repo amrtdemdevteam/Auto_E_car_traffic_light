@@ -10,20 +10,21 @@ This controller protects an E-Car junction using four downward TF-Mini Plus sens
 ```text
 Junction                                                     STOP side
     <---- S1 ----1 m---- S2 ----------- S3 ----1 m---- S4 ---- travel
-             Red pair                         Yellow pair
+             RED entry                         RED fallback
 
 Valid travel direction: S4 -> S3 -> S2 -> S1
-Yellow trigger: S4 -> S3 within 5 s
-Red trigger: S2 -> S1 within 5 s
-Red release: S1 must be online, fresh, and clear for 1 s before RETURN
-Reverse direction: S3 -> S4 or S1 -> S2 is ignored
+RED trigger: S4 rising edge immediately
+RED fallback: S3 rising edge when S4 missed
+S2/S1 rising edges: no RED trigger
+RED release: this RED cycle must first observe S1 occupied; then all S1-S4 must be online, fresh, and clear for red_clear_delay_s before RETURN
+Duplicate S4/S3 edges: suppressed until S1 is occupied
 ```
 
 ## Three-layer detection
 
 1. **Raw frame** — valid TF-Mini frame, distance `30..250 cm`, strength `>= 100`.
 2. **Sensor occupancy** — raw detect must pass 200 ms debounce. Short gaps up to `gap_hold_s` stay occupied, so cab/body/dolly gaps remain one convoy.
-3. **Directional pair** — first sensor rising edge followed by second sensor rising edge within `pair_window_s` confirms direction.
+3. **RED entry edge** — a new S4 rising edge triggers RED immediately; a new S3 rising edge is the fallback when S4 missed. S2 and S1 are not RED entry sensors. Further S4/S3 edges are suppressed until the current RED cycle has observed S1 occupied, while every S1-S4 edge remains corridor activity during RED.
 
 ```mermaid
 flowchart LR
@@ -34,11 +35,11 @@ flowchart LR
     C --> F{clear longer than gap_hold_s?}
     F -- No --> E
     F -- Yes --> G[Sensor CLEAR]
-    E --> H[Timestamp first rising edge]
-    H --> I{Correct pair order\nwithin pair_window_s?}
-    I -- S4 -> S3 --> J[YELLOW confirmed]
-    I -- S2 -> S1 --> K[RED confirmed]
-    I -- Reverse --> L[Ignore until pair clears]
+    E --> H{New rising edge?}
+    H -- S4 --> I[RED immediately]
+    H -- S3, S4 missed --> I
+    H -- S1 or S2 --> L[Ignore]
+    I --> J[Hold RED on any S1-S4 occupancy/activity]
 ```
 
 ## Main state machine
@@ -51,19 +52,18 @@ stateDiagram-v2
     RED: thick centered red X on black
     RETURN: filled upward yellow triangle on black
 
-    IDLE --> YELLOW: S4 -> S3 confirmed
-    IDLE --> RED: S2 -> S1 confirmed
-    YELLOW --> RED: S2 -> S1 confirmed (immediate overwrite)
-    RETURN --> RED: S2 -> S1 confirmed (immediate overwrite)
+    IDLE --> RED: S4 rising or S3 fallback rising
+    YELLOW --> RED: S4 rising or S3 fallback rising
+    RETURN --> RED: S4 rising or S3 fallback rising
     YELLOW --> IDLE: Yellow convoy clear + 5 s
-    RED --> RETURN: S1 online, fresh, and clear continuously for 1 s
+    RED --> RETURN: S1 occupied seen, then all S1-S4 online/fresh/clear continuously for red_clear_delay_s
     RETURN --> YELLOW: after 5 s AND yellow convoy still active
     RETURN --> IDLE: after 5 s AND no yellow convoy
 ```
 
-`red_duration_s` remains in config as a legacy/reference value. RED exit is controlled by direct S1 occupancy plus `red_clear_delay_s`, and release requires S1 data fresher than `red_exit_sensor_fresh_timeout_s`. With `red_exit_sensor_fresh_timeout_s=0.5`, S1 must be online with a valid frame aged 0–0.5 s and continuously clear for `red_clear_delay_s=1.0`. Occupied, offline, stale, missing, or future-dated data resets the clear timer and holds RED. A new valid red pair globally preempts IDLE, YELLOW, and RETURN; while already RED it resets the clear timer.
+`red_duration_s` remains in config as a legacy/reference value. RED exit is controlled by a per-cycle S1-occupied arm plus the corridor state. With `red_exit_sensor_fresh_timeout_s=0.5`, S1 must first be observed occupied during the current RED cycle; then every S1-S4 sensor must be online with a valid frame aged 0–0.5 s, all sensors must be clear, and that condition must remain continuous for the configured `red_clear_delay_s=1.0`. Before the S1 arm, or when any corridor sensor is occupied, active, offline, stale, missing, invalid, or future-dated, RED is held. An S4/S3 edge while RED is activity in the same RED cycle, not a state restart; the edge also prevents corridor-clear release. A new S4/S3 edge during RETURN preempts immediately to RED.
 
-Known residual risk: a service restart while a vehicle is already on S1 may not reconstruct RED without a new S2 -> S1 pair. This behavior is unchanged.
+Known residual risk: a service restart while a vehicle is already in the corridor may not reconstruct RED without a new S4/S3 rising edge. This behavior is unchanged.
 
 ## E-Car + dolly waveform
 
@@ -80,7 +80,7 @@ Short gaps are absorbed by gap_hold_s, therefore this is treated as ONE convoy.
 ## Two E-Cars following each other
 
 - If the inter-vehicle clear gap is shorter than `gap_hold_s`, they are intentionally treated as one convoy. This is safe for traffic-light operation.
-- If the clear gap exceeds `gap_hold_s`, the first convoy closes and the next rising edge starts a new vehicle event.
+- If the clear gap exceeds `gap_hold_s`, the sensor may produce a new rising edge; while RED, that edge is corridor activity and prevents release but does not create a second RED state cycle.
 - The system is not intended to count vehicles precisely; it is intended to keep the junction indication safe and stable.
 
 ## Fault behavior

@@ -613,7 +613,7 @@ void drawRedX() {
   constexpr int left = 18;
   constexpr int top = 2;
   constexpr int size = 28;
-  constexpr int halfThickness = 3;
+  constexpr int halfThickness = 5;
 
   for (int y = 0; y < size; ++y) {
     for (int x = 0; x < size; ++x) {

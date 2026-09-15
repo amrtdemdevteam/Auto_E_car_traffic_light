@@ -4,11 +4,11 @@ Repository for Raspberry Pi 4B + four TF-Mini Plus sensors + independent 64×32 
 
 ## System behavior
 - Real vehicle travel direction is S4 -> S3 -> S2 -> S1.
-- S4 -> S3 within `pair_window_s` confirms approach -> all displays YELLOW.
-- S2 -> S1 confirms red zone -> all displays RED immediately.
-- Reverse order is ignored.
+- S4 rising edge triggers RED immediately; S3 rising edge is the fallback if S4 misses.
+- S2 and S1 rising edges do not trigger RED.
+- Only new debounced rising edges trigger RED; duplicate edges from the same cycle are suppressed until S1 is occupied.
 - Debounce + gap hold merges cab/body/dolly gaps into one convoy.
-- RED holds until S1 is online, fresh, and continuously clear for 1 s; RETURN yellow fixed 5 s.
+- RED holds until this cycle has observed S1 occupied; then all S1-S4 sensors must be online, fresh, and continuously clear for `red_clear_delay_s` (currently 1 s); any corridor occupancy/activity resets that clear interval; RETURN yellow remains fixed at 5 s.
 - If a yellow convoy is still active at end of RETURN, stay YELLOW with no green flash.
 - Raspberry Pi is the only traffic-state authority; ESP32 receives MQTT state and renders symbols.
 - Sensor offline does not force the Pi state to RED. Displays retain explicit RED/STOP; otherwise faults render a yellow triangle.

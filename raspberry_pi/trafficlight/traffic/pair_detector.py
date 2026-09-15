@@ -11,6 +11,85 @@ class PairResult:
     active: bool = False
 
 
+@dataclass
+class RedEntryResult:
+    triggered: bool = False
+    sensor: str | None = None
+    activity: bool = False
+    activity_sensors: tuple[str, ...] = ()
+
+
+class RedEntryDetector:
+    """Trigger RED from one new S4 or S3 rising edge and track corridor activity.
+
+    S4 is the primary entry sensor and S3 is the fallback when S4 misses a
+    vehicle. After an entry edge, further S4/S3 edges are suppressed until S1
+    has been occupied, preventing the same vehicle's S3 edge from starting a
+    second RED cycle. Rising edges from any S1-S4 sensor are still reported as
+    corridor activity so RED release cannot pass through a convoy or stopped
+    vehicle.
+    """
+
+    def __init__(
+        self,
+        primary: str = "S4",
+        fallback: str = "S3",
+        corridor_sensors: tuple[str, ...] = ("S1", "S2", "S3", "S4"),
+    ):
+        self.primary = primary
+        self.fallback = fallback
+        self.corridor_sensors = tuple(corridor_sensors)
+        self._last_rising = {name: None for name in self.corridor_sensors}
+        self._awaiting_s1 = False
+
+    def update(self, sensors: dict, now: float | None = None) -> RedEntryResult:
+        now = now if now is not None else time.monotonic()
+        new_edges = []
+
+        # Consume each rising edge exactly once. Future timestamps are remembered
+        # and ignored, preserving the existing future-edge safety behavior.
+        for name in self.corridor_sensors:
+            rising = sensors[name].rising_edge_at
+            if rising is None or rising == self._last_rising[name]:
+                continue
+            self._last_rising[name] = rising
+
+            if rising > now:
+                logger.debug(
+                    f"RED_ENTRY ignored_future_edge sensor={name} "
+                    f"edge_at={rising:.3f} now={now:.3f}"
+                )
+                continue
+            new_edges.append(name)
+
+        result = RedEntryResult(
+            activity=bool(new_edges),
+            activity_sensors=tuple(new_edges),
+        )
+
+        for name in (self.primary, self.fallback):
+            if name not in new_edges:
+                continue
+
+            if self._awaiting_s1:
+                logger.debug(
+                    f"RED_ENTRY suppressed sensor={name} "
+                    "awaiting S1 occupancy"
+                )
+                continue
+
+            self._awaiting_s1 = True
+            result.triggered = True
+            result.sensor = name
+            logger.info(f"RED_ENTRY triggered sensor={name}")
+            break
+
+        if sensors["S1"].occupied:
+            self._awaiting_s1 = False
+
+        return result
+
+
 class DirectionalPairDetector:
     """Confirm motion only when FIRST -> SECOND occurs within window_s.
 
