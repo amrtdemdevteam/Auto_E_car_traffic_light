@@ -6,7 +6,7 @@
 4. Optional maintenance Wi-Fi: configure site Wi-Fi on the Pi, or run `sudo /opt/trafficlight/scripts/setup_wifi.sh` and enter SSIDs when prompted. Field deployment currently uses `Auto_ECar` for maintenance only.
 5. Plug the four USB-RS485 adapters one by one and run `/opt/trafficlight/scripts/detect_usb_rs485.sh`.
 6. Build `/etc/udev/rules.d/99-sensors.rules` from the template using the real adapter serial numbers.
-7. Edit `/etc/trafficlight/settings.json` if production timing/range differs from the repo defaults. RED release requires S1 to have been occupied in the current cycle, then all S1-S4 sensors online/fresh and clear continuously for `red_clear_delay_s`; it is not controlled by a fixed red timer.
+7. Edit `/etc/trafficlight/settings.json` if production timing/range differs from the repo defaults. RED release is controlled by S1 clear state and `red_clear_delay_s`, not by a fixed red timer.
 8. Flash each ESP32 display with unique IP 10.77.0.11 through 10.77.0.17.
 9. Start: `sudo systemctl start trafficlight`.
 10. Observe: `sudo journalctl -u trafficlight -f` and `mosquitto_sub -h 10.77.0.1 -t 'factory/trafficlight/#' -v`.

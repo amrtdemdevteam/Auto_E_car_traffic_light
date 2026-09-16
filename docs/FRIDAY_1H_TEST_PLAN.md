@@ -49,14 +49,14 @@ sudo journalctl -u trafficlight -f
 ```
 
 ## Minute 20–35: direction + state sequence
-1. A new S4 rising edge must make all displays RED immediately; no S4 -> S3 pair is required.
-2. With S4 missed, a new S3 rising edge must make all displays RED immediately.
-3. Confirm S1 clear before arrival does not release RED, even beyond 5 s.
-4. After S1 is occupied, keep a vehicle/convoy at S2 or S3 and confirm RED remains held.
-5. Clear all S1-S4 sensors and confirm RED remains for only the configured `red_clear_delay_s` (1 s in the default config) after fresh S1-S4 confirmation, then goes directly to GREEN/IDLE.
-6. Confirm no RETURN YELLOW phase or 5-second delay occurs on the production RED release path.
-7. During RED, repeat S3/S4 edges and confirm they hold corridor release without restarting the RED state cycle.
-8. S1/S2 rising edges must not create RED entry; the legacy RETURN state is not part of the production RED release path.
+1. Move/drive forward through S4 -> S3: all displays become yellow.
+2. Continue S2 -> S1: all displays become red immediately.
+3. Confirm red remains while S1 is occupied, even beyond 5 s.
+4. Clear S1 and confirm RETURN yellow begins only after S1 stays clear for 1 s.
+5. Confirm yellow return remains 5 s.
+6. Confirm green after convoy is clear.
+7. Repeat reverse S3 -> S4: must NOT create a new yellow trigger.
+8. Repeat reverse S1 -> S2: must NOT create a new red trigger.
 
 ## Minute 35–45: E-Car + dollies
 Use the actual E-Car and tow configuration. Confirm gaps between cab/body/hitches/dollies do not make the light flicker green. If necessary, tune only:
@@ -67,7 +67,7 @@ Use the actual E-Car and tow configuration. Confirm gaps between cab/body/hitche
 "red_clear_delay_s": 1.0
 ```
 
-Do not change thresholds, debounce, `gap_hold_s`, MQTT settings, or display mapping during this acceptance test.
+Change one value at a time and keep notes.
 
 ## Minute 45–52: fault tests
 - Unplug one sensor USB-RS485: within ~2 s every display should keep its main state and show `ERR:Sx`.

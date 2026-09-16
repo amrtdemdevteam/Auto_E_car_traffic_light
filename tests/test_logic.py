@@ -2,9 +2,9 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "raspberry_pi"))
-from trafficlight.app import corridor_release_blocked, red_exit_sensor_active
+from trafficlight.app import red_exit_sensor_active
 from trafficlight.traffic.state_machine import StateMachine, TrafficState
-from trafficlight.traffic.pair_detector import DirectionalPairDetector, RedEntryDetector
+from trafficlight.traffic.pair_detector import DirectionalPairDetector
 
 
 def snap(*, occ=False, rising=None, online=True):
@@ -26,327 +26,6 @@ def field_inputs(s1=False, s2=False, s3=False, s4=False, r1=None, r2=None, r3=No
         "S3": snap(occ=s3, rising=r3, online=online),
         "S4": snap(occ=s4, rising=r4, online=online),
     }
-
-
-def fresh_field_inputs(now, **kwargs):
-    sensors = field_inputs(**kwargs)
-    for sensor in sensors.values():
-        sensor.last_valid_frame = now
-    return sensors
-
-
-def new_state_machine():
-    return StateMachine({
-        "red_duration_s": 5,
-        "red_clear_delay_s": 1,
-        "return_yellow_s": 5,
-        "yellow_clear_delay_s": 5,
-    })
-
-
-def test_s4_rising_triggers_red_immediately():
-    detector = RedEntryDetector()
-    sm = new_state_machine()
-    result = detector.update(field_inputs(s4=True, r4=10.0), 10.0)
-
-    assert result.triggered and result.sensor == "S4"
-    assert sm.update(
-        False, result.triggered, False, 10.0,
-        red_exit_sensor_active=True,
-        red_exit_sensor_occupied=False,
-    ) == TrafficState.RED
-
-
-def test_s3_rising_is_red_fallback_when_s4_misses():
-    detector = RedEntryDetector()
-    sm = new_state_machine()
-    result = detector.update(field_inputs(s3=True, r3=10.0), 10.0)
-
-    assert result.triggered and result.sensor == "S3"
-    assert sm.update(
-        False, result.triggered, False, 10.0,
-        red_exit_sensor_active=True,
-        red_exit_sensor_occupied=False,
-    ) == TrafficState.RED
-
-
-def test_s1_and_s2_rising_edges_do_not_trigger_red():
-    detector = RedEntryDetector()
-
-    assert not detector.update(field_inputs(s1=True, r1=10.0), 10.0).triggered
-    assert not detector.update(field_inputs(s2=True, r2=10.0), 10.0).triggered
-
-
-def test_s3_after_s4_same_vehicle_is_suppressed_until_s1_occupancy():
-    detector = RedEntryDetector()
-    sm = new_state_machine()
-
-    first = detector.update(field_inputs(s4=True, r4=10.0), 10.0)
-    assert first.triggered
-    assert sm.update(
-        False, first.triggered, False, 10.0,
-        red_exit_sensor_active=True,
-        red_exit_sensor_occupied=False,
-    ) == TrafficState.RED
-
-    same_vehicle = detector.update(
-        field_inputs(s4=True, s3=True, r4=10.0, r3=11.0), 11.0
-    )
-    assert not same_vehicle.triggered
-    assert sm.update(
-        False, same_vehicle.triggered, False, 11.0,
-        red_exit_sensor_active=False,
-        red_exit_sensor_occupied=False,
-    ) == TrafficState.RED
-
-    detector.update(field_inputs(s1=True, s4=True, s3=True, r4=10.0, r3=11.0), 12.0)
-    assert sm.update(
-        False, False, False, 12.0,
-        red_exit_sensor_active=True,
-        red_exit_sensor_occupied=True,
-    ) == TrafficState.RED
-    assert sm.update(
-        False, False, False, 12.1,
-        red_exit_sensor_active=False,
-        red_exit_sensor_occupied=False,
-    ) == TrafficState.RED
-    assert sm.update(
-        False, False, False, 13.1,
-        red_exit_sensor_active=False,
-        red_exit_sensor_occupied=False,
-    ) == TrafficState.IDLE
-
-
-def test_duplicate_s4_edge_does_not_retrigger_red():
-    detector = RedEntryDetector()
-    sensors = field_inputs(s4=True, r4=10.0)
-
-    assert detector.update(sensors, 10.0).triggered
-    assert not detector.update(sensors, 10.5).triggered
-
-
-def test_red_entry_rearms_for_a_new_edge_after_s1_occupancy():
-    detector = RedEntryDetector()
-
-    assert detector.update(field_inputs(s4=True, r4=10.0), 10.0).triggered
-    assert not detector.update(field_inputs(s1=True, s4=True, r4=10.0), 12.0).triggered
-    next_vehicle = detector.update(field_inputs(s3=True, r3=20.0), 20.0)
-
-    assert next_vehicle.triggered and next_vehicle.sensor == "S3"
-
-
-def test_future_red_entry_edge_is_ignored_once():
-    detector = RedEntryDetector()
-    sensors = field_inputs(s4=True, r4=11.0)
-
-    assert not detector.update(sensors, 10.0).triggered
-    assert not detector.update(sensors, 10.5).triggered
-
-
-def test_s1_clear_before_vehicle_arrives_holds_red():
-    sm = new_state_machine()
-    assert sm.update(
-        False, True, False, 10.0,
-        red_exit_sensor_active=False,
-        red_exit_sensor_occupied=False,
-    ) == TrafficState.RED
-    assert sm.update(
-        False, False, False, 20.0,
-        red_exit_sensor_active=False,
-        red_exit_sensor_occupied=False,
-    ) == TrafficState.RED
-
-
-def test_s1_occupied_then_all_corridor_sensors_clear_for_delay_goes_green():
-    sm = new_state_machine()
-    assert sm.update(
-        False, True, False, 10.0,
-        red_exit_sensor_active=True,
-        red_exit_sensor_occupied=False,
-        corridor_release_blocked=False,
-    ) == TrafficState.RED
-    assert sm.update(
-        False, False, False, 11.0,
-        red_exit_sensor_active=True,
-        red_exit_sensor_occupied=True,
-        corridor_occupied=True,
-        corridor_release_blocked=False,
-    ) == TrafficState.RED
-    assert sm.update(
-        False, False, False, 12.0,
-        red_exit_sensor_active=False,
-        red_exit_sensor_occupied=False,
-        corridor_occupied=False,
-        corridor_release_blocked=False,
-    ) == TrafficState.RED
-    assert sm.update(
-        False, False, False, 12.9,
-        red_exit_sensor_active=False,
-        red_exit_sensor_occupied=False,
-        corridor_occupied=False,
-        corridor_release_blocked=False,
-    ) == TrafficState.RED
-    assert sm.update(
-        False, False, False, 13.0,
-        red_exit_sensor_active=False,
-        red_exit_sensor_occupied=False,
-        corridor_occupied=False,
-        corridor_release_blocked=False,
-    ) == TrafficState.IDLE
-
-
-def test_corridor_occupied_after_s1_keeps_red_until_corridor_is_clear():
-    sm = new_state_machine()
-    sm.update(False, True, False, 10.0, red_exit_sensor_active=True)
-    sm.update(
-        False, False, False, 11.0,
-        red_exit_sensor_active=True,
-        red_exit_sensor_occupied=True,
-        corridor_occupied=True,
-    )
-
-    assert sm.update(
-        False, False, False, 30.0,
-        red_exit_sensor_active=False,
-        corridor_occupied=True,
-    ) == TrafficState.RED
-    assert sm.update(
-        False, False, False, 30.1,
-        red_exit_sensor_active=False,
-        corridor_occupied=False,
-    ) == TrafficState.RED
-    assert sm.update(
-        False, False, False, 31.1,
-        red_exit_sensor_active=False,
-        corridor_occupied=False,
-    ) == TrafficState.IDLE
-
-
-def test_stopped_s2_or_s3_before_s1_holds_red_indefinitely():
-    sm = new_state_machine()
-    sm.update(False, True, False, 10.0, red_exit_sensor_active=True)
-
-    assert sm.update(
-        False, False, False, 40.0,
-        red_exit_sensor_active=False,
-        red_exit_sensor_occupied=False,
-        corridor_occupied=True,
-    ) == TrafficState.RED
-    assert sm.update(
-        False, False, False, 100.0,
-        red_exit_sensor_active=False,
-        red_exit_sensor_occupied=False,
-        corridor_occupied=True,
-    ) == TrafficState.RED
-
-
-def test_corridor_activity_resets_clear_timer_without_new_red_cycle():
-    sm = new_state_machine()
-    sm.update(False, True, False, 10.0, red_exit_sensor_active=True)
-    sm.update(
-        False, False, False, 11.0,
-        red_exit_sensor_active=True,
-        red_exit_sensor_occupied=True,
-        corridor_occupied=True,
-    )
-    sm.update(False, False, False, 12.0, red_exit_sensor_active=False)
-    original_state_since = sm.state_since
-    assert sm.red_clear_since == 12.0
-
-    assert sm.update(
-        False, True, False, 12.5,
-        red_exit_sensor_active=False,
-        corridor_activity=True,
-    ) == TrafficState.RED
-    assert sm.state_since == original_state_since
-    assert sm.red_clear_since is None
-    assert sm.update(False, False, False, 13.4, red_exit_sensor_active=False) == TrafficState.RED
-    assert sm.update(False, False, False, 14.4, red_exit_sensor_active=False) == TrafficState.IDLE
-
-
-def test_corridor_sensor_failure_blocks_release_even_after_s1_seen():
-    sm = new_state_machine()
-    sm.update(False, True, False, 10.0, red_exit_sensor_active=True)
-    sm.update(
-        False, False, False, 11.0,
-        red_exit_sensor_active=True,
-        red_exit_sensor_occupied=True,
-        corridor_occupied=True,
-    )
-
-    assert sm.update(
-        False, False, False, 20.0,
-        red_exit_sensor_active=False,
-        corridor_release_blocked=True,
-    ) == TrafficState.RED
-    assert sm.red_clear_since is None
-
-
-def test_all_corridor_sensors_must_be_fresh_online_and_valid_for_release():
-    sensors = fresh_field_inputs(100.0)
-    assert not corridor_release_blocked(sensors, 100.1, 0.5)
-
-    sensors["S2"].last_valid_frame = 99.0
-    assert corridor_release_blocked(sensors, 100.1, 0.5)
-
-    sensors = fresh_field_inputs(100.0)
-    sensors["S3"].online = False
-    assert corridor_release_blocked(sensors, 100.1, 0.5)
-
-    sensors = fresh_field_inputs(100.0)
-    # A checksum-invalid/unknown frame does not update last_valid_frame.
-    sensors["S4"].last_valid_frame = None
-    assert corridor_release_blocked(sensors, 100.1, 0.5)
-
-
-def test_red_entry_reports_all_sensor_activity_but_only_s4_s3_trigger():
-    detector = RedEntryDetector()
-    first = detector.update(field_inputs(s4=True, r4=10.0), 10.0)
-    assert first.triggered and first.activity and first.activity_sensors == ("S4",)
-
-    s2_activity = detector.update(field_inputs(s2=True, r2=11.0), 11.0)
-    assert not s2_activity.triggered
-    assert s2_activity.activity and s2_activity.activity_sensors == ("S2",)
-
-
-def test_occupied_without_rising_edge_does_not_trigger_or_create_activity():
-    detector = RedEntryDetector()
-    result = detector.update(field_inputs(s4=True), 10.0)
-    assert not result.triggered
-    assert not result.activity
-
-
-def test_s3_after_s4_is_activity_without_resetting_red_state():
-    detector = RedEntryDetector()
-    sm = new_state_machine()
-    first = detector.update(field_inputs(s4=True, r4=10.0), 10.0)
-    sm.update(False, first.triggered, False, 10.0, red_exit_sensor_active=True)
-    same_vehicle = detector.update(
-        field_inputs(s4=True, s3=True, r4=10.0, r3=11.0), 11.0
-    )
-    original_state_since = sm.state_since
-
-    assert same_vehicle.activity
-    assert not same_vehicle.triggered
-    assert sm.update(
-        False, same_vehicle.triggered, False, 11.0,
-        red_exit_sensor_active=False,
-        corridor_activity=same_vehicle.activity,
-    ) == TrafficState.RED
-    assert sm.state_since == original_state_since
-
-
-def test_new_entry_during_return_preempts_to_red_immediately():
-    detector = RedEntryDetector()
-    detector.update(field_inputs(s4=True, r4=10.0), 10.0)
-    detector.update(field_inputs(s1=True, s4=True, r4=10.0), 11.0)
-    result = detector.update(field_inputs(s4=True, r4=20.0), 20.0)
-    assert result.triggered and result.sensor == "S4"
-
-    sm = new_state_machine()
-    sm.state = TrafficState.RETURN
-    sm.state_since = 19.0
-    assert sm.update(False, result.triggered, False, 20.0, red_exit_sensor_active=True) == TrafficState.RED
 
 
 def test_s1_alone_does_not_trigger_or_activate_yellow():
@@ -415,22 +94,14 @@ def test_return_red_trigger_preempts_when_return_almost_finished():
     sm = StateMachine({"red_duration_s":5,"red_clear_delay_s":1,"return_yellow_s":5,"yellow_clear_delay_s":5})
     sm.state = TrafficState.RETURN
     sm.state_since = 100.0
-    assert sm.update(
-        False, True, False, 104.9,
-        red_exit_sensor_active=True,
-        red_exit_sensor_occupied=True,
-    ) == TrafficState.RED
+    assert sm.update(False, True, False, 104.9, red_exit_sensor_active=True) == TrafficState.RED
 
 
 def test_return_red_trigger_with_s1_occupied_enters_and_holds_red():
     sm = StateMachine({"red_duration_s":5,"red_clear_delay_s":1,"return_yellow_s":5,"yellow_clear_delay_s":5})
     sm.state = TrafficState.RETURN
     sm.state_since = 100.0
-    assert sm.update(
-        False, True, False, 104.9,
-        red_exit_sensor_active=True,
-        red_exit_sensor_occupied=True,
-    ) == TrafficState.RED
+    assert sm.update(False, True, False, 104.9, red_exit_sensor_active=True) == TrafficState.RED
     assert sm.update(False, False, False, 120.0, red_exit_sensor_active=True) == TrafficState.RED
 
 
@@ -439,20 +110,16 @@ def test_return_red_trigger_with_fresh_clear_requires_new_clear_interval():
     sm.state = TrafficState.RETURN
     sm.state_since = 100.0
     sm.red_clear_since = 90.0
-    assert sm.update(
-        False, True, False, 104.9,
-        red_exit_sensor_active=True,
-        red_exit_sensor_occupied=True,
-    ) == TrafficState.RED
+    assert sm.update(False, True, False, 104.9, red_exit_sensor_active=False) == TrafficState.RED
     assert sm.red_clear_since is None
     assert sm.update(False, False, False, 105.0, red_exit_sensor_active=False) == TrafficState.RED
     assert sm.update(False, False, False, 105.9, red_exit_sensor_active=False) == TrafficState.RED
-    assert sm.update(False, False, False, 106.0, red_exit_sensor_active=False) == TrafficState.IDLE
+    assert sm.update(False, False, False, 106.0, red_exit_sensor_active=False) == TrafficState.RETURN
 
 
 def test_repeated_red_trigger_while_red_resets_clear_timer_and_stays_red():
     sm = StateMachine({"red_duration_s":5,"red_clear_delay_s":1,"return_yellow_s":5,"yellow_clear_delay_s":5})
-    sm.update(False, True, False, 10.0, red_exit_sensor_active=True, red_exit_sensor_occupied=True)
+    sm.update(False, True, False, 10.0, red_exit_sensor_active=True)
     sm.update(False, False, False, 11.0, red_exit_sensor_active=False)
     assert sm.red_clear_since == 11.0
     assert sm.update(False, True, False, 11.9, red_exit_sensor_active=False) == TrafficState.RED
@@ -554,30 +221,30 @@ def test_red_held_while_s1_occupied_for_twenty_seconds():
     assert sm.update(False, False, False, t+20.0, red_exit_sensor_active=True) == TrafficState.RED
 
 
-def test_red_clear_requires_continuous_one_second_before_green():
+def test_red_clear_requires_continuous_one_second_before_return():
     sm = StateMachine({"red_duration_s":5,"red_clear_delay_s":1,"return_yellow_s":5,"yellow_clear_delay_s":5})
     t=100.0; sm.state_since=t
-    sm.update(False, True, False, t, red_exit_sensor_active=True, red_exit_sensor_occupied=True)
+    sm.update(False, True, False, t, red_exit_sensor_active=True)
     assert sm.update(False, False, False, t+12.0, red_exit_sensor_active=False) == TrafficState.RED
     assert sm.update(False, False, False, t+12.9, red_exit_sensor_active=False) == TrafficState.RED
-    assert sm.update(False, False, False, t+13.0, red_exit_sensor_active=False) == TrafficState.IDLE
+    assert sm.update(False, False, False, t+13.0, red_exit_sensor_active=False) == TrafficState.RETURN
 
 
 def test_red_clear_timer_resets_on_s1_reoccupancy():
     sm = StateMachine({"red_duration_s":5,"red_clear_delay_s":1,"return_yellow_s":5,"yellow_clear_delay_s":5})
     t=100.0; sm.state_since=t
-    sm.update(False, True, False, t, red_exit_sensor_active=True, red_exit_sensor_occupied=True)
+    sm.update(False, True, False, t, red_exit_sensor_active=True)
     assert sm.update(False, False, False, t+10.0, red_exit_sensor_active=False) == TrafficState.RED
     assert sm.update(False, False, False, t+10.6, red_exit_sensor_active=True) == TrafficState.RED
     assert sm.update(False, False, False, t+11.0, red_exit_sensor_active=False) == TrafficState.RED
     assert sm.update(False, False, False, t+11.9, red_exit_sensor_active=False) == TrafficState.RED
-    assert sm.update(False, False, False, t+12.0, red_exit_sensor_active=False) == TrafficState.IDLE
+    assert sm.update(False, False, False, t+12.0, red_exit_sensor_active=False) == TrafficState.RETURN
 
 
 def test_red_holds_when_exit_sensor_offline_unknown():
     sm = StateMachine({"red_duration_s":5,"red_clear_delay_s":1,"return_yellow_s":5,"yellow_clear_delay_s":5})
     t=100.0; sm.state_since=t
-    sm.update(False, True, False, t, red_exit_sensor_active=True, red_exit_sensor_occupied=True)
+    sm.update(False, True, False, t, red_exit_sensor_active=True)
     assert sm.update(False, False, False, t+30.0, red_exit_sensor_active=True) == TrafficState.RED
 
 
@@ -592,7 +259,7 @@ def test_red_exit_sensor_fresh_clear_can_start_timer():
 def test_stale_clear_before_offline_timeout_holds_red():
     sm = StateMachine({"red_duration_s":5,"red_clear_delay_s":1,"return_yellow_s":5,"yellow_clear_delay_s":5})
     t=100.0
-    sm.update(False, True, False, t, red_exit_sensor_active=True, red_exit_sensor_occupied=True)
+    sm.update(False, True, False, t, red_exit_sensor_active=True)
     clear_s1 = s1_exit_snap(occ=False, online=True, last_valid_frame=t)
     assert sm.update(False, False, False, t+0.4, red_exit_sensor_active=red_exit_sensor_active(clear_s1, t+0.4, 0.5)) == TrafficState.RED
     assert sm.update(False, False, False, t+0.9, red_exit_sensor_active=red_exit_sensor_active(clear_s1, t+0.9, 0.5)) == TrafficState.RED
@@ -603,7 +270,7 @@ def test_stale_clear_before_offline_timeout_holds_red():
 def test_stale_clear_then_fresh_clear_requires_new_continuous_interval():
     sm = StateMachine({"red_duration_s":5,"red_clear_delay_s":1,"return_yellow_s":5,"yellow_clear_delay_s":5})
     t=100.0
-    sm.update(False, True, False, t, red_exit_sensor_active=True, red_exit_sensor_occupied=True)
+    sm.update(False, True, False, t, red_exit_sensor_active=True)
     stale_clear = s1_exit_snap(occ=False, online=True, last_valid_frame=t)
     sm.update(False, False, False, t+0.6, red_exit_sensor_active=red_exit_sensor_active(stale_clear, t+0.6, 0.5))
     fresh_clear = s1_exit_snap(occ=False, online=True, last_valid_frame=t+1.0)
@@ -613,13 +280,13 @@ def test_stale_clear_then_fresh_clear_requires_new_continuous_interval():
     fresh_clear = s1_exit_snap(occ=False, online=True, last_valid_frame=t+1.9)
     assert sm.update(False, False, False, t+1.9, red_exit_sensor_active=red_exit_sensor_active(fresh_clear, t+1.9, 0.5)) == TrafficState.RED
     fresh_clear = s1_exit_snap(occ=False, online=True, last_valid_frame=t+2.0)
-    assert sm.update(False, False, False, t+2.0, red_exit_sensor_active=red_exit_sensor_active(fresh_clear, t+2.0, 0.5)) == TrafficState.IDLE
+    assert sm.update(False, False, False, t+2.0, red_exit_sensor_active=red_exit_sensor_active(fresh_clear, t+2.0, 0.5)) == TrafficState.RETURN
 
 
 def test_stale_clear_then_fresh_occupied_holds_red():
     sm = StateMachine({"red_duration_s":5,"red_clear_delay_s":1,"return_yellow_s":5,"yellow_clear_delay_s":5})
     t=100.0
-    sm.update(False, True, False, t, red_exit_sensor_active=True, red_exit_sensor_occupied=True)
+    sm.update(False, True, False, t, red_exit_sensor_active=True)
     stale_clear = s1_exit_snap(occ=False, online=True, last_valid_frame=t)
     sm.update(False, False, False, t+0.6, red_exit_sensor_active=red_exit_sensor_active(stale_clear, t+0.6, 0.5))
     fresh_occupied = s1_exit_snap(occ=True, online=True, last_valid_frame=t+1.0)
@@ -630,42 +297,38 @@ def test_red_exit_sensor_offline_holds_red():
     assert red_exit_sensor_active(s1_exit_snap(occ=False, online=False, last_valid_frame=10.0), 10.1, 0.5)
 
 
-def test_red_exit_sensor_future_timestamp_holds_red():
-    assert red_exit_sensor_active(s1_exit_snap(occ=False, online=True, last_valid_frame=10.2), 10.1, 0.5)
-
-
 def test_recovery_clear_waits_for_full_fresh_clear_confirmation():
     sm = StateMachine({"red_duration_s":5,"red_clear_delay_s":1,"return_yellow_s":5,"yellow_clear_delay_s":5})
     t=100.0
-    sm.update(False, True, False, t, red_exit_sensor_active=True, red_exit_sensor_occupied=True)
+    sm.update(False, True, False, t, red_exit_sensor_active=True)
     recovered_clear = s1_exit_snap(occ=False, online=True, last_valid_frame=t+2.0)
     assert sm.update(False, False, False, t+2.0, red_exit_sensor_active=red_exit_sensor_active(recovered_clear, t+2.0, 0.5)) == TrafficState.RED
     recovered_clear = s1_exit_snap(occ=False, online=True, last_valid_frame=t+3.0)
-    assert sm.update(False, False, False, t+3.0, red_exit_sensor_active=red_exit_sensor_active(recovered_clear, t+3.0, 0.5)) == TrafficState.IDLE
+    assert sm.update(False, False, False, t+3.0, red_exit_sensor_active=red_exit_sensor_active(recovered_clear, t+3.0, 0.5)) == TrafficState.RETURN
 
 
 def test_recovery_occupied_holds_red():
     sm = StateMachine({"red_duration_s":5,"red_clear_delay_s":1,"return_yellow_s":5,"yellow_clear_delay_s":5})
     t=100.0
-    sm.update(False, True, False, t, red_exit_sensor_active=True, red_exit_sensor_occupied=True)
+    sm.update(False, True, False, t, red_exit_sensor_active=True)
     recovered_occupied = s1_exit_snap(occ=True, online=True, last_valid_frame=t+2.0)
     assert sm.update(False, False, False, t+2.0, red_exit_sensor_active=red_exit_sensor_active(recovered_occupied, t+2.0, 0.5)) == TrafficState.RED
 
 
-def test_red_release_goes_green_immediately_after_s1_clear_confirmed():
+def test_return_fixed_then_idle_after_s1_clear_confirmed():
     sm = StateMachine({"red_duration_s":5,"red_clear_delay_s":1,"return_yellow_s":5,"yellow_clear_delay_s":5})
     t=100.0; sm.state_since=t
-    sm.update(False, True, False, t, red_exit_sensor_active=True, red_exit_sensor_occupied=True)
+    sm.update(False, True, False, t, red_exit_sensor_active=True)
     sm.update(False, False, False, t+8.0, red_exit_sensor_active=False)
-    assert sm.update(False, False, False, t+9.0, red_exit_sensor_active=False) == TrafficState.IDLE
-    assert sm.update(False, False, False, t+9.1, red_exit_sensor_active=False) == TrafficState.IDLE
+    assert sm.update(False, False, False, t+9.0, red_exit_sensor_active=False) == TrafficState.RETURN
+    assert sm.update(False, False, False, t+13.9, red_exit_sensor_active=False) == TrafficState.RETURN
     assert sm.update(False, False, False, t+14.0, red_exit_sensor_active=False) == TrafficState.IDLE
 
 
 def test_return_continues_yellow_if_active_no_green_flash():
     sm = StateMachine({"red_duration_s":5,"red_clear_delay_s":1,"return_yellow_s":5,"yellow_clear_delay_s":5})
     t=100.0; sm.state_since=t
-    sm.update(False, True, False, t, red_exit_sensor_active=True, red_exit_sensor_occupied=True)
+    sm.update(False, True, False, t, red_exit_sensor_active=True)
     sm.update(False, False, False, t+5, red_exit_sensor_active=False)
     sm.update(False, False, False, t+6, red_exit_sensor_active=False)
     assert sm.update(False, False, True, t+11, red_exit_sensor_active=False) == TrafficState.YELLOW
@@ -674,7 +337,7 @@ def test_return_continues_yellow_if_active_no_green_flash():
 def test_return_goes_green_if_yellow_inactive_after_s1_clear_confirmed():
     sm = StateMachine({"red_duration_s":5,"red_clear_delay_s":1,"return_yellow_s":5,"yellow_clear_delay_s":5})
     t=100.0; sm.state_since=t
-    sm.update(False, True, False, t, red_exit_sensor_active=True, red_exit_sensor_occupied=True)
+    sm.update(False, True, False, t, red_exit_sensor_active=True)
     sm.update(False, False, False, t+5, red_exit_sensor_active=False)
     sm.update(False, False, False, t+6, red_exit_sensor_active=False)
     assert sm.update(False, False, False, t+11, red_exit_sensor_active=False) == TrafficState.IDLE
