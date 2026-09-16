@@ -17,7 +17,7 @@ Current field deployment is D1–D3. All symbols use a black background; softwar
 ## Important
 - Healthy connected displays render the same Pi command. A local communication fault may change an individual display to yellow.
 - The E-Car may tow dollies. Short empty spaces between cab, body, hitch, and dollies are normal and are remembered by the controller.
-- RED remains active until the cycle has seen S1 occupied, then all S1-S4 sensors are online/fresh and continuously clear for the configured 1-second delay; corridor activity or a stopped vehicle holds RED. RETURN YELLOW then lasts 5 seconds. A new S4/S3 rising edge during RETURN immediately returns to RED.
+- RED remains active until the cycle has seen S1 occupied, then all S1-S4 sensors are online/fresh and continuously clear for the configured 1-second delay; corridor activity or a stopped vehicle holds RED. Production then goes directly to GREEN; there is no RETURN YELLOW phase.
 - Fault text is available in maintenance diagnostics, not on the symbol panel. Unknown commands show yellow; green requires an explicit GREEN/GO command without an effective fault.
 
 ## Sensor names

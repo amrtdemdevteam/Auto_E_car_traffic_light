@@ -16,7 +16,7 @@ Valid travel direction: S4 -> S3 -> S2 -> S1
 RED trigger: S4 rising edge immediately
 RED fallback: S3 rising edge when S4 missed
 S2/S1 rising edges: no RED trigger
-RED release: this RED cycle must first observe S1 occupied; then all S1-S4 must be online, fresh, and clear for red_clear_delay_s before RETURN
+RED release: this RED cycle must first observe S1 occupied; then all S1-S4 must be online, fresh, and clear for red_clear_delay_s before direct GREEN/IDLE
 Duplicate S4/S3 edges: suppressed until S1 is occupied
 ```
 
@@ -50,18 +50,18 @@ stateDiagram-v2
     IDLE: upward green arrow on black
     YELLOW: filled upward yellow triangle on black
     RED: thick centered red X on black
-    RETURN: filled upward yellow triangle on black
+    RETURN: legacy filled upward yellow triangle on black
 
     IDLE --> RED: S4 rising or S3 fallback rising
     YELLOW --> RED: S4 rising or S3 fallback rising
     RETURN --> RED: S4 rising or S3 fallback rising
     YELLOW --> IDLE: Yellow convoy clear + 5 s
-    RED --> RETURN: S1 occupied seen, then all S1-S4 online/fresh/clear continuously for red_clear_delay_s
+    RED --> IDLE: S1 occupied seen, then all S1-S4 online/fresh/clear continuously for red_clear_delay_s
     RETURN --> YELLOW: after 5 s AND yellow convoy still active
     RETURN --> IDLE: after 5 s AND no yellow convoy
 ```
 
-`red_duration_s` remains in config as a legacy/reference value. RED exit is controlled by a per-cycle S1-occupied arm plus the corridor state. With `red_exit_sensor_fresh_timeout_s=0.5`, S1 must first be observed occupied during the current RED cycle; then every S1-S4 sensor must be online with a valid frame aged 0–0.5 s, all sensors must be clear, and that condition must remain continuous for the configured `red_clear_delay_s=1.0`. Before the S1 arm, or when any corridor sensor is occupied, active, offline, stale, missing, invalid, or future-dated, RED is held. An S4/S3 edge while RED is activity in the same RED cycle, not a state restart; the edge also prevents corridor-clear release. A new S4/S3 edge during RETURN preempts immediately to RED.
+`red_duration_s` remains in config as a legacy/reference value. RED exit is controlled by a per-cycle S1-occupied arm plus the corridor state. With `red_exit_sensor_fresh_timeout_s=0.5`, S1 must first be observed occupied during the current RED cycle; then every S1-S4 sensor must be online with a valid frame aged 0–0.5 s, all sensors must be clear, and that condition must remain continuous for the configured `red_clear_delay_s=1.0`. Before the S1 arm, or when any corridor sensor is occupied, active, offline, stale, missing, invalid, or future-dated, RED is held. Once the safe clear delay completes, production transitions directly to GREEN/IDLE; it does not enter RETURN YELLOW. An S4/S3 edge while RED is activity in the same RED cycle, not a state restart; the edge also prevents corridor-clear release. The legacy RETURN state remains available for compatibility and preempts to RED on a new S4/S3 edge if entered by another caller.
 
 Known residual risk: a service restart while a vehicle is already in the corridor may not reconstruct RED without a new S4/S3 rising edge. This behavior is unchanged.
 

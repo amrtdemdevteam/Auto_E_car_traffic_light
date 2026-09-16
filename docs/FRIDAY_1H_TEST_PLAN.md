@@ -53,10 +53,10 @@ sudo journalctl -u trafficlight -f
 2. With S4 missed, a new S3 rising edge must make all displays RED immediately.
 3. Confirm S1 clear before arrival does not release RED, even beyond 5 s.
 4. After S1 is occupied, keep a vehicle/convoy at S2 or S3 and confirm RED remains held.
-5. Clear all S1-S4 sensors and confirm RETURN yellow begins only after the configured `red_clear_delay_s` (1 s in the default config) with fresh sensor data.
-6. Confirm RETURN yellow remains 5 s, then GREEN/IDLE follows existing logic.
+5. Clear all S1-S4 sensors and confirm RED remains for only the configured `red_clear_delay_s` (1 s in the default config) after fresh S1-S4 confirmation, then goes directly to GREEN/IDLE.
+6. Confirm no RETURN YELLOW phase or 5-second delay occurs on the production RED release path.
 7. During RED, repeat S3/S4 edges and confirm they hold corridor release without restarting the RED state cycle.
-8. During RETURN, a new S4 or S3 rising edge must preempt immediately back to RED; S1/S2 rising edges must not create RED entry.
+8. S1/S2 rising edges must not create RED entry; the legacy RETURN state is not part of the production RED release path.
 
 ## Minute 35–45: E-Car + dollies
 Use the actual E-Car and tow configuration. Confirm gaps between cab/body/hitches/dollies do not make the light flicker green. If necessary, tune only:

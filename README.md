@@ -8,8 +8,8 @@ Repository for Raspberry Pi 4B + four TF-Mini Plus sensors + independent 64×32 
 - S2 and S1 rising edges do not trigger RED.
 - Only new debounced rising edges trigger RED; duplicate edges from the same cycle are suppressed until S1 is occupied.
 - Debounce + gap hold merges cab/body/dolly gaps into one convoy.
-- RED holds until this cycle has observed S1 occupied; then all S1-S4 sensors must be online, fresh, and continuously clear for `red_clear_delay_s` (currently 1 s); any corridor occupancy/activity resets that clear interval; RETURN yellow remains fixed at 5 s.
-- If a yellow convoy is still active at end of RETURN, stay YELLOW with no green flash.
+- RED holds until this cycle has observed S1 occupied; then all S1-S4 sensors must be online, fresh, and continuously clear for `red_clear_delay_s` (currently 1 s); any corridor occupancy/activity resets that clear interval; production then goes directly to GREEN/IDLE with no RETURN yellow.
+- The legacy RETURN state remains in the state machine for compatibility, but production RED release does not enter it.
 - Raspberry Pi is the only traffic-state authority; ESP32 receives MQTT state and renders symbols.
 - Sensor offline does not force the Pi state to RED. Displays retain explicit RED/STOP; otherwise faults render a yellow triangle.
 - MQTT disconnect or command timeout produces effective `LINK ERR` with the same symbol precedence. Fault details remain in diagnostics, not on-screen text.

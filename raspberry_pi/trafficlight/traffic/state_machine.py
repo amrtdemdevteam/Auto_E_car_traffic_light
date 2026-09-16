@@ -77,7 +77,10 @@ class StateMachine:
                 if self.red_clear_since is None:
                     self.red_clear_since = now
                 elif now - self.red_clear_since >= self.red_clear_delay:
-                    self._set(TrafficState.RETURN, now)
+                    # After the safe clear delay, production returns directly
+                    # to green (IDLE). Keep RETURN for compatibility with
+                    # callers that may still enter that legacy state.
+                    self._set(TrafficState.IDLE, now)
         elif self.state == TrafficState.RETURN:
             if now - self.state_since >= self.return_duration:
                 self._set(TrafficState.YELLOW if yellow_active or yellow_trigger else TrafficState.IDLE, now)
