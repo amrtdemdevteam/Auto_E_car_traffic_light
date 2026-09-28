@@ -14,6 +14,13 @@ SVC_USER=trafficlightsvc
 TARGET_HOSTNAME=trafficlight
 MQTT_ADDR=10.77.0.1
 MQTT_PORT=1883
+JUNCTION=v1
+for arg in "$@"; do
+  case "$arg" in
+    --t3) JUNCTION=t3 ;;
+    *) echo "ERROR: unknown option $arg (supported: --t3)"; exit 1 ;;
+  esac
+done
 
 step(){ printf '\n\033[1;36m== %s ==\033[0m\n' "$*"; }
 pass(){ printf '\033[1;32m[PASS]\033[0m %s\n' "$*"; }
@@ -68,15 +75,34 @@ pass "Production virtualenv ready"
 step "Run application tests"
 PYTHONPATH="$APP/raspberry_pi" "$APP/.venv/bin/python" -m pytest -q "$APP/tests"
 "$APP/.venv/bin/python" -m json.tool "$APP/config/settings.example.json" >/dev/null
+"$APP/.venv/bin/python" -m json.tool "$APP/config/settings.t3.example.json" >/dev/null
 for f in "$APP/install.sh" "$APP"/scripts/*.sh; do bash -n "$f"; done
 pass "Python tests, JSON and shell syntax passed"
 
 step "Install configuration"
+if [[ "$JUNCTION" == "t3" ]]; then
+  EXAMPLE="$APP/config/settings.t3.example.json"
+else
+  EXAMPLE="$APP/config/settings.example.json"
+fi
 if [[ ! -f "$CONF/settings.json" ]]; then
-  cp "$APP/config/settings.example.json" "$CONF/settings.json"
-  pass "Created $CONF/settings.json"
+  if [[ "$JUNCTION" == "t3" ]]; then
+    # Start with no lane: the web UI setup wizard adds lanes one by one.
+    "$APP/.venv/bin/python" - "$EXAMPLE" "$CONF/settings.json" <<'PYCFG'
+import json, sys
+cfg = json.load(open(sys.argv[1], encoding="utf-8"))
+cfg["lanes"], cfg["sensors"] = [], {}
+json.dump(cfg, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+PYCFG
+  else
+    cp "$EXAMPLE" "$CONF/settings.json"
+  fi
+  pass "Created $CONF/settings.json from $(basename "$EXAMPLE")"
 else
   warn "Keeping existing $CONF/settings.json"
+  if [[ "$JUNCTION" == "t3" ]] && ! grep -q '"junction_type"[[:space:]]*:[[:space:]]*"t3"' "$CONF/settings.json"; then
+    warn "Existing settings.json is not a T3 config. To switch: sudo cp $EXAMPLE $CONF/settings.json"
+  fi
 fi
 chown -R "$SVC_USER":"$SVC_USER" "$LOG"
 chmod 750 "$LOG"
@@ -152,19 +178,83 @@ systemctl daemon-reload
 # Sensors are intentionally not required during installation. Leave the
 # controller disabled/stopped until S1-S4 USB-RS485 mappings exist. The mapping
 # wizard enables autostart only after all four stable symlinks are verified.
-systemctl disable trafficlight >/dev/null 2>&1 || true
-systemctl stop trafficlight 2>/dev/null || true
-pass "trafficlight.service installed (disabled/stopped until sensor mapping)"
+if [[ "$JUNCTION" == "t3" ]]; then
+  # T3: the controller must run during web setup (port probe, display test).
+  # With no lane configured it never controls traffic: every display shows CONFIG.
+  systemctl enable trafficlight >/dev/null
+  systemctl restart trafficlight
+  pass "trafficlight.service running (CONFIG mode until lanes are set up in the web UI)"
+else
+  systemctl disable trafficlight >/dev/null 2>&1 || true
+  systemctl stop trafficlight 2>/dev/null || true
+  pass "trafficlight.service installed (disabled/stopped until sensor mapping)"
+fi
+
+if [[ "$JUNCTION" == "t3" ]]; then
+  step "Install T3 web UI"
+  # The web UI writes settings.json, versions/, users.json and audit.log.
+  mkdir -p "$CONF/versions"
+  chown -R "$SVC_USER":"$SVC_USER" "$CONF"
+  chmod 750 "$CONF"
+  # Only the reboot command is allowed without a password.
+  cat > /etc/sudoers.d/trafficlight-web <<SUDO
+${SVC_USER} ALL=(root) NOPASSWD: /usr/bin/systemctl reboot
+SUDO
+  chmod 440 /etc/sudoers.d/trafficlight-web
+  visudo -cf /etc/sudoers.d/trafficlight-web >/dev/null || fail "sudoers snippet invalid"
+  cat > /usr/local/bin/trafficlight-user <<USERCLI
+#!/usr/bin/env bash
+# Manage web UI accounts:  sudo trafficlight-user add <name> --role editor|viewer
+set -e
+PYTHONPATH=${APP}/raspberry_pi ${APP}/.venv/bin/python -m trafficlight.web.users --data-dir ${CONF} "\$@"
+[[ -f ${CONF}/users.json ]] && chown ${SVC_USER}:${SVC_USER} ${CONF}/users.json && chmod 640 ${CONF}/users.json || true
+USERCLI
+  chmod 755 /usr/local/bin/trafficlight-user
+  cp "$APP/install/trafficlight-web.service" /etc/systemd/system/trafficlight-web.service
+  systemctl daemon-reload
+  systemctl enable trafficlight-web >/dev/null
+  systemctl restart trafficlight-web
+  sleep 1
+  systemctl is-active --quiet trafficlight-web || fail "trafficlight-web did not start (journalctl -u trafficlight-web)"
+  pass "trafficlight-web.service active on port 8080"
+fi
 
 step "Final installer self-check"
 PYTHONPATH="$APP/raspberry_pi" "$APP/.venv/bin/python" -m pytest -q "$APP/tests"
 systemctl is-active --quiet mosquitto || fail "Mosquitto unexpectedly inactive"
-if systemctl is-enabled --quiet trafficlight; then
+if [[ "$JUNCTION" != "t3" ]] && systemctl is-enabled --quiet trafficlight; then
   fail "trafficlight.service should remain disabled before sensor mapping"
 fi
 getent hosts "$TARGET_HOSTNAME" >/dev/null || fail "hostname resolution check failed"
 ip -4 addr show eth0 | grep -q '10\.77\.0\.1/24' || fail "Ethernet address check failed"
 pass "All installation checks passed"
+
+if [[ "$JUNCTION" == "t3" ]]; then
+cat <<T3DONE
+
+============================================================
+ T3 JUNCTION MODE
+============================================================
+ 1) Create the first web account (editor):
+      sudo trafficlight-user add engineer01 --role editor
+ 2) Plug in the USB-485 adapters, sensors and displays, then open
+      http://<pi-ip>:8080  and log in. The setup page opens:
+      press + to add each lane, choose Auto / Manual, the display
+      (press "test" - the blinking display is the one) and the sensor
+      ports ("find by hand" - cover the sensor and the port is picked).
+      Press Next, then drag the lanes onto the map.
+ 3) The controller is already running; until step 2 is saved every
+    display shows CONFIG and no lane gets green.
+ 4) First flash each ESP32 display by USB (once):
+      cd esp32_display_t3 && pio run -e t3_display1 -t upload
+    After that, firmware can be updated from the web (OTA).
+    Change OTA_PASSWORD in include/device_config.h AND
+    "ota.password" in settings.json to the same new value.
+ NOTE: T3 logic is tested by simulation only - NOT field-tested yet.
+============================================================
+T3DONE
+  exit 0
+fi
 
 cat <<'DONE'
 

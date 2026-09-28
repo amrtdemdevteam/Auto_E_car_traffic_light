@@ -1,0 +1,76 @@
+{
+  "junction_id": "T3",
+  "junction_name": "แยกพิเศษหน้า pillar",
+  "junction_type": "t3",
+  "loop_hz": 20,
+  "mqtt": {
+    "broker": "10.77.0.1",
+    "port": 1883,
+    "keepalive_s": 30,
+    "base_topic": "factory/trafficlight"
+  },
+  "sensor_defaults": {
+    "baudrate": 115200,
+    "min_detect_cm": 30,
+    "max_detect_cm": 250,
+    "min_strength": 100,
+    "debounce_ms": 200,
+    "gap_hold_s": 1.2,
+    "offline_timeout_s": 2.0,
+    "recover_stable_s": 1.0,
+    "fresh_timeout_s": 0.5,
+    "reopen_interval_s": 2.0
+  },
+  "sensors": {
+    "C1.1": {"port": "/dev/ttyUSB0"},
+    "C1.2": {"port": "/dev/ttyUSB1"},
+    "C2": {"port": "/dev/ttyUSB2"},
+    "C3": {"port": "/dev/ttyUSB3"},
+    "C4": {"port": "/dev/ttyUSB4"},
+    "C5": {"port": "/dev/ttyUSB5"}
+  },
+  "hand": {
+    "hold_s": 3.0,
+    "grace_ms": 300,
+    "confirm_show_s": 1.0,
+    "rearm_clear_s": 0.5,
+    "max_pending_per_lane": 1
+  },
+  "timing": {
+    "manual_clear_s": 3.0,
+    "auto_clear_s": 4.0,
+    "special_green_s": 5.0,
+    "auto_ticket_expiry_s": 7.0,
+    "switch_all_red_s": 1.0,
+    "display_ack_timeout_s": 2.0,
+    "display_link_timeout_s": 5.0,
+    "command_refresh_s": 1.0,
+    "fault_clear_s": 12.0,
+    "startup_min_s": 3.0
+  },
+  "priority": {"auto_first": true},
+  "lanes": [
+    {"id": 1, "name": "เลน 1 Auto", "type": "auto", "approach": "S", "near_sensor": "C1.1", "far_sensor": "C1.2", "display": 1, "enabled": true, "priority": 0, "green_frame": "GO"},
+    {"id": 2, "name": "เลน 2 Manual", "type": "manual", "approach": "S", "sensor": "C2", "display": 2, "enabled": true, "priority": 0, "green_frame": "GO"},
+    {"id": 3, "name": "เลน 3 Manual พิเศษ", "type": "special", "approach": "W", "sensor": "C3", "display": 3, "enabled": true, "priority": 0, "green_frame": "GO"},
+    {"id": 4, "name": "เลน 4 Manual", "type": "manual", "approach": "N", "sensor": "C4", "display": 4, "enabled": true, "priority": 0, "green_frame": "GO"},
+    {"id": 5, "name": "เลน 5 Manual พิเศษ", "type": "special", "approach": "N", "sensor": "C5", "display": 5, "enabled": true, "priority": 0, "green_frame": "GO"}
+  ],
+  "displays": {
+    "1": {"ip": "10.77.0.11"},
+    "2": {"ip": "10.77.0.12"},
+    "3": {"ip": "10.77.0.13"},
+    "4": {"ip": "10.77.0.14"},
+    "5": {"ip": "10.77.0.15"}
+  },
+  "frames": {"enabled_reserve": []},
+  "ota": {"port": 65280, "password": "change-me"},
+  "web": {"bind": "0.0.0.0", "port": 8080, "session_hours": 8},
+  "log": {
+    "directory": "/var/log/trafficlight",
+    "rotation": "100 MB",
+    "retention": "7 days",
+    "level": "INFO",
+    "sensor_sample_interval_s": 1.0
+  }
+}

@@ -1,0 +1,1104 @@
+<title>T3 Junction Logic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F2F3F0;--panel:#FAFBF9;--ink:#161A19;--mut:#55605B;--line:#C3CAC6;--soft:#E3E7E3;
+  --red:#CF3129;--grn:#14804A;--cyn:#0A7593;--amb:#9C620C;--hatch:#9AA39F;
+  --redbg:#F6DEDB;--grnbg:#DAEEE1;--cynbg:#DAEDF3;--ambbg:#F3E7D2;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  color-scheme:dark;--bg:#111413;--panel:#171B1A;--ink:#E7EBE8;--mut:#9BA5A0;--line:#39413D;--soft:#1F2523;
+  --red:#F05A50;--grn:#3DBB72;--cyn:#41B4D8;--amb:#D99A3C;--hatch:#5E6863;
+  --redbg:#3A1F1C;--grnbg:#16301F;--cynbg:#132C35;--ambbg:#33280F;}}
+:root[data-theme="dark"]{
+  color-scheme:dark;--bg:#111413;--panel:#171B1A;--ink:#E7EBE8;--mut:#9BA5A0;--line:#39413D;--soft:#1F2523;
+  --red:#F05A50;--grn:#3DBB72;--cyn:#41B4D8;--amb:#D99A3C;--hatch:#5E6863;
+  --redbg:#3A1F1C;--grnbg:#16301F;--cynbg:#132C35;--ambbg:#33280F;}
+body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',Tahoma,'Noto Sans Thai',sans-serif;font-size:16px;line-height:1.65;padding-inline:20px;padding-block:40px 80px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+header{display:flex;flex-direction:column;gap:10px;max-width:820px}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);font-weight:500}
+h1{font-size:40px;line-height:1.2;margin:0;font-weight:600;text-wrap:balance}
+h2{font-size:24px;line-height:1.3;margin:0;font-weight:600;text-wrap:balance}
+.lede{color:var(--mut);margin:0;max-width:68ch}
+.rulebar{display:flex;flex-wrap:wrap;gap:10px 28px;padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:15px}
+.rulebar b{font-weight:600}
+section{display:flex;flex-direction:column;gap:14px}
+.sechead{display:flex;align-items:baseline;gap:14px}
+.num{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--mut)}
+figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.scroll{overflow-x:auto}
+.scroll svg{display:block;width:100%;min-width:820px;height:auto;color:var(--ink)}
+figcaption{font-size:14px;color:var(--mut);max-width:90ch}
+/* svg classes */
+.t{fill:var(--ink);font-family:'IBM Plex Sans Thai',Tahoma,sans-serif}
+.tm{fill:var(--mut);font-family:'IBM Plex Sans Thai',Tahoma,sans-serif}
+.tn{fill:var(--ink);font-family:'IBM Plex Mono',monospace}
+.tnm{fill:var(--mut);font-family:'IBM Plex Mono',monospace}
+.tr{fill:var(--red)}.tg{fill:var(--grn)}.tc{fill:var(--cyn)}.ta{fill:var(--amb)}
+.ln{stroke:var(--ink);fill:none}.lm{stroke:var(--mut);fill:none}.ll{stroke:var(--line);fill:none}
+.box{fill:var(--panel);stroke:var(--ink)}.boxs{fill:var(--soft);stroke:none}.boxl{fill:var(--panel);stroke:var(--line)}
+.fr{fill:var(--red)}.fg{fill:var(--grn)}.fc{fill:var(--cyn)}.fa{fill:var(--amb)}.fi{fill:var(--ink)}.fb{fill:var(--bg)}.fp{fill:var(--panel)}.fs{fill:var(--soft)}.fh{fill:var(--hatch)}
+.frb{fill:var(--redbg)}.fgb{fill:var(--grnbg)}.fcb{fill:var(--cynbg)}.fab{fill:var(--ambbg)}
+.sr{stroke:var(--red)}.sg{stroke:var(--grn)}.sc{stroke:var(--cyn)}.sa{stroke:var(--amb)}
+.ah{fill:var(--ink)}.ahm{fill:var(--mut)}
+.bg-panel{fill:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:10px 14px 10px 0;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);font-weight:500}
+td.v{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+.tag{font-size:13px;white-space:nowrap}
+.tag.cfm{color:var(--amb);font-weight:500}
+.todo{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0 32px}
+.todo div{padding:12px 0;border-top:1px solid var(--line);display:flex;gap:12px}
+.todo .mono{color:var(--amb);font-weight:600}
+.ui{min-width:1060px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--bg);font-size:14px}
+.ui .bar{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--soft);border-bottom:1px solid var(--line)}
+.ui .dot{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.ui .url{margin-left:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--mut);background:var(--panel);padding:3px 10px;border-radius:4px;flex:1}
+.ui .top{display:flex;align-items:center;gap:28px;padding:0 20px;height:48px;border-bottom:1px solid var(--line);background:var(--panel)}
+.ui nav{display:flex;gap:20px;align-self:stretch}.ui nav span{display:flex;align-items:center;color:var(--mut);border-bottom:2px solid transparent}
+.ui nav span.on{color:var(--ink);border-color:var(--ink);font-weight:600}
+.ui .who{margin-left:auto;font-size:12px;color:var(--mut);font-family:'IBM Plex Mono',monospace}
+.ui .body{padding:18px 20px;display:flex;flex-direction:column;gap:16px}
+.ui .grid2{display:grid;grid-template-columns:1fr 1fr;gap:28px}.ui .grid3{display:grid;grid-template-columns:260px 1fr 1.3fr;gap:28px}
+.ui .col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.ui .cap{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);font-weight:500}
+.ui .state{display:flex;flex-direction:column;gap:2px}.ui .state b{font-size:20px}
+.ui .map svg{width:100%;min-width:0 !important;height:auto;display:block;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+.ui .mut{color:var(--mut);font-size:13px}.ui .g{color:var(--grn);font-weight:500}.ui .a{color:var(--amb);font-weight:500}.ui .b{font-weight:600}
+.ui table.t{width:100%;border-collapse:collapse;font-size:13px}.ui table.t th{font-size:11px;padding:6px 8px 6px 0}.ui table.t td{padding:6px 8px 6px 0;vertical-align:middle}
+.ui canvas.led.sm{width:88px;max-width:none;border-radius:3px}
+.ui button{font-family:inherit;font-size:13px;height:32px;padding:0 14px;border-radius:6px;border:1px solid var(--ink);background:var(--ink);color:var(--bg)}
+.ui button.ghost,.ui button.mini{background:transparent;color:var(--ink);border-color:var(--line)}.ui button.mini{height:28px;padding:0 10px;font-size:12px}
+.ui button[disabled]{opacity:.35}
+.ui select,.ui input{font-family:inherit;font-size:13px;height:30px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--ink);padding:0 8px}
+.ui input[type=checkbox]{height:16px;width:16px;accent-color:var(--ink)}
+.ui .stack{display:flex;flex-direction:column;gap:6px}
+.ui .row2{display:flex;align-items:center;gap:16px}
+.ui .check{display:flex;flex-wrap:wrap;gap:6px 24px;padding:12px 14px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font-size:13px}.ui .check b{width:100%}
+.ui .save{display:flex;align-items:center;gap:10px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:14px}.ui .save span{margin-right:auto;font-size:13px}
+.ui .fld{display:grid;grid-template-columns:1fr 70px auto 70px auto;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.ui .fld label{display:flex;flex-direction:column;font-size:14px}.ui .fld small{color:var(--mut);font-size:12px}
+.ui .fld input.num{width:70px;text-align:right;font-family:'IBM Plex Mono',monospace}
+.ui .fld.chg{background:var(--ambbg);border-radius:4px}.ui .fld.err{background:var(--redbg);border-radius:4px}.ui .fld.err input{border-color:var(--red)}.ui .fld.err small{color:var(--red)}
+.ui .tick{display:flex;align-items:center;gap:10px;font-size:14px;padding:6px 0}
+.ui .log{display:flex;flex-direction:column;gap:4px;font-size:12px;border-top:1px solid var(--line);padding-top:12px}
+.ui .actions{display:flex;align-items:center;gap:10px}
+.ui .dialog{margin-top:8px;display:flex;flex-direction:column;gap:8px;padding:16px;border:1.5px solid var(--ink);border-radius:8px;background:var(--panel);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.ui .dialog div{display:flex;gap:8px;justify-content:flex-end}
+.ui .login{padding:16px;border:1px solid var(--line);border-radius:8px;background:var(--panel);gap:8px}.ui .login input{width:100%;box-sizing:border-box}
+
+.iconrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:20px}
+.ic{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.ic span{color:var(--mut);font-size:13px;line-height:1.55}
+canvas.led{display:block;width:100%;max-width:240px;height:auto;aspect-ratio:2/1;border-radius:4px}
+.ftable canvas.led{width:176px;max-width:none}
+.ftable td{vertical-align:middle}
+.ftable td.on{color:var(--grn);font-weight:500;white-space:nowrap}
+.ftable td.off{color:var(--mut);white-space:nowrap}
+@media (max-width:600px){h1{font-size:30px}figure{padding:14px}}
+</style>
+
+<div class="wrap">
+
+<header>
+<span class="eyebrow">แยก T3 · ระบบไฟจราจร E-Car · ลอจิกการทำงาน</span>
+<h1>T3 เขียวทีละเลน ตามคิว</h1>
+<p class="lede">รถทุกคันต้องขอคิวก่อน ระบบให้ไฟเขียวได้ครั้งละหนึ่งเลนเท่านั้น เลนอื่นเป็น X แดงเสมอ รถ Auto แทรกขึ้นหน้าคิวได้ แต่ไม่ตัดไฟรถที่กำลังผ่านแยก ตัวเลขวินาทีทุกค่าในเอกสารนี้ปรับได้ในไฟล์ config ของแยก</p>
+</header>
+
+<div class="rulebar">
+<span><b>X แดง</b> = ไม่มีรถ / ยังไม่ถึงคิว</span>
+<span><b class="mono">1</b> เลนเขียวได้ครั้งละหนึ่งเลน</span>
+<span><b>Auto</b> แทรกหน้าคิวได้</span>
+<span><b>ไม่ตัด</b> เลนที่กำลังเขียว</span>
+<span><b>สลับเลน</b> ทุกจอ X 1.0 วินาทีก่อน</span>
+</div>
+
+<!-- 1 LAYOUT -->
+<section>
+<div class="sechead"><span class="num">1</span><h2>ผังแยก เซนเซอร์ และจอ</h2></div>
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1120 600" role="img" aria-label="ผังแยก T3 มี 5 เลน เลน 1 เป็นรถ Auto มีเซนเซอร์ 2 จุด เลน 2 และ 4 เป็น Manual ปกติ เลน 3 และ 5 เป็น Manual พิเศษที่ยื่นมือขอคิว">
+<defs>
+<marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ahm"/></marker>
+</defs>
+<!-- lanes -->
+<rect x="400" y="20" width="360" height="560" class="fs"/>
+<rect x="30" y="250" width="370" height="90" class="fs"/>
+<rect x="400" y="250" width="360" height="90" class="fh" opacity=".28"/>
+<line x1="400" y1="20" x2="400" y2="250" class="lm"/><line x1="400" y1="340" x2="400" y2="580" class="lm"/>
+<line x1="520" y1="20" x2="520" y2="580" class="ll" stroke-dasharray="6 6"/>
+<line x1="640" y1="20" x2="640" y2="580" class="ll" stroke-dasharray="6 6"/>
+<line x1="760" y1="20" x2="760" y2="580" class="lm"/>
+<line x1="30" y1="250" x2="400" y2="250" class="lm"/><line x1="30" y1="340" x2="400" y2="340" class="lm"/>
+<text x="752" y="334" text-anchor="end" class="tm" font-size="12" letter-spacing="2">พื้นที่แยก</text>
+<!-- pillar & A -->
+<rect x="250" y="340" width="150" height="80" class="fh" opacity=".35"/>
+<text x="325" y="408" text-anchor="middle" class="tm" font-size="12">pillar</text>
+<rect x="342" y="346" width="44" height="34" class="fi"/>
+<text x="364" y="369" text-anchor="middle" class="fb" font-size="16" font-weight="600" style="fill:var(--bg)">A</text>
+<text x="240" y="370" text-anchor="end" class="tm" font-size="12">กล่องควบคุม</text>
+<!-- flow arrows -->
+<g stroke-width="3">
+<line x1="50" y1="295" x2="120" y2="295" class="lm" marker-end="url(#a1)"/>
+<line x1="460" y1="575" x2="460" y2="520" class="lm" marker-end="url(#a1)"/>
+<line x1="580" y1="575" x2="580" y2="520" class="lm" marker-end="url(#a1)"/>
+<line x1="600" y1="25" x2="600" y2="80" class="lm" marker-end="url(#a1)"/>
+<line x1="700" y1="25" x2="700" y2="80" class="lm" marker-end="url(#a1)"/>
+<line x1="790" y1="200" x2="850" y2="200" class="lm" marker-end="url(#a1)"/>
+<line x1="790" y1="390" x2="850" y2="390" class="lm" marker-end="url(#a1)"/>
+</g>
+<text x="820" y="185" text-anchor="middle" class="tm" font-size="12">ทางออก</text>
+<!-- lane labels -->
+<g font-size="15" font-weight="600" class="t">
+<text x="140" y="240">เลน 3</text>
+<text x="436" y="560" text-anchor="end">เลน 2</text>
+<text x="620" y="560">เลน 1</text>
+<text x="590" y="45" text-anchor="end">เลน 4</text>
+<text x="712" y="45">เลน 5</text>
+</g>
+<!-- sensors: squares ink; ToF side-mounted: circles cyan -->
+<g font-size="12" font-family="IBM Plex Mono, monospace">
+<rect x="444" y="400" width="32" height="22" class="box"/><text x="460" y="416" text-anchor="middle" class="tn">C2</text>
+<rect x="556" y="400" width="48" height="22" class="box"/><text x="580" y="416" text-anchor="middle" class="tn">C1.1</text>
+<rect x="556" y="480" width="48" height="22" class="box"/><text x="580" y="496" text-anchor="middle" class="tn">C1.2</text>
+<rect x="584" y="168" width="32" height="22" class="box"/><text x="600" y="184" text-anchor="middle" class="tn">C4</text>
+<circle cx="360" cy="325" r="13" class="fp sc" stroke-width="2.5"/><text x="360" y="329" text-anchor="middle" class="tc" font-weight="600">C3</text>
+<circle cx="640" cy="183" r="13" class="fp sc" stroke-width="2.5"/><text x="640" y="187" text-anchor="middle" class="tc" font-weight="600">C5</text>
+</g>
+<line x1="580" y1="422" x2="580" y2="480" class="lm" stroke-dasharray="3 4"/>
+<text x="612" y="455" class="tm" font-size="12">14 m สาย</text>
+<!-- displays -->
+<g font-size="12" font-family="IBM Plex Mono, monospace" font-weight="600">
+<rect x="440" y="304" width="40" height="22" rx="2" class="fr"/><text x="460" y="320" text-anchor="middle" style="fill:#fff">B2</text>
+<rect x="560" y="304" width="40" height="22" rx="2" class="fr"/><text x="580" y="320" text-anchor="middle" style="fill:#fff">B1</text>
+<rect x="560" y="264" width="40" height="22" rx="2" class="fr"/><text x="580" y="280" text-anchor="middle" style="fill:#fff">B4</text>
+<rect x="680" y="264" width="40" height="22" rx="2" class="fr"/><text x="700" y="280" text-anchor="middle" style="fill:#fff">B5</text>
+<rect x="378" y="262" width="20" height="40" rx="2" class="fr"/><text x="388" y="286" text-anchor="middle" style="fill:#fff" font-size="10">B3</text>
+</g>
+<!-- legend / lane table -->
+<g transform="translate(880,40)">
+<text x="0" y="0" class="tm" font-size="12" letter-spacing="1.5">เลน · เซนเซอร์ · จอ</text>
+<g font-size="14">
+<line x1="0" y1="16" x2="230" y2="16" class="ll"/>
+<text x="0" y="42" class="t" font-weight="600">เลน 1 · Auto</text>
+<text x="0" y="62" class="tm" font-size="13">C1.2 ไกล → แทรกคิว</text>
+<text x="0" y="80" class="tm" font-size="13">C1.1 ใกล้ → ยืนยันรถพ้น</text>
+<text x="230" y="42" text-anchor="end" class="tn" font-weight="600">B1</text>
+<line x1="0" y1="96" x2="230" y2="96" class="ll"/>
+<text x="0" y="122" class="t" font-weight="600">เลน 2 · Manual ปกติ</text>
+<text x="0" y="142" class="tm" font-size="13">C2 ตรวจรถ + dolly</text>
+<text x="230" y="122" text-anchor="end" class="tn" font-weight="600">B2</text>
+<line x1="0" y1="158" x2="230" y2="158" class="ll"/>
+<text x="0" y="184" class="tc" font-weight="600">เลน 3 · Manual พิเศษ</text>
+<text x="0" y="204" class="tm" font-size="13">C3 ToF ข้างเลน · ยื่นมือ</text>
+<text x="230" y="184" text-anchor="end" class="tn" font-weight="600">B3</text>
+<line x1="0" y1="220" x2="230" y2="220" class="ll"/>
+<text x="0" y="246" class="t" font-weight="600">เลน 4 · Manual ปกติ</text>
+<text x="0" y="266" class="tm" font-size="13">C4 ตรวจรถ + dolly</text>
+<text x="230" y="246" text-anchor="end" class="tn" font-weight="600">B4</text>
+<line x1="0" y1="282" x2="230" y2="282" class="ll"/>
+<text x="0" y="308" class="tc" font-weight="600">เลน 5 · Manual พิเศษ</text>
+<text x="0" y="328" class="tm" font-size="13">C5 ToF ข้างเลน · ยื่นมือ</text>
+<text x="230" y="308" text-anchor="end" class="tn" font-weight="600">B5</text>
+<line x1="0" y1="344" x2="230" y2="344" class="ll"/>
+</g>
+<g font-size="13" transform="translate(0,380)">
+<rect x="0" y="-12" width="22" height="16" class="box"/><text x="32" y="1" class="tm">เซนเซอร์ตรวจรถ (ยิงลงกลางเลน)</text>
+<circle cx="11" cy="22" r="8" class="fp sc" stroke-width="2.5"/><text x="32" y="27" class="tm">ToF ข้างเลน ตรวจมือ</text>
+<rect x="0" y="40" width="22" height="16" rx="2" class="fr"/><text x="32" y="53" class="tm">จอ 64×32 (ปกติแสดง X แดง)</text>
+</g>
+</g>
+</svg>
+</div>
+<figcaption>ตำแหน่งตามแบบติดตั้งวันที่ 28 ก.ย. เลน 3 และ 5 คนขับมักจอดตรงทางเข้าแยกเพื่อยกหรือเปลี่ยนของ จึงติดเซนเซอร์ตรวจมือไว้ข้างเลนแทนกลางเลน เลน 1 และเลน 4 อยู่ช่องเดียวกันแต่วิ่งสวนทาง</figcaption>
+</figure>
+</section>
+
+<!-- 2 SIGNAL PATH -->
+<section>
+<div class="sechead"><span class="num">2</span><h2>เส้นทางสัญญาณ จากเซนเซอร์ถึงจอ</h2></div>
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1120 290" role="img" aria-label="เซนเซอร์ 6 ตัวส่งข้อมูลให้กล่องควบคุม A ซึ่งกรองสัญญาณ จัดคิว และส่งคำสั่งแยกรายจอไปยังจอ B1 ถึง B5">
+<defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="ah"/></marker></defs>
+<rect x="20" y="60" width="220" height="170" rx="6" class="box" stroke-width="1.5"/>
+<text x="40" y="92" class="t" font-size="17" font-weight="600">เซนเซอร์ ToF 6 ตัว</text>
+<text x="40" y="120" class="tn" font-size="14">C1.1 C1.2 C2 C4</text>
+<text x="40" y="140" class="tm" font-size="13">ตรวจรถ ยิงลงพื้นกลางเลน</text>
+<text x="40" y="172" class="tn tc" font-size="14" style="fill:var(--cyn)">C3 C5</text>
+<text x="40" y="192" class="tm" font-size="13">ตรวจมือ ติดข้างเลน</text>
+<line x1="240" y1="145" x2="388" y2="145" class="ln" stroke-width="2" marker-end="url(#a2)"/>
+<text x="314" y="132" text-anchor="middle" class="tn" font-size="13">ระยะ + ความแรง</text>
+<text x="314" y="168" text-anchor="middle" class="tm" font-size="12">อ่านทุก 0.05 s</text>
+
+<rect x="390" y="30" width="400" height="230" rx="6" class="box" stroke-width="2"/>
+<text x="410" y="62" class="t" font-size="17" font-weight="600">กล่องควบคุม A · Raspberry Pi</text>
+<text x="410" y="84" class="tm" font-size="13">ตัดสินใจที่จุดเดียว จอไม่คิดเอง</text>
+<g font-size="14">
+<rect x="410" y="104" width="112" height="120" rx="4" class="fs"/>
+<text x="466" y="134" text-anchor="middle" class="t" font-weight="600">1 กรอง</text>
+<text x="466" y="160" text-anchor="middle" class="tn" font-size="12">debounce 0.2 s</text>
+<text x="466" y="180" text-anchor="middle" class="tn" font-size="12">gap hold 1.2 s</text>
+<text x="466" y="200" text-anchor="middle" class="tn" font-size="12">เสีย 2.0 s</text>
+<rect x="534" y="104" width="112" height="120" rx="4" class="fs"/>
+<text x="590" y="134" text-anchor="middle" class="t" font-weight="600">2 จัดคิว</text>
+<text x="590" y="160" text-anchor="middle" class="tm" font-size="12">Auto แทรกหน้า</text>
+<text x="590" y="180" text-anchor="middle" class="tm" font-size="12">Manual มาก่อน</text>
+<text x="590" y="200" text-anchor="middle" class="tm" font-size="12">ได้ก่อน</text>
+<rect x="658" y="104" width="112" height="120" rx="4" class="fs"/>
+<text x="714" y="134" text-anchor="middle" class="t" font-weight="600">3 ให้เขียว</text>
+<text x="714" y="160" text-anchor="middle" class="tm" font-size="12">ครั้งละ 1 เลน</text>
+<text x="714" y="180" text-anchor="middle" class="tm" font-size="12">นับเวลาเคลียร์</text>
+<text x="714" y="200" text-anchor="middle" class="tn" font-size="12">3 / 4 / 5 s</text>
+<line x1="522" y1="164" x2="532" y2="164" class="ln" stroke-width="1.5" marker-end="url(#a2)"/>
+<line x1="646" y1="164" x2="656" y2="164" class="ln" stroke-width="1.5" marker-end="url(#a2)"/>
+</g>
+<line x1="790" y1="145" x2="898" y2="145" class="ln" stroke-width="2" marker-end="url(#a2)"/>
+<text x="844" y="132" text-anchor="middle" class="tn" font-size="13">คำสั่งรายจอ</text>
+<text x="844" y="168" text-anchor="middle" class="tm" font-size="12">Ethernet · MQTT</text>
+<rect x="900" y="60" width="200" height="170" rx="6" class="box" stroke-width="1.5"/>
+<text x="920" y="92" class="t" font-size="17" font-weight="600">จอ B1–B5</text>
+<text x="920" y="116" class="tm" font-size="13">ESP32 + HUB75 64×32</text>
+<rect x="920" y="132" width="40" height="22" rx="2" class="fr"/><text x="972" y="148" class="tm" font-size="13">X แดง</text>
+<rect x="920" y="162" width="40" height="22" rx="2" class="fg"/><text x="972" y="178" class="tm" font-size="13">ลูกศรเขียว</text>
+<rect x="920" y="192" width="40" height="22" rx="2" class="fc"/><text x="972" y="208" class="tm" font-size="13">ตรวจมือ 1/3–3/3</text>
+<text x="1000" y="262" text-anchor="middle" class="tr" font-size="13" font-weight="500">ไม่ได้คำสั่งเกิน 5 s → ไม่เขียว</text>
+</svg>
+</div>
+<figcaption>กล่อง A เป็นผู้ตัดสินใจเพียงจุดเดียว จอแต่ละจอได้คำสั่งของตัวเอง (V1 ใช้คำสั่งเดียวส่งทุกจอ) ถ้าจอขาดการติดต่อกับกล่อง A เกิน 5 วินาที จอจะเปลี่ยนเป็นภาพแจ้งการเชื่อมต่อขาดเอง และไม่แสดงสีเขียว</figcaption>
+</figure>
+</section>
+
+<!-- 3 FILTER TIMING -->
+<section>
+<div class="sechead"><span class="num">3</span><h2>เซนเซอร์กรองสัญญาณอย่างไร และเริ่มนับเวลาตอนไหน</h2></div>
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1120 470" role="img" aria-label="แผนภาพเวลา รถกับ dolly ผ่านเซนเซอร์ ใช้ debounce 0.2 วินาที ช่องว่าง dolly 0.5 วินาทีถูกรวมเป็นคันเดียว เพราะน้อยกว่า gap hold 1.2 วินาที เมื่อท้ายพ้นแล้วรอ 1.2 วินาที จึงนับเวลาเคลียร์ 3 วินาทีแล้วเป็นแดง">
+<!-- axis: x = 200 + t*80, t 0..11 -->
+<g class="tnm" font-size="12" text-anchor="middle">
+<text x="200" y="440">0</text><text x="280" y="440">1</text><text x="360" y="440">2</text><text x="440" y="440">3</text><text x="520" y="440">4</text><text x="600" y="440">5</text><text x="680" y="440">6</text><text x="760" y="440">7</text><text x="840" y="440">8</text><text x="920" y="440">9</text><text x="1000" y="440">10</text><text x="1080" y="440">11 s</text>
+</g>
+<g class="ll"><line x1="200" y1="40" x2="200" y2="420"/><line x1="280" y1="40" x2="280" y2="420"/><line x1="360" y1="40" x2="360" y2="420"/><line x1="440" y1="40" x2="440" y2="420"/><line x1="520" y1="40" x2="520" y2="420"/><line x1="600" y1="40" x2="600" y2="420"/><line x1="680" y1="40" x2="680" y2="420"/><line x1="760" y1="40" x2="760" y2="420"/><line x1="840" y1="40" x2="840" y2="420"/><line x1="920" y1="40" x2="920" y2="420"/><line x1="1000" y1="40" x2="1000" y2="420"/><line x1="1080" y1="40" x2="1080" y2="420"/></g>
+<!-- row labels -->
+<g font-size="14">
+<text x="20" y="92" class="t" font-weight="600">1 สัญญาณดิบ</text><text x="20" y="112" class="tm" font-size="12">30–250 cm, แรง ≥100</text>
+<text x="20" y="192" class="t" font-weight="600">2 หลังกรอง</text><text x="20" y="212" class="tm" font-size="12">“มีรถ” ที่ระบบใช้</text>
+<text x="20" y="292" class="t" font-weight="600">3 จับเวลาเคลียร์</text><text x="20" y="312" class="tm" font-size="12">Manual 3 s · Auto 4 s</text>
+<text x="20" y="382" class="t" font-weight="600">4 จอของเลน</text><text x="20" y="402" class="tm" font-size="12">ถ้าเลนนี้อยู่หน้าคิว</text>
+</g>
+<!-- raw -->
+<path d="M200 110 H200 V80 H440 V110 H480 V80 H680 V110 H1090" class="ln" stroke-width="2.5"/>
+<text x="320" y="72" text-anchor="middle" class="tm" font-size="12">หัวรถ + ตัวรถ</text>
+<text x="580" y="72" text-anchor="middle" class="tm" font-size="12">dolly</text>
+<!-- filtered -->
+<path d="M200 210 H216 V180 H776 V210 H1090" class="ln" stroke-width="2.5"/>
+<rect x="216" y="180" width="560" height="30" class="fs" opacity=".9"/>
+<path d="M200 210 H216 V180 H776 V210 H1090" class="ln" stroke-width="2.5"/>
+<!-- timer -->
+<rect x="776" y="278" width="240" height="30" rx="3" class="fab"/>
+<rect x="776" y="278" width="240" height="30" rx="3" class="sa" fill="none" stroke-width="1.5"/>
+<text x="896" y="298" text-anchor="middle" class="ta tn" font-size="14" font-weight="600" style="fill:var(--amb)">3.0 s</text>
+<!-- display -->
+<rect x="216" y="366" width="800" height="30" rx="3" class="fg"/>
+<text x="616" y="386" text-anchor="middle" font-size="14" font-weight="600" style="fill:#fff">ลูกศรเขียว</text>
+<rect x="200" y="366" width="16" height="30" class="fr"/>
+<rect x="1016" y="366" width="74" height="30" class="fr"/>
+<text x="1053" y="386" text-anchor="middle" font-size="14" font-weight="600" style="fill:#fff">X</text>
+<!-- annotations -->
+<g font-size="12">
+<line x1="200" y1="166" x2="216" y2="166" class="ln"/><text x="222" y="170" class="tn" font-size="12">debounce 0.2 s ต้องเห็นต่อเนื่องจึงนับว่ามีรถ</text>
+<line x1="440" y1="130" x2="480" y2="130" class="ln" stroke-width="2"/><line x1="440" y1="124" x2="440" y2="136" class="ln"/><line x1="480" y1="124" x2="480" y2="136" class="ln"/>
+<text x="460" y="146" text-anchor="middle" class="tn">0.5 s</text>
+<text x="300" y="244" class="tm">ช่องว่าง dolly 0.5 s &lt; 1.2 s → ยังเป็นคันเดิม</text>
+<line x1="680" y1="130" x2="776" y2="130" class="ln" stroke-width="2"/><line x1="680" y1="124" x2="680" y2="136" class="ln"/><line x1="776" y1="124" x2="776" y2="136" class="ln"/>
+<text x="728" y="146" text-anchor="middle" class="tn">gap hold 1.2 s</text>
+<text x="690" y="100" class="t" font-size="12" font-weight="600">ท้ายพ้นจริง</text>
+<text x="782" y="244" class="t" font-weight="600">ยืนยันว่าพ้นแล้ว → เริ่มนับ</text>
+<line x1="680" y1="330" x2="1016" y2="330" class="lm" stroke-dasharray="4 3"/><line x1="680" y1="324" x2="680" y2="336" class="lm"/><line x1="1016" y1="324" x2="1016" y2="336" class="lm"/>
+<text x="848" y="350" text-anchor="middle" class="tn" font-size="13" font-weight="600">ท้ายพ้นจริง → X = 4.2 s (Auto 5.2 s)</text>
+</g>
+</svg>
+</div>
+<figcaption>ตัวอย่างรถ Manual พร้อม dolly ผ่านเซนเซอร์ ระบบนับเวลาเคลียร์หลังสัญญาณกรองยืนยันว่าพ้นแล้ว (ตกลงใช้แบบนี้เมื่อ 28 ก.ย.) จึงไม่ถูกหลอกด้วยช่องว่างระหว่าง dolly ค่ากรองทั้งหมดมาจาก V1 ที่ใช้งานอยู่ภาคสนาม และใช้ debounce 0.2 s ค่าเดียวกันทุกเซนเซอร์ตรวจรถ</figcaption>
+</figure>
+</section>
+
+<!-- 4 QUEUE -->
+<section>
+<div class="sechead"><span class="num">4</span><h2>การจัดคิว และการเลือกเลนที่ได้เขียว</h2></div>
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1120 470" role="img" aria-label="คำขอจาก 3 แหล่งเข้าคิวเดียว ตั๋ว Auto อยู่หน้าสุด ตามด้วย Manual ตามลำดับความสำคัญและมาก่อนได้ก่อน ระบบให้เขียวทีละเลนหลังเลนเดิมจบและจอเดิมเป็น X แล้ว">
+<defs><marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="ah"/></marker></defs>
+<text x="20" y="30" class="tm" font-size="12" letter-spacing="1.5">คำขอเข้าคิว</text>
+<g font-size="14">
+<rect x="20" y="50" width="250" height="70" rx="6" class="box" stroke-width="1.5"/>
+<text x="38" y="78" class="t" font-weight="600">C1.2 เจอรถ Auto</text><text x="38" y="102" class="tm" font-size="13">→ ตั๋ว Auto · แทรกหน้าคิว</text>
+<rect x="20" y="140" width="250" height="70" rx="6" class="box" stroke-width="1.5"/>
+<text x="38" y="168" class="t" font-weight="600">C2 / C4 เจอรถ</text><text x="38" y="192" class="tm" font-size="13">หลังกรอง 0.2 s → ตั๋ว Manual</text>
+<rect x="20" y="230" width="250" height="70" rx="6" class="box sc" stroke-width="1.5"/>
+<text x="38" y="258" class="tc" font-weight="600">C3 / C5 มือค้างครบ 3 s</text><text x="38" y="282" class="tm" font-size="13">→ ตั๋ว Manual</text>
+</g>
+<path d="M270 85 H310 V175 H340 M270 175 H340 M270 265 H310 V175" class="ln" stroke-width="1.5"/>
+<line x1="330" y1="175" x2="352" y2="175" class="ln" stroke-width="1.5" marker-end="url(#a4)"/>
+<!-- queue -->
+<text x="360" y="30" class="tm" font-size="12" letter-spacing="1.5">คิวเดียวของทั้งแยก · หน้าคิวอยู่ขวา</text>
+<rect x="354" y="130" width="470" height="90" rx="6" class="boxl"/>
+<g font-size="13" font-family="IBM Plex Mono, monospace">
+<rect x="370" y="146" width="100" height="58" rx="4" class="fs"/><text x="420" y="170" text-anchor="middle" class="tn">C5 มือ</text><text x="420" y="190" text-anchor="middle" class="tnm" font-size="12">13:02:09</text>
+<rect x="480" y="146" width="100" height="58" rx="4" class="fs"/><text x="530" y="170" text-anchor="middle" class="tn">C4</text><text x="530" y="190" text-anchor="middle" class="tnm" font-size="12">13:02:04</text>
+<rect x="596" y="146" width="100" height="58" rx="4" class="fi"/><text x="646" y="170" text-anchor="middle" style="fill:var(--bg)" font-weight="600">Auto #2</text><text x="646" y="190" text-anchor="middle" style="fill:var(--bg)" font-size="12">13:02:08</text>
+<rect x="706" y="146" width="100" height="58" rx="4" class="fi"/><text x="756" y="170" text-anchor="middle" style="fill:var(--bg)" font-weight="600">Auto #1</text><text x="756" y="190" text-anchor="middle" style="fill:var(--bg)" font-size="12">13:02:06</text>
+</g>
+<text x="420" y="240" text-anchor="middle" class="tm" font-size="12">ท้ายคิว</text>
+<text x="756" y="240" text-anchor="middle" class="t" font-size="12" font-weight="600">หน้าคิว</text>
+<path d="M530 140 C530 108 646 108 646 138" class="ln" stroke-width="1.5" marker-end="url(#a4)"/>
+<text x="588" y="100" text-anchor="middle" class="t" font-size="12">Auto แซงขึ้นหน้า Manual</text>
+<!-- order rules -->
+<g font-size="14" transform="translate(360,280)">
+<text x="0" y="0" class="t" font-weight="600">ลำดับในคิว</text>
+<text x="0" y="28" class="t"><tspan class="tn" font-weight="600">1</tspan>  Auto อยู่หน้าสุดเสมอ (ความสำคัญสูงสุด)</text>
+<text x="0" y="54" class="t"><tspan class="tn" font-weight="600">2</tspan>  Manual เรียงตามความสำคัญของเลนที่ตั้งไว้</text>
+<text x="0" y="80" class="t"><tspan class="tn" font-weight="600">3</tspan>  ความสำคัญเท่ากัน มาก่อนได้ก่อน</text>
+<text x="0" y="106" class="t"><tspan class="tn" font-weight="600">4</tspan>  เวลาเท่ากันเป๊ะ สลับกันทีละเลน</text>
+<text x="0" y="140" class="tm" font-size="13">Auto มาต่อเนื่อง 3–4 คัน Manual ต้องรอจนหมด</text>
+</g>
+<!-- dispatcher -->
+<line x1="824" y1="175" x2="866" y2="175" class="ln" stroke-width="1.5" marker-end="url(#a4)"/>
+<rect x="868" y="40" width="232" height="400" rx="6" class="box" stroke-width="2"/>
+<text x="886" y="70" class="t" font-size="16" font-weight="600">ให้เขียวตั๋วหน้าคิว</text>
+<g font-size="13">
+<text x="886" y="104" class="t" font-weight="600">ก่อนเปิดเลนใหม่</text>
+<text x="886" y="126" class="tm">เลนที่เขียวอยู่ต้องจบก่อน</text>
+<text x="886" y="146" class="tm">ไม่ตัดไฟกลางทาง</text>
+<text x="886" y="168" class="tm">ทุกจอ X 1.0 s + จอเดิมยืนยัน</text>
+<line x1="886" y1="186" x2="1082" y2="186" class="ll"/>
+<text x="886" y="214" class="t" font-weight="600">ขณะเขียว</text>
+<text x="886" y="236" class="tm">เลนอื่นทุกเลนเป็น X</text>
+<text x="886" y="256" class="tm">คำขอใหม่เข้าคิวรอ</text>
+<line x1="886" y1="274" x2="1082" y2="274" class="ll"/>
+<text x="886" y="302" class="t" font-weight="600">เขียวต่อโดยไม่คั่น X</text>
+<text x="886" y="324" class="tm">Auto คันถัดไปต่อคิวอยู่</text>
+<text x="886" y="344" class="tm">หรือคันถัดไปมาจากเลนเดิม</text>
+<text x="886" y="364" class="tm">และไม่มีคิวเลนอื่นรอ</text>
+<rect x="886" y="390" width="196" height="32" rx="4" class="frb"/>
+<text x="984" y="411" text-anchor="middle" class="tr" font-weight="600">ห้ามเขียวพร้อมกันเด็ดขาด</text>
+</g>
+</svg>
+</div>
+<figcaption>ตัวอย่างคิว: C4 ขอก่อน (13:02:04) แต่ Auto สองคันที่มาทีหลังขึ้นหน้าคิวไปก่อน เมื่อ Auto ทั้งสองคันผ่านไปแล้ว C4 จึงได้เขียว ตามด้วย C5</figcaption>
+</figure>
+</section>
+
+<!-- 5 AUTO -->
+<section>
+<div class="sechead"><span class="num">5</span><h2>เลน 1 · รถ Auto (เซนเซอร์ C1.2 และ C1.1 · จอ B1)</h2></div>
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1120 400" role="img" aria-label="C1.2 เจอรถ Auto สร้างตั๋วแทรกหน้าคิว รถวิ่งถึง C1.1 ประมาณ 5 วินาที เมื่อถึงคิวและ C1.1 เจอรถ B1 เขียว รถเช็ค lidar 2 วินาทีแล้วออกตัว ท้ายพ้น C1.1 กรอง 1.2 วินาที นับ 4 วินาที แล้วเป็น X หรือเขียวต่อถ้ามี Auto คันถัดไป">
+<defs><marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="ah"/></marker></defs>
+<g font-size="14">
+<rect x="12" y="40" width="138" height="96" rx="6" class="box" stroke-width="1.5"/>
+<text x="26" y="68" class="t" font-weight="600">C1.2 เจอรถ</text><text x="26" y="90" class="tm" font-size="13">จุดไกล</text><text x="26" y="112" class="tn" font-size="12">กรอง 0.2 s</text>
+<rect x="170" y="40" width="138" height="96" rx="6" class="box" stroke-width="1.5"/>
+<text x="184" y="68" class="t" font-weight="600">ตั๋ว Auto</text><text x="184" y="90" class="tm" font-size="13">แทรกหน้าคิว</text><text x="184" y="112" class="tm" font-size="13">ต่อหลัง Auto ก่อน</text>
+<rect x="328" y="40" width="138" height="96" rx="6" class="box" stroke-width="1.5"/>
+<text x="342" y="68" class="t" font-weight="600">วิ่งถึง C1.1</text><text x="342" y="90" class="tn" font-size="13">~5 s</text><text x="342" y="112" class="tm" font-size="13">จอดที่หน้าแยก</text>
+<rect x="486" y="40" width="148" height="96" rx="6" class="fgb"/><rect x="486" y="40" width="148" height="96" rx="6" class="sg" fill="none" stroke-width="2"/>
+<text x="500" y="68" class="tg" font-weight="600">B1 เขียว</text><text x="500" y="90" class="t" font-size="13">ถึงคิว และ</text><text x="500" y="112" class="t" font-size="13">C1.1 เจอรถแล้ว</text>
+<rect x="654" y="40" width="138" height="96" rx="6" class="box" stroke-width="1.5"/>
+<text x="668" y="68" class="t" font-weight="600">รถเช็ค lidar</text><text x="668" y="90" class="tn" font-size="13">~2 s</text><text x="668" y="112" class="tm" font-size="13">แล้วออกตัว</text>
+<rect x="812" y="40" width="138" height="96" rx="6" class="box" stroke-width="1.5"/>
+<text x="826" y="68" class="t" font-weight="600">ท้าย dolly พ้น</text><text x="826" y="90" class="tm" font-size="13">C1.1</text><text x="826" y="112" class="tn" font-size="12">gap hold 1.2 s</text>
+<rect x="970" y="40" width="130" height="96" rx="6" class="fab"/><rect x="970" y="40" width="130" height="96" rx="6" class="sa" fill="none" stroke-width="1.5"/>
+<text x="984" y="68" class="ta" font-weight="600">นับ 4.0 s</text><text x="984" y="90" class="t" font-size="13">จอยังเขียว</text><text x="984" y="112" class="tm" font-size="13">ไม่เปลี่ยนภาพ</text>
+</g>
+<g stroke-width="1.5">
+<line x1="150" y1="88" x2="168" y2="88" class="ln" marker-end="url(#a5)"/>
+<line x1="308" y1="88" x2="326" y2="88" class="ln" marker-end="url(#a5)"/>
+<line x1="466" y1="88" x2="484" y2="88" class="ln" marker-end="url(#a5)"/>
+<line x1="634" y1="88" x2="652" y2="88" class="ln" marker-end="url(#a5)"/>
+<line x1="792" y1="88" x2="810" y2="88" class="ln" marker-end="url(#a5)"/>
+<line x1="950" y1="88" x2="968" y2="88" class="ln" marker-end="url(#a5)"/>
+</g>
+<!-- outcomes -->
+<path d="M1035 136 V170 H790 V196" class="ln" stroke-width="1.5" marker-end="url(#a5)"/>
+<path d="M1035 170 V196" class="ln" stroke-width="1.5" marker-end="url(#a5)"/>
+<g font-size="14">
+<rect x="640" y="198" width="280" height="84" rx="6" class="fgb"/><rect x="640" y="198" width="280" height="84" rx="6" class="sg" fill="none" stroke-width="1.5"/>
+<text x="656" y="226" class="tg" font-weight="600">มี Auto คันถัดไปในคิว</text>
+<text x="656" y="248" class="t" font-size="13">B1 เขียวต่อยาว ไม่คั่น X</text>
+<text x="656" y="268" class="tm" font-size="13">จนคันสุดท้ายพ้น C1.1 + 4 s</text>
+<rect x="940" y="198" width="160" height="84" rx="6" class="frb"/><rect x="940" y="198" width="160" height="84" rx="6" class="sr" fill="none" stroke-width="1.5"/>
+<text x="956" y="226" class="tr" font-weight="600">ไม่มี Auto ต่อ</text>
+<text x="956" y="248" class="t" font-size="13">B1 เป็น X แดง</text>
+<text x="956" y="268" class="tm" font-size="13">ตั๋วถัดไปได้คิว</text>
+</g>
+<!-- rules under -->
+<g font-size="14">
+<rect x="12" y="170" width="300" height="112" rx="6" class="boxl"/>
+<text x="28" y="198" class="t" font-weight="600">ตั๋ว Auto ถึงหัวคิว แต่รถยังไม่ถึง C1.1</text>
+<text x="28" y="222" class="tm" font-size="13">แยกรอ ทุกจอ X</text>
+<text x="28" y="242" class="tm" font-size="13">ไม่ให้ Manual ไปก่อน กันตัดหน้า Auto</text>
+<text x="28" y="262" class="tm" font-size="13">รอได้ไม่เกินอายุตั๋ว 7 s</text>
+<rect x="328" y="170" width="296" height="112" rx="6" class="boxl"/>
+<text x="344" y="198" class="t" font-weight="600">C1.1 ไม่เจอรถภายใน <tspan class="tn">7 s</tspan></text>
+<text x="344" y="222" class="tm" font-size="13">นับจากที่ C1.2 เจอ → ทิ้งตั๋วที่แทรกไว้</text>
+<text x="344" y="242" class="tm" font-size="13">ถ้ารถมาถึง C1.1 ทีหลัง</text>
+<text x="344" y="262" class="tm" font-size="13">C1.1 สร้างตั๋ว Auto ใหม่เอง</text>
+</g>
+<rect x="12" y="304" width="1088" height="76" rx="6" class="fs"/>
+<text x="28" y="334" class="t" font-size="14" font-weight="600">Auto จ่อตูดหลายคัน</text>
+<text x="28" y="358" class="tm" font-size="13">ถ้าเซนเซอร์เห็นช่องว่างระหว่างคัน นับเป็นหลายตั๋ว · ถ้าช่องว่างสั้นกว่า gap hold (ห่าง ~0.5 m ที่ 2 m/s ≈ 0.25 s) นับเป็นชุดยาวชุดเดียว</text>
+<text x="600" y="334" class="tg" font-size="14" font-weight="600">ทั้งสองแบบ B1 เขียวต่อเนื่อง ไม่เปลี่ยนไปมา</text>
+</svg>
+</div>
+<figcaption>C1.2 อยู่ไกลกว่า C1.1 รถวิ่งจาก C1.2 ถึง C1.1 ประมาณ 5 วินาที จอดเช็ค lidar อีกราว 2 วินาทีแล้วออกตัว อายุตั๋ว 7 วินาทีจึงพอสำหรับช่วงวิ่งถึง C1.1 B1 เขียวเมื่อถึงคิวและรถมาอยู่ที่ C1.1 แล้วเท่านั้น</figcaption>
+</figure>
+</section>
+
+<!-- 6 MANUAL NORMAL -->
+<section>
+<div class="sechead"><span class="num">6</span><h2>เลน 2 และ 4 · Manual ปกติ (C2 → B2, C4 → B4)</h2></div>
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1120 250" role="img" aria-label="เซนเซอร์เจอรถหลังกรอง 0.2 วินาที ต่อคิว ถึงคิวเขียว ท้ายรถและ dolly พ้นแล้วกรอง 1.2 วินาที นับ 3 วินาทีแล้วเป็น X หรือเขียวต่อถ้าคันถัดไปมาจากเลนเดิมและไม่มีคิวเลนอื่น">
+<defs><marker id="a6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="ah"/></marker></defs>
+<g font-size="14">
+<rect x="20" y="30" width="170" height="92" rx="6" class="box" stroke-width="1.5"/>
+<text x="36" y="60" class="t" font-weight="600">C2 / C4 เจอรถ</text><text x="36" y="82" class="tm" font-size="13">ที่จุดจ่อแยก</text><text x="36" y="104" class="tn" font-size="12">กรอง 0.2 s</text>
+<rect x="220" y="30" width="170" height="92" rx="6" class="box" stroke-width="1.5"/>
+<text x="236" y="60" class="t" font-weight="600">ตั๋ว Manual</text><text x="236" y="82" class="tm" font-size="13">ต่อคิว</text><text x="236" y="104" class="tm" font-size="13">รถ + dolly = 1 ตั๋ว</text>
+<rect x="420" y="30" width="170" height="92" rx="6" class="fgb"/><rect x="420" y="30" width="170" height="92" rx="6" class="sg" fill="none" stroke-width="2"/>
+<text x="436" y="60" class="tg" font-weight="600">ถึงคิว</text><text x="436" y="82" class="t" font-size="13">จอลูกศรเขียว</text><text x="436" y="104" class="tm" font-size="13">เลนอื่น X ทั้งหมด</text>
+<rect x="620" y="30" width="170" height="92" rx="6" class="box" stroke-width="1.5"/>
+<text x="636" y="60" class="t" font-weight="600">ท้ายรถ/dolly พ้น</text><text x="636" y="82" class="tm" font-size="13">ไม่เจอต่อเนื่อง</text><text x="636" y="104" class="tn" font-size="12">gap hold 1.2 s</text>
+<rect x="820" y="30" width="130" height="92" rx="6" class="fab"/><rect x="820" y="30" width="130" height="92" rx="6" class="sa" fill="none" stroke-width="1.5"/>
+<text x="836" y="60" class="ta" font-weight="600">นับ 3.0 s</text><text x="836" y="82" class="t" font-size="13">จอยังเขียว</text>
+</g>
+<g stroke-width="1.5">
+<line x1="190" y1="76" x2="218" y2="76" class="ln" marker-end="url(#a6)"/>
+<line x1="390" y1="76" x2="418" y2="76" class="ln" marker-end="url(#a6)"/>
+<line x1="590" y1="76" x2="618" y2="76" class="ln" marker-end="url(#a6)"/>
+<line x1="790" y1="76" x2="818" y2="76" class="ln" marker-end="url(#a6)"/>
+<line x1="950" y1="76" x2="978" y2="76" class="ln" marker-end="url(#a6)"/>
+</g>
+<rect x="980" y="30" width="120" height="92" rx="6" class="frb"/><rect x="980" y="30" width="120" height="92" rx="6" class="sr" fill="none" stroke-width="1.5"/>
+<text x="996" y="60" class="tr" font-size="14" font-weight="600">X แดง</text><text x="996" y="82" class="t" font-size="13">ตั๋วถัดไป</text><text x="996" y="102" class="t" font-size="13">ได้คิว</text>
+<path d="M885 122 V160 H700" class="ln" stroke-width="1.5" marker-end="url(#a6)"/>
+<rect x="160" y="146" width="538" height="80" rx="6" class="fgb"/><rect x="160" y="146" width="538" height="80" rx="6" class="sg" fill="none" stroke-width="1.5"/>
+<text x="178" y="174" class="tg" font-size="14" font-weight="600">เขียวต่อ ไม่คั่น X</text>
+<text x="178" y="196" class="t" font-size="13">ถ้าคันถัดไปมาจากเลนเดิมและถูกตรวจเจอทันที โดยไม่มีคิวเลนอื่นรออยู่</text>
+<text x="178" y="216" class="tm" font-size="13">ถ้ามีคิวเลนอื่นรออยู่ คันนี้ต่อท้ายคิวตามปกติ</text>
+</svg>
+</div>
+<figcaption>ใช้หลักเดียวกับเลน Auto ของ V1 คือรวมรถกับ dolly เป็นคันเดียวด้วย gap hold แล้วนับเวลาหลังท้ายพ้นเซนเซอร์ ตั๋ว Manual ไม่หายเองแม้รถถอยออกไป ต้องมีวิธีเคลียร์ตั๋วค้างสำหรับผู้ดูแล</figcaption>
+</figure>
+</section>
+
+<!-- 7 MANUAL SPECIAL -->
+<section>
+<div class="sechead"><span class="num">7</span><h2>เลน 3 และ 5 · Manual พิเศษ ยื่นมือขอคิว (C3 → B3, C5 → B5)</h2></div>
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1120 360" role="img" aria-label="คนขับแกว่งแขนหาจุด จอขึ้นเห็นมือทุกครั้งที่ผ่านลำแสง แต่การแกว่งทำให้การนับเริ่มใหม่ เมื่อค้างมือนิ่งต่อเนื่อง 3 วินาที โดยหลุดสั้นกว่า 0.3 วินาทีได้ จึงได้หนึ่งตั๋ว">
+<!-- x = 190 + t*120 ; t 0..7.5 -->
+<g class="ll"><line x1="190" y1="40" x2="190" y2="300"/><line x1="310" y1="40" x2="310" y2="300"/><line x1="430" y1="40" x2="430" y2="300"/><line x1="550" y1="40" x2="550" y2="300"/><line x1="670" y1="40" x2="670" y2="300"/><line x1="790" y1="40" x2="790" y2="300"/><line x1="910" y1="40" x2="910" y2="300"/><line x1="1030" y1="40" x2="1030" y2="300"/></g>
+<g class="tnm" font-size="12" text-anchor="middle"><text x="190" y="322">0</text><text x="310" y="322">1</text><text x="430" y="322">2</text><text x="550" y="322">3</text><text x="670" y="322">4</text><text x="790" y="322">5</text><text x="910" y="322">6</text><text x="1030" y="322">7 s</text></g>
+<g font-size="14">
+<text x="20" y="76" class="t" font-weight="600">1 เซนเซอร์เห็นมือ</text><text x="20" y="96" class="tm" font-size="12">30–250 cm · ≥100</text>
+<text x="20" y="166" class="t" font-weight="600">2 นับค้างมือ</text><text x="20" y="186" class="tm" font-size="12">ต้องต่อเนื่อง 3.0 s</text>
+<text x="20" y="256" class="t" font-weight="600">3 จอ B3 / B5</text><text x="20" y="276" class="tm" font-size="12">ตอบทันทีที่เห็นมือ</text>
+</g>
+<!-- raw: swings 0-0.3, 0.8-1.1, 1.6-1.9 ; steady 2.6-6.4 with dropout 4.1-4.25 -->
+<path d="M190 100 V70 H226 V100 H286 V70 H322 V100 H382 V70 H418 V100 H502 V70 H682 V100 H700 V70 H958 V100 H1100" class="ln" stroke-width="2.5"/>
+<text x="300" y="58" text-anchor="middle" class="tm" font-size="12">แกว่งแขนหาจุด</text>
+<text x="690" y="118" text-anchor="middle" class="tn" font-size="12">หลุด 0.15 s</text>
+<text x="730" y="58" text-anchor="middle" class="tm" font-size="12">ค้างมือนิ่ง</text>
+<!-- progress: resets; steady counts from 2.6 -> ticket at 5.6 -->
+<rect x="502" y="150" width="360" height="30" rx="3" class="fcb"/>
+<rect x="502" y="150" width="360" height="30" rx="3" class="sc" fill="none" stroke-width="1.5"/>
+<line x1="622" y1="150" x2="622" y2="180" class="sc" stroke-width="1.5"/><line x1="742" y1="150" x2="742" y2="180" class="sc" stroke-width="1.5"/>
+<text x="562" y="170" text-anchor="middle" class="tc" font-size="12" font-weight="600">0–1 s</text>
+<text x="682" y="170" text-anchor="middle" class="tc" font-size="12" font-weight="600">1–2 s</text>
+<text x="802" y="170" text-anchor="middle" class="tc" font-size="12" font-weight="600">2–3 s</text>
+<path d="M226 180 V160 M322 180 V160 M418 180 V160" class="lm" stroke-width="3"/>
+<text x="322" y="204" text-anchor="middle" class="tm" font-size="12">หลุดเกิน 0.3 s → เริ่มนับใหม่ทุกครั้ง</text>
+<text x="682" y="204" text-anchor="middle" class="tm" font-size="12">หลุดสั้นกว่า 0.3 s → นับต่อ</text>
+<path d="M862 150 V136 H880" class="ln"/><text x="886" y="140" class="t" font-size="12" font-weight="600">ครบ 3 s = 1 ตั๋ว</text>
+<!-- display row y 240-270 -->
+<g font-size="11" font-weight="600">
+<rect x="190" y="240" width="72" height="30" class="fc" opacity=".55"/>
+<rect x="262" y="240" width="24" height="30" class="fr"/>
+<rect x="286" y="240" width="72" height="30" class="fc" opacity=".55"/>
+<rect x="358" y="240" width="24" height="30" class="fr"/>
+<rect x="382" y="240" width="72" height="30" class="fc" opacity=".55"/>
+<rect x="454" y="240" width="48" height="30" class="fr"/>
+<rect x="502" y="240" width="120" height="30" class="fc" opacity=".55"/><text x="562" y="259" text-anchor="middle" class="t">เห็นมือ</text>
+<rect x="622" y="240" width="120" height="30" class="fc" opacity=".75"/><text x="682" y="259" text-anchor="middle" style="fill:#fff">1/3</text>
+<rect x="742" y="240" width="120" height="30" class="fc" opacity=".9"/><text x="802" y="259" text-anchor="middle" style="fill:#fff">2/3</text>
+<rect x="862" y="240" width="96" height="30" class="fc"/><text x="910" y="259" text-anchor="middle" style="fill:#fff">3/3 ยืนยัน</text>
+<rect x="958" y="240" width="142" height="30" class="fr"/><text x="1029" y="259" text-anchor="middle" style="fill:#fff">X · รอคิว</text>
+</g>
+<text x="330" y="232" text-anchor="middle" class="tc" font-size="12">จอขึ้น “เห็นมือ” ทุกครั้งที่ผ่าน</text>
+</svg>
+</div>
+<figcaption>คนขับจะแกว่งแขนไปมาจนจอขึ้นว่าเห็นมือ แล้วจึงค้างไว้ ระหว่างแกว่ง แขนผ่านลำแสงแล้วหลุดออกเกิน 0.3 วินาทีทุกครั้ง การนับจึงเริ่มใหม่ ไม่เกิดตั๋ว เมื่อค้างนิ่ง มือที่สั่นแล้วหลุดสั้นกว่า 0.3 วินาทีไม่ทำให้นับใหม่</figcaption>
+</figure>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1120 300" role="img" aria-label="หลังได้ตั๋ว จอแสดง X รอคิว เมื่อถึงคิวเขียวคงที่ 5 วินาทีแล้วกลับเป็น X กติกาตั๋วเลนพิเศษ">
+<g font-size="13">
+<rect x="20" y="40" width="160" height="44" class="fc"/><text x="100" y="67" text-anchor="middle" style="fill:#fff" font-weight="600">3/3 ได้ตั๋ว</text>
+<rect x="180" y="40" width="200" height="44" class="fr"/><text x="280" y="67" text-anchor="middle" style="fill:#fff" font-weight="600">X · รอคิว</text>
+<rect x="380" y="40" width="120" height="44" class="fh"/><text x="440" y="67" text-anchor="middle" style="fill:#fff" font-weight="600">สลับเลน 1.0 s</text>
+<rect x="500" y="40" width="500" height="44" class="fg"/><text x="750" y="67" text-anchor="middle" style="fill:#fff" font-weight="600">ลูกศรเขียว คงที่ 5.0 s</text>
+<rect x="1000" y="40" width="100" height="44" class="fr"/><text x="1050" y="67" text-anchor="middle" style="fill:#fff" font-weight="600">X</text>
+</g>
+<text x="20" y="28" class="tm" font-size="12" letter-spacing="1.5">หลังได้ตั๋ว</text>
+<text x="750" y="106" text-anchor="middle" class="tnm" font-size="12">ชี้นิ้ว 3 ทาง + บีบแตร ~2 s · ขับผ่าน ~3 s</text>
+<g font-size="14">
+<rect x="20" y="136" width="340" height="140" rx="6" class="boxl"/>
+<text x="36" y="164" class="t" font-weight="600">ตั๋วของเลนพิเศษ</text>
+<text x="36" y="188" class="tm" font-size="13">ค้างมือครบหนึ่งครั้ง = หนึ่งตั๋ว</text>
+<text x="36" y="208" class="tm" font-size="13">ตั๋วค้างในคิวแม้เอามือออกแล้ว</text>
+<text x="36" y="228" class="tm" font-size="13">เลนหนึ่งมีตั๋วรอได้ 1 ใบ ยื่นซ้ำระหว่างรอไม่เพิ่มคิว</text>
+<text x="36" y="248" class="tm" font-size="13">ต้องเอามือออกก่อนจึงขอใหม่ได้</text>
+<rect x="380" y="136" width="340" height="140" rx="6" class="boxl"/>
+<text x="396" y="164" class="t" font-weight="600">ทำไมยื่นมือแทนตรวจรถ</text>
+<text x="396" y="188" class="tm" font-size="13">คนขับจอดตรงทางเข้าแยกเพื่อยก/เปลี่ยนของ</text>
+<text x="396" y="208" class="tm" font-size="13">เซนเซอร์กลางเลนจะเห็นรถตลอดเวลา</text>
+<text x="396" y="228" class="tm" font-size="13">จึงติด ToF ข้างเลน ยิงลงพื้น</text>
+<text x="396" y="248" class="tm" font-size="13">ยื่นมือเมื่อพร้อมออกจริง</text>
+<rect x="740" y="136" width="360" height="140" rx="6" class="boxl"/>
+<text x="756" y="164" class="t" font-weight="600">ทำไมเขียวแบบจับเวลา</text>
+<text x="756" y="188" class="tm" font-size="13">เซนเซอร์ข้างเลนตรวจมือ ไม่ได้ตรวจรถ</text>
+<text x="756" y="208" class="tm" font-size="13">จึงรู้ไม่ได้ว่ารถพ้นแยกแล้วหรือยัง</text>
+<text x="756" y="228" class="tm" font-size="13">ให้เขียว 5.0 s แล้วกลับเป็น X ทันที</text>
+<text x="756" y="248" class="ta" font-size="13" font-weight="500">พื้นต้องอยู่ไกลกว่า 250 cm จากหัวเซนเซอร์</text>
+</g>
+</svg>
+</div>
+<figcaption>ระยะตรวจมือใช้ 30–250 cm และความแรง ≥100 เท่ากับเซนเซอร์ตรวจรถ แต่ตั้งแยกได้เฉพาะ C3 และ C5 ถ้าวัดหน้างานแล้วพื้นอยู่ใกล้กว่า 250 cm ต้องลดค่าสูงสุดลง ไม่อย่างนั้นระบบจะนับพื้นเป็นมือ</figcaption>
+</figure>
+</section>
+
+<!-- 8 EXAMPLE TIMELINE -->
+<section>
+<div class="sechead"><span class="num">8</span><h2>ตัวอย่างเหตุการณ์จริง 28 วินาที</h2></div>
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1120 480" role="img" aria-label="ตัวอย่างเวลา C2 เขียวจนรถพ้น Auto สองคันแทรกคิวและรออยู่ที่ C1.1 ได้เขียวต่อเนื่องหลังสลับเลน 1 วินาที จากนั้น C4 ที่ขอไว้ก่อนได้เขียว C3 ยื่นมือได้ตั๋วต่อท้าย">
+<!-- x = 150 + t*33 ; t 0..28 -> 150..1074 -->
+<g class="ll"><line x1="150" y1="40" x2="150" y2="400"/><line x1="315" y1="40" x2="315" y2="400"/><line x1="480" y1="40" x2="480" y2="400"/><line x1="645" y1="40" x2="645" y2="400"/><line x1="810" y1="40" x2="810" y2="400"/><line x1="975" y1="40" x2="975" y2="400"/></g>
+<g class="tnm" font-size="12" text-anchor="middle"><text x="150" y="422">0</text><text x="315" y="422">5</text><text x="480" y="422">10</text><text x="645" y="422">15</text><text x="810" y="422">20</text><text x="975" y="422">25 s</text></g>
+<g font-size="14" font-weight="600" class="t">
+<text x="20" y="84">B1 · เลน 1</text><text x="20" y="154">B2 · เลน 2</text><text x="20" y="224">B3 · เลน 3</text><text x="20" y="294">B4 · เลน 4</text><text x="20" y="364">B5 · เลน 5</text>
+</g>
+<g class="fr">
+<rect x="150" y="72" width="304" height="16"/><rect x="849" y="72" width="225" height="16"/>
+<rect x="150" y="142" width="7" height="16"/><rect x="454" y="142" width="620" height="16"/>
+<rect x="150" y="212" width="429" height="16"/><rect x="678" y="212" width="396" height="16"/>
+<rect x="150" y="282" width="700" height="16"/>
+<rect x="150" y="352" width="924" height="16"/>
+</g>
+<rect x="381" y="68" width="73" height="24" class="fr"/>
+<text x="386" y="85" style="fill:#fff" font-size="11" font-weight="600">รถรอที่ C1.1</text>
+<rect x="157" y="136" width="297" height="28" rx="2" class="fg"/>
+<rect x="355" y="136" width="99" height="28" class="fab"/><text x="404" y="155" text-anchor="middle" class="ta" font-size="12" font-weight="600">3 s</text>
+<rect x="454" y="66" width="33" height="28" class="fh"/>
+<rect x="487" y="66" width="362" height="28" rx="2" class="fg"/>
+<rect x="718" y="66" width="131" height="28" class="fab"/><text x="783" y="85" text-anchor="middle" class="ta" font-size="12" font-weight="600">4 s</text>
+<rect x="850" y="276" width="33" height="28" class="fh"/>
+<rect x="883" y="276" width="191" height="28" rx="2" class="fg"/>
+<rect x="579" y="206" width="99" height="28" rx="2" class="fc"/><text x="628" y="225" text-anchor="middle" style="fill:#fff" font-size="12" font-weight="600">มือ 3 s</text>
+<g font-size="12">
+<text x="160" y="128" class="t">0 s C2 เจอรถ → เขียว</text>
+<line x1="183" y1="170" x2="183" y2="282" class="lm" stroke-dasharray="3 3"/><text x="189" y="272" class="t">1 s C4 เจอรถ → ตั๋วรอ</text>
+<line x1="216" y1="96" x2="216" y2="58" class="lm" stroke-dasharray="3 3"/><text x="222" y="54" class="t">2 s C1.2 เจอ Auto #1 → แทรกหน้าคิว</text>
+<text x="222" y="112" class="t">4 s Auto #2 → ต่อหลัง #1</text>
+<line x1="315" y1="170" x2="315" y2="136" class="lm"/><text x="258" y="186" class="tm">5 s ท้ายพ้น C2</text><text x="258" y="202" class="tm">+1.2 s กรอง +3 s</text>
+<text x="490" y="128" class="t">10.2 s B1 เขียว (สลับเลน 1.0 s)</text>
+<text x="520" y="54" class="tm">Auto 2 คันผ่านต่อเนื่อง ไม่คั่น X</text>
+<text x="700" y="112" class="tm">17.2 s คันสุดท้ายพ้น C1.1 (กรองแล้ว) +4 s</text>
+<text x="585" y="252" class="tc">16 s C3 ได้ตั๋ว ต่อท้าย C4</text>
+<text x="850" y="268" class="t">22.2 s C4 เขียว (ขอตั้งแต่ 1 s)</text>
+</g>
+<g font-size="12" transform="translate(150,456)">
+<rect x="0" y="-11" width="22" height="12" class="fg"/><text x="30" y="0" class="tm">เขียว</text>
+<rect x="90" y="-9" width="22" height="8" class="fr"/><text x="120" y="0" class="tm">X แดง</text>
+<rect x="190" y="-11" width="22" height="12" class="fab"/><text x="220" y="0" class="tm">นับเวลาเคลียร์ (ยังเขียว)</text>
+<rect x="400" y="-11" width="10" height="12" class="fh"/><text x="418" y="0" class="tm">สลับเลน 1.0 s ทุกจอ X และจอเดิมยืนยันกลับ</text>
+</g>
+</svg>
+</div>
+<figcaption>Auto #1 เจอที่ C1.2 วินาทีที่ 2 วิ่งถึง C1.1 วินาทีที่ 7 แล้วรอให้ C2 จบก่อน C4 ขอคิวตั้งแต่วินาทีที่ 1 แต่ Auto สองคันแทรกขึ้นหน้า C4 จึงได้เขียวหลัง Auto คันสุดท้ายพ้น C1.1 ครบ 4 วินาที และสลับเลนอีก 1 วินาที ตลอดเวลาทั้งหมดมีเลนเขียวไม่เกินหนึ่งเลน</figcaption>
+</figure>
+</section>
+
+<!-- 9 FAULTS -->
+<section>
+<div class="sechead"><span class="num">9</span><h2>เมื่อมีอะไรผิดปกติ</h2></div>
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1120 720" role="img" aria-label="ตารางเหตุผิดปกติ เซนเซอร์เสียตอนแดง เสียตอนเขียว เลนพิเศษเสียตอนเขียว C1.2 เสีย จอไม่ยืนยัน จอขาดคำสั่ง และการรีบูต">
+<g class="tm" font-size="12" letter-spacing="1.5"><text x="20" y="30">เหตุการณ์</text><text x="330" y="30">ระบบทำอะไร</text><text x="930" y="30">จอเลนนั้น</text></g>
+<line x1="20" y1="44" x2="1100" y2="44" class="ll"/>
+<!-- r1 y 44-134 -->
+<text x="20" y="78" class="t" font-size="15" font-weight="600">เซนเซอร์เสียตอนเลนนั้นแดง</text>
+<text x="20" y="100" class="tn" font-size="13">ไม่มีข้อมูลเกิน 2.0 s</text>
+<text x="330" y="78" class="t" font-size="14">ปิดเฉพาะเลนนั้น ไม่รับคิวใหม่ · เลนอื่นทำงานปกติ</text>
+<text x="330" y="100" class="tm" font-size="13">กลับมาเองเมื่อข้อมูลนิ่งต่อเนื่อง 1.0 s และบันทึก log</text>
+<rect x="930" y="56" width="128" height="64" rx="3" style="fill:#0b0c0b"/><rect x="933" y="59" width="122" height="58" style="fill:none;stroke:#ff2a1c" stroke-width="4"/>
+<text x="994" y="84" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" style="fill:#f3f2ea">SENSOR C2</text>
+<text x="994" y="102" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" style="fill:#f3f2ea">BROKEN</text>
+<line x1="20" y1="134" x2="1100" y2="134" class="ll"/>
+<!-- r2 y 134-264 highlighted proposal -->
+<rect x="20" y="140" width="1080" height="118" rx="4" class="fgb" opacity=".6"/>
+<text x="32" y="170" class="t" font-size="15" font-weight="600">เซนเซอร์เสียตอนเลนนั้นเขียว</text>
+<text x="32" y="192" class="tn" font-size="13">C1.1 · C2 · C4</text>
+<text x="32" y="214" class="tg" font-size="12" font-weight="600">ยืนยันแล้ว 28 ก.ย.</text>
+<text x="330" y="170" class="t" font-size="14"><tspan class="tn" font-weight="600">1</tspan>  จอเลนนั้นเลิกเขียวทันที กันรถคันใหม่เข้า</text>
+<text x="330" y="194" class="t" font-size="14"><tspan class="tn" font-weight="600">2</tspan>  ทุกเลนรอ X ต่อ “เวลาเผื่อเคลียร์” <tspan class="tn" font-weight="600">12 s</tspan> ให้รถที่อยู่ในแยกออกไปก่อน</text>
+<text x="330" y="218" class="t" font-size="14"><tspan class="tn" font-weight="600">3</tspan>  ครบแล้วเลนอื่นทำงานต่อปกติ ไม่ต้องรอคนกดรีเซ็ต</text>
+<text x="330" y="242" class="tm" font-size="13">เลนที่เสียปิดไว้ และกลับมาเองเมื่อข้อมูลนิ่ง 1.0 s</text>
+<rect x="930" y="166" width="128" height="64" rx="3" style="fill:#0b0c0b"/><rect x="933" y="169" width="122" height="58" style="fill:none;stroke:#ff2a1c" stroke-width="4"/>
+<text x="994" y="194" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" style="fill:#f3f2ea">SENSOR C4</text>
+<text x="994" y="212" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" style="fill:#f3f2ea">BROKEN</text>
+<line x1="20" y1="264" x2="1100" y2="264" class="ll"/>
+<!-- r3 -->
+<text x="20" y="298" class="t" font-size="15" font-weight="600">เลนพิเศษเสียตอนเขียว</text>
+<text x="20" y="320" class="tn" font-size="13">C3 · C5</text>
+<text x="330" y="298" class="t" font-size="14">เขียว 5 s เดิมเดินต่อจนครบ เพราะไม่ได้ใช้เซนเซอร์นับรถพ้น</text>
+<text x="330" y="320" class="tm" font-size="13">จากนั้นปิดเลนนั้น เลนอื่นทำงานปกติ</text>
+<line x1="20" y1="344" x2="1100" y2="344" class="ll"/>
+<!-- r4 -->
+<text x="20" y="378" class="t" font-size="15" font-weight="600">เลน 1 · C1.2 เสีย</text>
+<text x="20" y="400" class="tg" font-size="12" font-weight="600">ยืนยันแล้ว 28 ก.ย.</text>
+<text x="330" y="378" class="t" font-size="14">C1.1 ทำหน้าที่แทนทั้งสองอย่าง: แทรกคิวเมื่อรถมาถึง และยืนยันรถออกจากเลน</text>
+<text x="330" y="400" class="tm" font-size="13">แค่แทรกคิวได้ช้าลง · B1 แสดงสัญญาณตามปกติ แจ้งเตือนใน log · ถ้า C1.1 เสีย ปิดเลน 1</text>
+<line x1="20" y1="424" x2="1100" y2="424" class="ll"/>
+<!-- r5 -->
+<text x="20" y="458" class="t" font-size="15" font-weight="600">จอไม่ยืนยันว่าเป็น X</text>
+<text x="20" y="480" class="tn" font-size="13">เกิน 2.0 s</text>
+<text x="330" y="458" class="t" font-size="14">ถือว่าจอนั้นเสีย ไม่เปิดเขียวเลนนั้น</text>
+<text x="330" y="480" class="tm" font-size="13">จอที่ขาดการติดต่อจะไม่แสดงเขียวเอง (แถวถัดไป)</text>
+<line x1="20" y1="504" x2="1100" y2="504" class="ll"/>
+<!-- r6 -->
+<text x="20" y="538" class="t" font-size="15" font-weight="600">จอไม่ได้คำสั่ง</text>
+<text x="20" y="560" class="tn" font-size="13">เกิน 5.0 s</text>
+<text x="330" y="538" class="t" font-size="14">จอตัดสินเอง เปลี่ยนเป็นภาพการเชื่อมต่อขาด</text>
+<text x="330" y="560" class="tm" font-size="13">ไม่แสดงเขียวจนได้คำสั่งใหม่ของรอบปัจจุบัน</text>
+<rect x="930" y="516" width="128" height="64" rx="3" style="fill:#0b0c0b"/><rect x="933" y="519" width="122" height="58" style="fill:none;stroke:#ff2a1c" stroke-width="4"/>
+<text x="994" y="544" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" style="fill:#f3f2ea">LINK</text>
+<text x="994" y="562" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" style="fill:#f3f2ea">LOST</text>
+<line x1="20" y1="594" x2="1100" y2="594" class="ll"/>
+<!-- r7 -->
+<text x="20" y="628" class="t" font-size="15" font-weight="600">เปิดเครื่อง / รีบูต</text>
+<text x="20" y="650" class="tm" font-size="13">จอหรือกล่อง A</text>
+<text x="330" y="628" class="t" font-size="14">จอขึ้นภาพกำลังเริ่มระบบก่อนเสมอ</text>
+<text x="330" y="650" class="tm" font-size="13">ไม่ใช้คำสั่งเขียวเก่าที่ค้างอยู่ในระบบสื่อสาร</text>
+<rect x="930" y="606" width="128" height="64" rx="3" style="fill:#0b0c0b"/><rect x="933" y="609" width="122" height="58" style="fill:none;stroke:#ff2a1c" stroke-width="4"/>
+<text x="994" y="643" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" style="fill:#f3f2ea">START</text>
+<line x1="20" y1="684" x2="1100" y2="684" class="ll"/>
+</svg>
+</div>
+<figcaption>เซนเซอร์เสียตอนเลนนั้นเขียว ระบบจะไม่รู้เลยว่ารถพ้นแยกแล้วหรือยัง จึงรอเวลาคงที่แทนการรอคนกดรีเซ็ต วิธีเดียวกับเลนพิเศษ (ยืนยันแล้ว) ใช้ 12 s คิดจากกรณีแย่สุดของเลน Auto: เช็ค lidar 2 s + ขบวนยาวสุด 8 m (รถ 2 m + dolly 2 คัน + ช่องว่าง) ที่ 2 m/s = 4 s + กรอง 1.2 s + เคลียร์ 4 s ≈ 11.2 s ปรับตามความยาวชุดรถจริงใน config</figcaption>
+</figure>
+</section>
+
+<!-- 10 FRAMES -->
+<section>
+<div class="sechead"><span class="num">10</span><h2>ภาพบนจอ B1–B5 · 26 เฟรม</h2></div>
+<figure>
+<div class="iconrow">
+<div class="ic"><canvas class="led" data-f="start" data-a="2" width="320" height="160"></canvas><b>เริ่มระบบ</b><span>ปุ่ม power ตามมาตรฐาน IEC 60417 ที่เห็นบนเครื่องใช้ไฟฟ้าทุกชนิด แปลว่าเครื่องเพิ่งเปิด</span></div>
+<div class="ic"><canvas class="led" data-f="reboot" width="320" height="160"></canvas><b>รีบูต</b><span>ลูกศรวนรอบ สัญลักษณ์ “เริ่มใหม่” ที่ใช้กันทั่วโลก</span></div>
+<div class="ic"><canvas class="led" data-f="hold" width="320" height="160"></canvas><b>เห็นมือแล้ว ค้างไว้</b><span>จุดกลางวงสว่างขึ้นทันทีที่เห็นมือ พร้อมคำว่า HOLD</span></div>
+<div class="ic"><canvas class="led" data-f="ring" data-a="2" width="320" height="160"></canvas><b>กำลังนับ</b><span>วงแหวนเติมทีละ 1/3 แบบปุ่ม “กดค้างเพื่อยืนยัน” ในแอปทั่วไป</span></div>
+<div class="ic"><canvas class="led" data-f="ok" width="320" height="160"></canvas><b>ยืนยันแล้ว</b><span>วงเต็ม + เครื่องหมายถูก = รับคำขอแล้ว (ยังไม่ใช่ไฟเขียว)</span></div>
+</div>
+<figcaption>ไม่ใช้รูปมือ เพราะฝ่ามือตั้งขึ้นคือสัญลักษณ์ “หยุด” ในป้ายจราจรสากล สีฟ้าใช้กับการตรวจมืออย่างเดียว จึงไม่สับสนกับแดงหรือเขียว ส่วน X แดงกับลูกศรเขียวเป็นสัญญาณควบคุมช่องทางตามอนุสัญญาเวียนนาว่าด้วยป้ายและสัญญาณจราจร</figcaption>
+</figure>
+
+<figure>
+<div class="scroll">
+<table class="ftable">
+<thead><tr><th>รหัส</th><th>ภาพบนจอ</th><th>ชื่อ</th><th>ถูกเรียกใช้เมื่อ</th><th>จอ</th><th>สถานะ</th></tr></thead>
+<tbody>
+<tr><td class="v">F01</td><td><canvas class="led" data-f="start" data-a="2" width="320" height="160"></canvas></td><td>เริ่มระบบ</td><td>เปิดเครื่อง จนกว่าจะได้คำสั่งแรกจากกล่อง A · จุด 3 จุดเดินทุก 0.5 s</td><td>ทุกจอ</td><td class="on">ใช้งาน</td></tr>
+<tr><td class="v">F02</td><td><canvas class="led" data-f="reboot" width="320" height="160"></canvas></td><td>รีบูต</td><td>กล่อง A สั่งรีบูต หรือจอรีสตาร์ตเอง ไม่ใช้คำสั่งเขียวเก่า</td><td>ทุกจอ</td><td class="on">ใช้งาน</td></tr>
+<tr><td class="v">F03</td><td><canvas class="led" data-f="linkwait" width="320" height="160"></canvas></td><td>รอเชื่อมต่อ</td><td>สาย LAN พร้อมแล้ว แต่ยังไม่ได้รับคำสั่งรอบปัจจุบัน</td><td>ทุกจอ</td><td class="on">ใช้งาน</td></tr>
+<tr><td class="v">F04</td><td><canvas class="led" data-f="stop" width="320" height="160"></canvas></td><td>X แดง · ห้ามผ่าน</td><td>ไม่มีรถ, ยังไม่ถึงคิว, รอคิว และช่วงสลับเลน 1.0 s · ภาพเดียวกับ V1</td><td>ทุกจอ</td><td class="on">ใช้งาน</td></tr>
+<tr><td class="v">F05</td><td><canvas class="led" data-f="go" width="320" height="160"></canvas></td><td>ลูกศรเขียว · ผ่าน</td><td>เลนได้คิว · C1 ต้องมีรถที่ C1.1 ด้วย · รวมช่วงนับเคลียร์ 3 / 4 s และเขียวคงที่ 5 s ของเลนพิเศษ (ไม่มีตัวเลข)</td><td>ทุกจอ</td><td class="on">ใช้งาน</td></tr>
+<tr><td class="v">F06</td><td><canvas class="led" data-f="hold" width="320" height="160"></canvas></td><td>เห็นมือ · ค้างไว้</td><td>ToF เห็นมือครั้งแรก (0–1 s) · ขึ้นทุกครั้งที่แขนผ่านตอนแกว่ง</td><td>B3 B5</td><td class="on">ใช้งาน</td></tr>
+<tr><td class="v">F07</td><td><canvas class="led" data-f="ring" data-a="1" width="320" height="160"></canvas></td><td>ค้างมือ 1/3</td><td>ค้างมือต่อเนื่องครบ 1 s</td><td>B3 B5</td><td class="on">ใช้งาน</td></tr>
+<tr><td class="v">F08</td><td><canvas class="led" data-f="ring" data-a="2" width="320" height="160"></canvas></td><td>ค้างมือ 2/3</td><td>ค้างมือต่อเนื่องครบ 2 s</td><td>B3 B5</td><td class="on">ใช้งาน</td></tr>
+<tr><td class="v">F09</td><td><canvas class="led" data-f="ok" width="320" height="160"></canvas></td><td>ยืนยันแล้ว</td><td>ครบ 3 s ได้ตั๋ว · แสดง 1 s แล้วกลับ F04 รอคิว · ยื่นซ้ำระหว่างรอไม่เพิ่มตั๋ว</td><td>B3 B5</td><td class="on">ใช้งาน</td></tr>
+<tr><td class="v">F10</td><td><canvas class="led" data-f="sensor" data-a="C1.1" width="320" height="160"></canvas></td><td>เซนเซอร์เสีย</td><td>เซนเซอร์ของเลนไม่มีข้อมูลเกิน 2.0 s · ค้างจนข้อมูลนิ่ง 1.0 s · แบบเดียวกันทุกเซนเซอร์ (C1.1 C1.2* C2 C3 C4 C5)</td><td>เฉพาะเลนนั้น</td><td class="on">ใช้งาน</td></tr>
+<tr><td class="v">F11</td><td><canvas class="led" data-f="linklost" width="320" height="160"></canvas></td><td>การเชื่อมต่อขาด</td><td>จอไม่ได้คำสั่งเกิน 5.0 s · จอตัดสินเอง</td><td>ทุกจอ</td><td class="on">ใช้งาน</td></tr>
+<tr><td class="v">F12</td><td><canvas class="led" data-f="config" width="320" height="160"></canvas></td><td>ตั้งค่าผิด</td><td>จอไม่ได้ถูกจับคู่กับเลน หรือ config ไม่ผ่านการตรวจ</td><td>ทุกจอ</td><td class="on">ใช้งาน</td></tr>
+<tr><td class="v">F13</td><td><canvas class="led" data-f="maint" width="320" height="160"></canvas></td><td>ปิดเลนซ่อม</td><td>ผู้ดูแลสั่งปิดเลนเพื่อบำรุงรักษา</td><td>ทุกจอ</td><td class="on">ใช้งาน</td></tr>
+<tr><td class="v">F14</td><td><canvas class="led" data-f="update" width="320" height="160"></canvas></td><td>กำลังอัปเดต</td><td>ระหว่างอัปโหลดเฟิร์มแวร์ผ่าน LAN (OTA) · เลนนั้นปิดจนจอกลับมาทำงาน</td><td>จอที่อัปเดต</td><td class="on">ใช้งาน (เมื่อมี OTA)</td></tr>
+<tr><td class="v">F15</td><td><canvas class="led" data-f="linkok" width="320" height="160"></canvas></td><td>เชื่อมต่อกลับมา</td><td>หลัง F11 แสดง 1.5 s แล้วตามคำสั่งปัจจุบัน</td><td>ทุกจอ</td><td class="off">สำรอง</td></tr>
+<tr><td class="v">F16</td><td><canvas class="led" data-f="stophint" width="320" height="160"></canvas></td><td>X + จุดยื่นมือ</td><td>แทน F04 ที่เลนพิเศษ ถ้าคนขับหาจุดยื่นมือไม่เจอ</td><td>B3 B5</td><td class="off">สำรอง</td></tr>
+<tr><td class="v">F17</td><td><canvas class="led" data-f="allstop" width="320" height="160"></canvas></td><td>หยุดทั้งแยก</td><td>ผู้ดูแลสั่งหยุดฉุกเฉินทุกเลน</td><td>ทุกจอ</td><td class="off">สำรอง</td></tr>
+<tr><td class="v">F18</td><td><canvas class="led" data-f="caution" width="320" height="160"></canvas></td><td>สามเหลี่ยมเหลือง</td><td>เฟรมเดิมของ V1 ไม่ใช้ในลำดับปกติของ T3</td><td>—</td><td class="off">สำรอง · ปิด</td></tr>
+<tr><td class="v">F19</td><td><canvas class="led" data-f="left" width="320" height="160"></canvas></td><td>ลูกศรซ้าย</td><td>เลนที่ต้องเลี้ยวซ้าย เลือกแทน F05</td><td>—</td><td class="off">สำรอง</td></tr>
+<tr><td class="v">F20</td><td><canvas class="led" data-f="right" width="320" height="160"></canvas></td><td>ลูกศรขวา</td><td>เลนที่ต้องเลี้ยวขวา เลือกแทน F05</td><td>—</td><td class="off">สำรอง</td></tr>
+<tr><td class="v">F21</td><td><canvas class="led" data-f="gocd" data-a="3" width="320" height="160"></canvas></td><td>เขียว + 3</td><td>เผื่อใช้นับถอยหลังช่วงท้ายไฟเขียวในอนาคต</td><td>—</td><td class="off">สำรอง</td></tr>
+<tr><td class="v">F22</td><td><canvas class="led" data-f="gocd" data-a="2" width="320" height="160"></canvas></td><td>เขียว + 2</td><td>เผื่อใช้นับถอยหลังช่วงท้ายไฟเขียว</td><td>—</td><td class="off">สำรอง</td></tr>
+<tr><td class="v">F23</td><td><canvas class="led" data-f="gocd" data-a="1" width="320" height="160"></canvas></td><td>เขียว + 1</td><td>เผื่อใช้นับถอยหลังช่วงท้ายไฟเขียว</td><td>—</td><td class="off">สำรอง</td></tr>
+<tr><td class="v">F24</td><td><canvas class="led" data-f="redcd" data-a="3" width="320" height="160"></canvas></td><td>แดง + 3</td><td>เผื่อใช้บอกว่าอีกกี่วินาทีจะได้เขียว</td><td>—</td><td class="off">สำรอง</td></tr>
+<tr><td class="v">F25</td><td><canvas class="led" data-f="redcd" data-a="2" width="320" height="160"></canvas></td><td>แดง + 2</td><td>เผื่อใช้บอกว่าอีกกี่วินาทีจะได้เขียว</td><td>—</td><td class="off">สำรอง</td></tr>
+<tr><td class="v">F26</td><td><canvas class="led" data-f="redcd" data-a="1" width="320" height="160"></canvas></td><td>แดง + 1</td><td>เผื่อใช้บอกว่าอีกกี่วินาทีจะได้เขียว</td><td>—</td><td class="off">สำรอง</td></tr>
+</tbody>
+</table>
+</div>
+<figcaption>ภาพวาดตามพิกเซลจริงของแผง 64×32 ทุกเฟรมที่ไม่ใช่สีเขียวยังหมายถึงห้ามผ่าน กรอบแดงรอบจอ = เลนปิด พร้อมบอกเหตุผล · *C1.2 เสีย ระบบยังใช้เลน 1 ต่อได้ด้วย C1.1 ตัวเดียว C1.1 ทำหน้าที่แทรกคิวและยืนยันรถออกแทน B1 จึงแสดงสัญญาณปกติ แจ้งเตือนใน log แทน</figcaption>
+</figure>
+</section>
+
+<!-- 10 PARAMS -->
+<section>
+<div class="sechead"><span class="num">11</span><h2>ค่าเวลาทั้งหมด</h2></div>
+<figure>
+<div class="scroll">
+<table>
+<thead><tr><th>ค่า</th><th>เวลา / ค่า</th><th>ใช้ทำอะไร</th><th>ที่มา</th></tr></thead>
+<tbody>
+<tr><td>รอบตรวจเซนเซอร์</td><td class="v">0.05 s</td><td>ระบบตัดสินใจ 20 ครั้งต่อวินาที (ค่าเป้าหมาย ต้องวัดจริงเมื่อมี 6 เซนเซอร์)</td><td class="tag">ค่า V1</td></tr>
+<tr><td>สัญญาณที่นับว่าเจอ (รถ)</td><td class="v">30–250 cm · ≥100</td><td>ระยะและความแรงของเซนเซอร์ตรวจรถ</td><td class="tag">ค่า V1</td></tr>
+<tr><td>สัญญาณที่นับว่าเจอ (มือ C3, C5)</td><td class="v">30–250 cm · ≥100</td><td>ค่าเดียวกับรถ แต่ตั้งแยก · พื้นต้องไกลกว่าค่าสูงสุด</td><td class="tag">ยืนยันแล้ว · วัดพื้นหน้างาน</td></tr>
+<tr><td>Debounce</td><td class="v">0.2 s</td><td>ค่าเดียวทุกเซนเซอร์ตรวจรถ ต้องเจอต่อเนื่องจึงนับว่ามีรถ</td><td class="tag">ยืนยันแล้ว (ค่า V1)</td></tr>
+<tr><td>Gap hold</td><td class="v">1.2 s</td><td>ช่องว่างสั้นกว่านี้ถือเป็นคันเดิม ใช้ยืนยันว่าท้ายพ้นแล้ว</td><td class="tag">ค่า V1 · จูนจาก trace จริง</td></tr>
+<tr><td>เคลียร์ Manual ปกติ (C2, C4)</td><td class="v">3.0 s</td><td>นับหลังยืนยันท้ายพ้น แล้วเป็น X</td><td class="tag">ข้อกำหนด T3</td></tr>
+<tr><td>เคลียร์ Auto (C1.1)</td><td class="v">4.0 s</td><td>นับหลังยืนยันท้าย dolly พ้น C1.1</td><td class="tag">ข้อกำหนด T3</td></tr>
+<tr><td>อายุตั๋ว Auto</td><td class="v">7.0 s</td><td>C1.1 ต้องเจอรถภายในเวลานี้นับจาก C1.2 (รถใช้จริง ~5 s)</td><td class="tag">ข้อกำหนด T3</td></tr>
+<tr><td>ค้างมือ (C3, C5)</td><td class="v">3.0 s</td><td>ครบแล้วได้ตั๋ว · จอแสดง เห็นมือ, 1/3, 2/3, 3/3</td><td class="tag">ข้อกำหนด T3</td></tr>
+<tr><td>อนุโลมมือหลุด</td><td class="v">0.3 s</td><td>หลุดสั้นกว่านี้นับต่อ · นานกว่านี้เริ่มใหม่ (กันการแกว่ง)</td><td class="tag">ค่าเริ่มต้น · จูนหน้างาน</td></tr>
+<tr><td>เขียวเลนพิเศษ (C3, C5)</td><td class="v">5.0 s</td><td>เขียวคงที่ (ชี้นิ้ว + บีบแตร ~2 s, ขับ ~3 s)</td><td class="tag">ข้อกำหนด T3</td></tr>
+<tr><td>ช่วงสลับเลน</td><td class="v">1.0 s</td><td>ทุกจอ X ก่อนเปิดเลนใหม่ และจอเดิมต้องยืนยันกลับ</td><td class="tag">ยืนยันแล้ว</td></tr>
+<tr><td>รอจอยืนยัน</td><td class="v">2.0 s</td><td>ไม่ยืนยันภายในเวลานี้ ถือว่าจอเสีย</td><td class="tag">ยืนยันแล้ว</td></tr>
+<tr><td>เซนเซอร์เสีย</td><td class="v">2.0 s</td><td>ไม่มีข้อมูลนานเท่านี้ ถือว่าเสีย</td><td class="tag">ค่า V1</td></tr>
+<tr><td>กลับมาใช้ได้</td><td class="v">1.0 s</td><td>ข้อมูลนิ่งต่อเนื่องแล้วเปิดเลนกลับเอง พร้อม log</td><td class="tag">ยืนยันแล้ว</td></tr>
+<tr><td>เวลาเผื่อเคลียร์ เมื่อเซนเซอร์เสียตอนเขียว</td><td class="v">12 s</td><td>ทุกเลนรอ X ให้รถในแยกออกก่อน แล้วทำงานต่อ</td><td class="tag">ยืนยันแล้ว · ปรับตามความยาวชุดรถ</td></tr>
+<tr><td>จอขาดคำสั่ง</td><td class="v">5.0 s</td><td>เกินนี้จอขึ้นการเชื่อมต่อขาด ไม่เขียว</td><td class="tag">ค่า V1</td></tr>
+</tbody>
+</table>
+</div>
+<figcaption>ทุกค่าอยู่ในไฟล์ config ของแยก ปรับหน้างานได้โดยไม่ต้องแก้โปรแกรม “ค่า V1” คือค่าที่ใช้งานจริงอยู่แล้วที่แยกปกติ</figcaption>
+</figure>
+</section>
+
+<!-- 12 WEB UI -->
+<section>
+<div class="sechead"><span class="num">12</span><h2>หน้าเว็บตั้งค่าและดูสถานะ (ต้นแบบ)</h2></div>
+<p class="lede">เปิดจากคอมที่ต่อ Wi-Fi วงเดียวกับ Pi · หนึ่ง IP ดูแลหนึ่งแยก แต่ละแยกมีแผนที่ของตัวเอง · ใช้โค้ดชุดเดียวกันทุกแยก ต่างกันแค่ config · ตัวอย่างนี้เป็นแยก T3 ตอนรถ Auto กำลังผ่าน</p>
+
+<!-- A STATUS -->
+<figure>
+<div class="scroll"><div class="ui">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">http://[IP ของ Pi T3]:8080/status</span></div>
+<div class="app">
+<div class="top"><b>T3 · แยกพิเศษหน้า pillar</b><nav><span class="on">สถานะ</span><span>ตั้งค่าเลน</span><span>ตั้งค่าเวลา</span><span>จอ</span><span>ผู้ใช้และประวัติ</span></nav><span class="who">engineer01 · แก้ไขได้</span></div>
+<div class="body">
+<div class="grid2">
+<div class="col">
+<div class="state"><span class="cap">สถานะแยก</span><b>เลน 1 เขียว · Auto กำลังผ่าน</b><span class="mut">คิวรอ 2 · controller ออนไลน์ · config v13</span></div>
+<div class="map"><svg viewBox="20 10 840 585" role="img" aria-label="แผนที่สถานะแยก T3 ตอนนี้ B1 เขียว มี 5 เลน เลน 1 เป็นรถ Auto มีเซนเซอร์ 2 จุด เลน 2 และ 4 เป็น Manual ปกติ เลน 3 และ 5 เป็น Manual พิเศษที่ยื่นมือขอคิว">
+<defs>
+<marker id="a1m" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ahm"/></marker>
+</defs>
+<!-- lanes -->
+<rect x="400" y="20" width="360" height="560" class="fs"/>
+<rect x="30" y="250" width="370" height="90" class="fs"/>
+<rect x="400" y="250" width="360" height="90" class="fh" opacity=".28"/>
+<line x1="400" y1="20" x2="400" y2="250" class="lm"/><line x1="400" y1="340" x2="400" y2="580" class="lm"/>
+<line x1="520" y1="20" x2="520" y2="580" class="ll" stroke-dasharray="6 6"/>
+<line x1="640" y1="20" x2="640" y2="580" class="ll" stroke-dasharray="6 6"/>
+<line x1="760" y1="20" x2="760" y2="580" class="lm"/>
+<line x1="30" y1="250" x2="400" y2="250" class="lm"/><line x1="30" y1="340" x2="400" y2="340" class="lm"/>
+<text x="752" y="334" text-anchor="end" class="tm" font-size="12" letter-spacing="2">พื้นที่แยก</text>
+<!-- pillar & A -->
+<rect x="250" y="340" width="150" height="80" class="fh" opacity=".35"/>
+<text x="325" y="408" text-anchor="middle" class="tm" font-size="12">pillar</text>
+<rect x="342" y="346" width="44" height="34" class="fi"/>
+<text x="364" y="369" text-anchor="middle" class="fb" font-size="16" font-weight="600" style="fill:var(--bg)">A</text>
+<text x="240" y="370" text-anchor="end" class="tm" font-size="12">กล่องควบคุม</text>
+<!-- flow arrows -->
+<g stroke-width="3">
+<line x1="50" y1="295" x2="120" y2="295" class="lm" marker-end="url(#a1m)"/>
+<line x1="460" y1="575" x2="460" y2="520" class="lm" marker-end="url(#a1m)"/>
+<line x1="580" y1="575" x2="580" y2="520" class="lm" marker-end="url(#a1m)"/>
+<line x1="600" y1="25" x2="600" y2="80" class="lm" marker-end="url(#a1m)"/>
+<line x1="700" y1="25" x2="700" y2="80" class="lm" marker-end="url(#a1m)"/>
+<line x1="790" y1="200" x2="850" y2="200" class="lm" marker-end="url(#a1m)"/>
+<line x1="790" y1="390" x2="850" y2="390" class="lm" marker-end="url(#a1m)"/>
+</g>
+<text x="820" y="185" text-anchor="middle" class="tm" font-size="12">ทางออก</text>
+<!-- lane labels -->
+<g font-size="15" font-weight="600" class="t">
+<text x="140" y="240">เลน 3</text>
+<text x="436" y="560" text-anchor="end">เลน 2</text>
+<text x="620" y="560">เลน 1</text>
+<text x="590" y="45" text-anchor="end">เลน 4</text>
+<text x="712" y="45">เลน 5</text>
+</g>
+<!-- sensors: squares ink; ToF side-mounted: circles cyan -->
+<g font-size="12" font-family="IBM Plex Mono, monospace">
+<rect x="444" y="400" width="32" height="22" class="box"/><text x="460" y="416" text-anchor="middle" class="tn">C2</text>
+<rect x="556" y="400" width="48" height="22" class="box"/><text x="580" y="416" text-anchor="middle" class="tn">C1.1</text>
+<rect x="556" y="480" width="48" height="22" class="box"/><text x="580" y="496" text-anchor="middle" class="tn">C1.2</text>
+<rect x="584" y="168" width="32" height="22" class="box"/><text x="600" y="184" text-anchor="middle" class="tn">C4</text>
+<circle cx="360" cy="325" r="13" class="fp sc" stroke-width="2.5"/><text x="360" y="329" text-anchor="middle" class="tc" font-weight="600">C3</text>
+<circle cx="640" cy="183" r="13" class="fp sc" stroke-width="2.5"/><text x="640" y="187" text-anchor="middle" class="tc" font-weight="600">C5</text>
+</g>
+<line x1="580" y1="422" x2="580" y2="480" class="lm" stroke-dasharray="3 4"/>
+<text x="612" y="455" class="tm" font-size="12">14 m สาย</text>
+<!-- displays -->
+<g font-size="12" font-family="IBM Plex Mono, monospace" font-weight="600">
+<rect x="440" y="304" width="40" height="22" rx="2" class="fr"/><text x="460" y="320" text-anchor="middle" style="fill:#fff">B2</text>
+<rect x="560" y="304" width="40" height="22" rx="2" class="fg"/><text x="580" y="320" text-anchor="middle" style="fill:#fff">B1</text>
+<rect x="560" y="264" width="40" height="22" rx="2" class="fr"/><text x="580" y="280" text-anchor="middle" style="fill:#fff">B4</text>
+<rect x="680" y="264" width="40" height="22" rx="2" class="fr"/><text x="700" y="280" text-anchor="middle" style="fill:#fff">B5</text>
+<rect x="378" y="262" width="20" height="40" rx="2" class="fr"/><text x="388" y="286" text-anchor="middle" style="fill:#fff" font-size="10">B3</text>
+</g>
+</svg></div>
+</div>
+<div class="col">
+<span class="cap">เลน</span>
+<table class="t">
+<tr><th>เลน</th><th>ประเภท</th><th>จอตอนนี้</th><th>สถานะ</th><th></th></tr>
+<tr><td class="mono b">1</td><td>Auto</td><td><canvas class="led sm" data-f="go" width="192" height="96"></canvas></td><td class="g">เขียว · ผ่าน C1.1</td><td><button class="mini">ปิดเลน</button></td></tr>
+<tr><td class="mono b">2</td><td>Manual</td><td><canvas class="led sm" data-f="stop" width="192" height="96"></canvas></td><td>ว่าง</td><td><button class="mini">ปิดเลน</button></td></tr>
+<tr><td class="mono b">3</td><td>Manual พิเศษ</td><td><canvas class="led sm" data-f="stop" width="192" height="96"></canvas></td><td class="a">มีตั๋วรอ · คิวที่ 2</td><td><button class="mini">ปิดเลน</button></td></tr>
+<tr><td class="mono b">4</td><td>Manual</td><td><canvas class="led sm" data-f="stop" width="192" height="96"></canvas></td><td class="a">มีตั๋วรอ · คิวที่ 1</td><td><button class="mini">ปิดเลน</button></td></tr>
+<tr><td class="mono b">5</td><td>Manual พิเศษ</td><td><canvas class="led sm" data-f="stop" width="192" height="96"></canvas></td><td>ว่าง</td><td><button class="mini">ปิดเลน</button></td></tr>
+</table>
+<span class="cap">เซนเซอร์ค่าสด</span>
+<table class="t mono">
+<tr><th>ตัว</th><th>ระยะ</th><th>แรง</th><th>ผล</th><th>สัญญาณ</th></tr>
+<tr><td class="b">C1.1</td><td>142 cm</td><td>1 820</td><td class="g">เจอ</td><td>ปกติ</td></tr>
+<tr><td class="b">C1.2</td><td>312 cm</td><td>640</td><td>ว่าง</td><td>ปกติ</td></tr>
+<tr><td class="b">C2</td><td>305 cm</td><td>702</td><td>ว่าง</td><td>ปกติ</td></tr>
+<tr><td class="b">C3</td><td>298 cm</td><td>511</td><td>ว่าง</td><td>ปกติ</td></tr>
+<tr><td class="b">C4</td><td>118 cm</td><td>2 240</td><td class="g">เจอ</td><td>ปกติ</td></tr>
+<tr><td class="b">C5</td><td>301 cm</td><td>498</td><td>ว่าง</td><td>ปกติ</td></tr>
+</table>
+</div>
+</div>
+<div class="log mono"><span class="cap">เหตุการณ์ล่าสุด</span>
+<div>13:02:04  C4 เจอรถ → ตั๋ว Manual คิวที่ 1</div>
+<div>13:02:06  C1.2 เจอ Auto → แทรกหน้าคิว</div>
+<div>13:02:09  C3 ค้างมือครบ 3.0 s → ตั๋วคิวที่ 2</div>
+<div>13:02:11  C1.1 เจอรถ · สลับเลน 1.0 s · จอทุกตัวยืนยัน X แล้ว → B1 เขียว</div>
+</div>
+<div class="actions"><button>รีสตาร์ตระบบควบคุม</button><button>รีบูต Pi</button><span class="mut">ทั้งสองปุ่มต้องยืนยันอีกครั้ง และรอให้แยกว่างก่อน</span></div>
+</div></div></div></div>
+<figcaption>หน้าแรกหลังล็อกอิน ใช้ผังเดียวกับรูป 1 สีของจอบนแผนที่เป็นสถานะจริงขณะนั้น ตารางเลนแสดงภาพเดียวกับที่คนขับเห็นบนจอ ผู้ใช้แบบ “ดูอย่างเดียว” เห็นหน้านี้ได้ แต่ไม่มีปุ่มสั่งงาน</figcaption>
+</figure>
+
+<!-- B LANES -->
+<figure>
+<div class="scroll"><div class="ui">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">http://[IP ของ Pi T3]:8080/lanes</span></div>
+<div class="app">
+<div class="top"><b>T3 · แยกพิเศษหน้า pillar</b><nav><span>สถานะ</span><span class="on">ตั้งค่าเลน</span><span>ตั้งค่าเวลา</span><span>จอ</span><span>ผู้ใช้และประวัติ</span></nav><span class="who">engineer01 · แก้ไขได้</span></div>
+<div class="body">
+<table class="t form">
+<tr><th>เลน</th><th>ประเภท</th><th>เข้าจากทิศ</th><th>เซนเซอร์</th><th>พอร์ต</th><th>จอ</th><th>เปิดใช้</th><th></th></tr>
+<tr><td class="mono b">1</td><td><select><option>Auto</option><option>Manual</option><option>Manual พิเศษ</option></select></td><td><select><option>ใต้</option></select></td>
+<td><div class="stack"><span><span class="mono">C1.1</span> ใกล้แยก</span><span><span class="mono">C1.2</span> ไกล · แทรกคิว</span></div></td>
+<td><div class="stack"><select><option>USB-485 #1 · ช่อง 1</option></select><select><option>USB-485 #1 · ช่อง 2</option></select></div></td>
+<td><select><option>B1 · 10.77.0.11</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
+<tr><td class="mono b">2</td><td><select><option>Manual</option></select></td><td><select><option>ใต้</option></select></td><td><span class="mono">C2</span></td><td><select><option>USB-485 #1 · ช่อง 3</option></select></td><td><select><option>B2 · 10.77.0.12</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
+<tr><td class="mono b">3</td><td><select><option>Manual พิเศษ</option></select></td><td><select><option>ตะวันตก</option></select></td><td><span class="mono">C3</span> ToF ข้างเลน</td><td><select><option>USB-485 #1 · ช่อง 4</option></select></td><td><select><option>B3 · 10.77.0.13</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
+<tr><td class="mono b">4</td><td><select><option>Manual</option></select></td><td><select><option>เหนือ</option></select></td><td><span class="mono">C4</span></td><td><select><option>USB-485 #2 · ช่อง 1</option></select></td><td><select><option>B4 · 10.77.0.14</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
+<tr><td class="mono b">5</td><td><select><option>Manual พิเศษ</option></select></td><td><select><option>เหนือ</option></select></td><td><span class="mono">C5</span> ToF ข้างเลน</td><td><select><option>USB-485 #2 · ช่อง 2</option></select></td><td><select><option>B5 · 10.77.0.15</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
+</table>
+<div class="row2"><button class="ghost">+ เพิ่มเลน</button><span class="mut">ประเภท Auto ต้องมีเซนเซอร์ 2 ตัว (ใกล้ + ไกล) · ประเภทอื่นใช้ตัวเดียว · ระบบเปลี่ยนช่องเซนเซอร์ให้เองตามประเภท</span></div>
+<div class="check"><b>ตรวจก่อนบันทึก</b><span class="g">✓ ทุกเลนมีจอหนึ่งจอ ไม่ซ้ำกัน</span><span class="g">✓ ทุกเซนเซอร์มีพอร์ต ไม่ซ้ำกัน</span><span class="g">✓ มีเลน Auto ไม่เกินหนึ่งเลน</span><span class="g">✓ พบ USB-485 2 ตัว (8 ช่อง) ใช้ 6 ช่อง</span></div>
+<div class="save"><span>แก้ไขแล้ว 0 รายการ</span><button class="ghost">ยกเลิก</button><button>บันทึก</button></div>
+</div></div></div></div>
+<figcaption>ตั้งค่าด้วย dropdown กับติ๊กอย่างเดียว ปุ่ม “ทดสอบจอ” สั่งให้จอของเลนนั้นกะพริบ X แดง 3 ครั้ง เพื่อยืนยันว่าจับคู่ถูกตัว (ทำได้เฉพาะตอนแยกว่าง) ช่องพอร์ตแสดงเฉพาะตัวแปลง USB-485 ที่ Pi เจออยู่ตอนนั้น</figcaption>
+</figure>
+
+<!-- C TIMING -->
+<figure>
+<div class="scroll"><div class="ui">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">http://[IP ของ Pi T3]:8080/timing</span></div>
+<div class="app">
+<div class="top"><b>T3 · แยกพิเศษหน้า pillar</b><nav><span>สถานะ</span><span>ตั้งค่าเลน</span><span class="on">ตั้งค่าเวลา</span><span>จอ</span><span>ผู้ใช้และประวัติ</span></nav><span class="who">engineer01 · แก้ไขได้</span></div>
+<div class="body">
+<div class="grid2">
+<div class="col">
+<span class="cap">เวลาไฟเขียว</span>
+<div class="fld"><label for="u1">เคลียร์ Manual ปกติ<small>นับหลังท้ายรถพ้นเซนเซอร์</small></label><input id="u1" class="num" value="3.0"><span>s</span></div>
+<div class="fld"><label for="u2">เคลียร์ Auto<small>นับหลังท้าย dolly พ้น C1.1</small></label><input id="u2" class="num" value="4.0"><span>s</span></div>
+<div class="fld chg"><label for="u3">เขียวเลนพิเศษ<small>ค่าเดิม 5.0 → ค่าใหม่</small></label><input id="u3" class="num" value="6.0"><span>s</span></div>
+<div class="fld"><label for="u4">ค้างมือเพื่อขอคิว<small>จอแสดง 1/3 2/3 3/3</small></label><input id="u4" class="num" value="3.0"><span>s</span></div>
+<div class="fld"><label for="u5">อายุตั๋ว Auto<small>C1.1 ต้องเจอรถภายในเวลานี้</small></label><input id="u5" class="num" value="7.0"><span>s</span></div>
+<div class="fld"><label for="u6">สลับเลน<small>ทุกจอ X ก่อนเปิดเลนใหม่</small></label><input id="u6" class="num" value="1.0"><span>s</span></div>
+</div>
+<div class="col">
+<span class="cap">การตรวจจับและความปลอดภัย</span>
+<div class="fld"><label for="u7">ระยะที่นับว่าเจอ<small>เซนเซอร์ตรวจรถ</small></label><input id="u7" class="num" value="30"><span>–</span><input class="num" value="250"><span>cm</span></div>
+<div class="fld"><label for="u8">ระยะที่นับว่าเจอมือ<small>C3, C5</small></label><input id="u8" class="num" value="30"><span>–</span><input class="num" value="250"><span>cm</span></div>
+<div class="fld"><label for="u9">Gap hold<small>ช่องว่างสั้นกว่านี้ถือเป็นคันเดิม</small></label><input id="u9" class="num" value="1.2"><span>s</span></div>
+<div class="fld"><label for="u10">เวลาเผื่อเคลียร์<small>เซนเซอร์เสียตอนเขียว</small></label><input id="u10" class="num" value="12"><span>s</span></div>
+<div class="fld err"><label for="u11">อนุโลมมือหลุด<small>ต้องอยู่ระหว่าง 0.1–1.0 s</small></label><input id="u11" class="num" value="0"><span>s</span></div>
+<label class="tick"><input type="checkbox" checked> Auto ขอคิวได้ก่อน Manual (priority สูงสุด)</label>
+</div>
+</div>
+<div class="save"><span class="a">แก้ไขแล้ว 1 รายการ · มีค่าผิด 1 ช่อง แก้ก่อนจึงบันทึกได้</span><button class="ghost">คืนค่าเริ่มต้น</button><button disabled>บันทึก</button></div>
+</div></div></div></div>
+<figcaption>ช่องที่ถูกแก้มีแถบบอกค่าเดิมกับค่าใหม่ ช่องที่ค่าเกินขอบเขตปลอดภัยเป็นสีแดงพร้อมบอกช่วงที่รับได้ และปุ่มบันทึกกดไม่ได้จนกว่าจะแก้ ค่าตั้งต้นทุกช่องมาจากตารางค่าเวลา (หัวข้อ 11)</figcaption>
+</figure>
+
+<!-- D SAVE DIALOG + DISPLAYS -->
+<figure>
+<div class="scroll"><div class="ui">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">http://[IP ของ Pi T3]:8080/displays</span></div>
+<div class="app">
+<div class="top"><b>T3 · แยกพิเศษหน้า pillar</b><nav><span>สถานะ</span><span>ตั้งค่าเลน</span><span>ตั้งค่าเวลา</span><span class="on">จอ</span><span>ผู้ใช้และประวัติ</span></nav><span class="who">engineer01 · แก้ไขได้</span></div>
+<div class="body">
+<div class="grid2">
+<div class="col">
+<span class="cap">จอของแยกนี้</span>
+<table class="t">
+<tr><th>จอ</th><th>เลน</th><th>สถานะ</th><th>ยืนยันล่าสุด</th><th>เฟิร์มแวร์</th><th></th></tr>
+<tr><td class="mono b">B1</td><td>1</td><td class="g">ออนไลน์</td><td class="mono">0.1 s</td><td class="mono">t3-1.0.0</td><td><button class="mini">อัปเดต</button></td></tr>
+<tr><td class="mono b">B2</td><td>2</td><td class="g">ออนไลน์</td><td class="mono">0.2 s</td><td class="mono">t3-1.0.0</td><td><button class="mini">อัปเดต</button></td></tr>
+<tr><td class="mono b">B3</td><td>3</td><td class="g">ออนไลน์</td><td class="mono">0.1 s</td><td class="mono">t3-1.0.0</td><td><button class="mini">อัปเดต</button></td></tr>
+<tr><td class="mono b">B4</td><td>4</td><td class="g">ออนไลน์</td><td class="mono">0.2 s</td><td class="mono">t3-1.0.0</td><td><button class="mini">อัปเดต</button></td></tr>
+<tr><td class="mono b">B5</td><td>5</td><td class="a">กำลังอัปเดต 64%</td><td class="mono">—</td><td class="mono">t3-1.0.0 → 1.0.1</td><td></td></tr>
+</table>
+<div class="row2"><button class="ghost">เลือกไฟล์เฟิร์มแวร์ (.bin)</button><span class="mut">อัปเดตได้ทีละจอ · เลนของจอนั้นปิดระหว่างอัปเดต (F14) · บูตไม่ผ่านจะย้อนกลับตัวเก่าเอง</span></div>
+</div>
+<div class="col">
+<span class="cap">เฟรมสำรอง</span>
+<label class="tick"><input type="checkbox"> F16 X + จุดยื่นมือ แทน X ที่เลนพิเศษ</label>
+<label class="tick"><input type="checkbox"> F19 / F20 ลูกศรซ้าย–ขวา แทนลูกศรขึ้น</label>
+<label class="tick"><input type="checkbox"> F21–F23 เขียว + นับ 3 2 1</label>
+<label class="tick"><input type="checkbox"> F24–F26 แดง + นับ 3 2 1</label>
+<label class="tick"><input type="checkbox" disabled> F18 สามเหลี่ยมเหลือง (ปิดถาวรใน T3)</label>
+<div class="dialog">
+<b>ยืนยันการบันทึก config v14</b>
+<span>เขียวเลนพิเศษ 5.0 → <b>6.0 s</b></span>
+<span class="mut">ระบบจะรอให้แยกว่าง แล้วรีสตาร์ตระบบควบคุม (~5 s ทุกจอเป็น X) ย้อนกลับ v13 ได้จากหน้าประวัติ</span>
+<div><button class="ghost">ยกเลิก</button><button>บันทึกและใช้ค่าใหม่</button></div>
+</div>
+</div>
+</div>
+</div></div></div></div>
+<figcaption>หน้าจอรวม OTA กับการเปิด/ปิดเฟรมสำรอง กล่องด้านล่างขวาคือหน้าต่างยืนยันที่ขึ้นทุกครั้งเมื่อกดบันทึก บอกว่าจะเปลี่ยนค่าอะไรบ้าง และระบบจะทำอะไรต่อ</figcaption>
+</figure>
+
+<!-- E USERS / HISTORY / LOGIN -->
+<figure>
+<div class="scroll"><div class="ui">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">http://[IP ของ Pi T3]:8080/users</span></div>
+<div class="app">
+<div class="top"><b>T3 · แยกพิเศษหน้า pillar</b><nav><span>สถานะ</span><span>ตั้งค่าเลน</span><span>ตั้งค่าเวลา</span><span>จอ</span><span class="on">ผู้ใช้และประวัติ</span></nav><span class="who">engineer01 · แก้ไขได้</span></div>
+<div class="body">
+<div class="grid3">
+<div class="col login">
+<span class="cap">หน้าล็อกอิน</span>
+<b>T3 · แยกพิเศษหน้า pillar</b>
+<label for="lu">ชื่อผู้ใช้</label><input id="lu" value="engineer01">
+<label for="lp">รหัสผ่าน</label><input id="lp" type="password" value="••••••••">
+<button>เข้าสู่ระบบ</button>
+</div>
+<div class="col">
+<span class="cap">บัญชีผู้ใช้</span>
+<table class="t">
+<tr><th>ชื่อผู้ใช้</th><th>สิทธิ์</th><th></th></tr>
+<tr><td class="mono">engineer01</td><td><select><option>แก้ไขได้</option><option>ดูอย่างเดียว</option></select></td><td><button class="mini">รีเซ็ตรหัส</button></td></tr>
+<tr><td class="mono">engineer02</td><td><select><option>แก้ไขได้</option></select></td><td><button class="mini">รีเซ็ตรหัส</button></td></tr>
+<tr><td class="mono">operator01</td><td><select><option>ดูอย่างเดียว</option></select></td><td><button class="mini">รีเซ็ตรหัส</button></td></tr>
+</table>
+<button class="ghost">+ เพิ่มผู้ใช้</button>
+</div>
+<div class="col">
+<span class="cap">ประวัติการแก้ไข</span>
+<table class="t">
+<tr><th>เวอร์ชัน</th><th>ใคร · เมื่อไหร่</th><th></th></tr>
+<tr><td class="mono b">v14</td><td>engineer01 · 28 ก.ย. 15:10<br><span class="mut">เขียวเลนพิเศษ 5.0 → 6.0 s</span></td><td><span class="g">ใช้อยู่</span></td></tr>
+<tr><td class="mono b">v13</td><td>engineer02 · 27 ก.ย. 09:42<br><span class="mut">เลน 4 พอร์ต #2-1</span></td><td><button class="mini">ย้อนกลับ</button></td></tr>
+<tr><td class="mono b">v12</td><td>engineer01 · 26 ก.ย. 16:05<br><span class="mut">ตั้งค่าเริ่มต้นแยก T3</span></td><td><button class="mini">ย้อนกลับ</button></td></tr>
+</table>
+</div>
+</div>
+</div></div></div></div>
+<figcaption>แยกบัญชีรายคน มีสิทธิ์สองระดับคือ “แก้ไขได้” และ “ดูอย่างเดียว” ทุกการบันทึกเป็นเวอร์ชันใหม่ บอกว่าใครแก้อะไร และย้อนกลับได้ ชื่อผู้ใช้และวันที่ในภาพเป็นตัวอย่าง</figcaption>
+</figure>
+</section>
+
+<section>
+<div class="sechead"><span class="num">13</span><h2>ยังต้องตัดสินใจหรือวัดหน้างาน</h2></div>
+<div class="todo">
+<div><span class="mono">A</span><span>ทดสอบระยะมือ 30–250 cm ที่ C3, C5 หน้างาน ถ้าพื้นอยู่ในระยะให้ลดค่าสูงสุดลง</span></div>
+<div><span class="mono">B</span><span>บันทึกสัญญาณจริงของ Auto จ่อตูด ดูว่าแยกคันได้ไหม แล้วจูน gap hold</span></div>
+<div><span class="mono">C</span><span>วัดรอบการทำงานจริงเมื่อต่อเซนเซอร์ครบ 6 ตัว</span></div>
+</div>
+</section>
+
+</div>
+<script>
+(function(){
+var F={'A':'01110100011000111111100011000110001','B':'11110100011000111110100011000111110','C':'01110100011000010000100001000101110','D':'11110100011000110001100011000111110','E':'11111100001000011110100001000011111','F':'11111100001000011110100001000010000','G':'01110100011000010111100011000101111','H':'10001100011000111111100011000110001','I':'01110001000010000100001000010001110','K':'10001100101010011000101001001010001','L':'10000100001000010000100001000011111','M':'10001110111010110101100011000110001','N':'10001110011010110011100011000110001','O':'01110100011000110001100011000101110','P':'11110100011000111110100001000010000','R':'11110100011000111110101001001010001','S':'01111100001000001110000010000111110','T':'11111001000010000100001000010000100','U':'10001100011000110001100011000101110','W':'10001100011000110101101011010101010','0':'01110100011001110101110011000101110','1':'00100011000010000100001000010001110','2':'01110100010000100010001000100011111','3':'11110000010000101110000010000111110','4':'00010001100101010010111110001000010','5':'11111100001111000001000011000101110','/':'00001000100001000100010000100010000','.':'00000000000000000000000000110001100',' ':'00000000000000000000000000000000000'};
+var C={R:'#ff2a1c',G:'#1fd23f',Y:'#ffd000',W:'#f3f2ea',B:'#12bfff',D:'#23323a',DW:'#3a3a35'};
+function build(f,a){
+ var m={};function set(x,y,c){x=Math.round(x);y=Math.round(y);if(x>=0&&x<64&&y>=0&&y<32)m[x+','+y]=c;}
+ function tw(s,sc,sp){return s.length? s.length*5*sc+(s.length-1)*sp:0;}
+ function text(s,x,y,c,sc,sp){sc=sc||1;sp=(sp===undefined)?sc:sp;var cx=x;for(var i=0;i<s.length;i++){var g=F[s[i]]||F[' '];for(var r=0;r<7;r++)for(var k=0;k<5;k++)if(g[r*5+k]==='1')for(var p=0;p<sc;p++)for(var q=0;q<sc;q++)set(cx+k*sc+q,y+r*sc+p,c);cx+=5*sc+sp;}}
+ function ctext(s,y,c,sc,x0,w,sp){sc=sc||1;x0=x0||0;w=w||64;sp=(sp===undefined)?sc:sp;text(s,x0+Math.floor((w-tw(s,sc,sp))/2),y,c,sc,sp);}
+ function border(t){t=t||1;for(var x=0;x<64;x++)for(var i=0;i<t;i++){set(x,i,C.R);set(x,31-i,C.R);}for(var y=0;y<32;y++)for(var j=0;j<t;j++){set(j,y,C.R);set(63-j,y,C.R);}}
+ function each(fn){for(var y=0;y<32;y++)for(var x=0;x<64;x++)fn(x,y,x+0.5,y+0.5);}
+ function ang(dx,dy){var a=Math.atan2(dx,-dy)*180/Math.PI;return a<0?a+360:a;}
+ function seg(px,py,x1,y1,x2,y2){var vx=x2-x1,vy=y2-y1,t=((px-x1)*vx+(py-y1)*vy)/(vx*vx+vy*vy);t=Math.max(0,Math.min(1,t));return Math.hypot(px-(x1+t*vx),py-(y1+t*vy));}
+ function bigX(){for(var y=0;y<28;y++)for(var x=0;x<28;x++){var d1=x-y,d2=x+y-27;if(Math.abs(d1)<=5||Math.abs(d2)<=5)set(18+x,2+y,C.R);}}
+ function bigArrow(){for(var y=2;y<=15;y++){var hw=y-2;for(var x=31-hw;x<=32+hw;x++)set(x,y,C.G);}for(y=16;y<=29;y++)for(x=28;x<=35;x++)set(x,y,C.G);}
+ function smallArrow(){for(var y=3;y<=15;y++){var hw=y-3;for(var x=14-hw;x<=15+hw;x++)set(x,y,C.G);}for(y=16;y<=29;y++)for(x=11;x<=18;x++)set(x,y,C.G);}
+ function side(mir){function p(x,y){set(mir?63-x:x,y,C.G);}for(var y=12;y<=19;y++)for(var x=6;x<=39;x++)p(x,y);for(x=40;x<=55;x++){var k=55-x;for(y=Math.max(1,15-k);y<=Math.min(30,16+k);y++)p(x,y);}}
+ function ring(n,cx,cy,dot,check){each(function(x,y,px,py){var d=Math.hypot(px-cx,py-cy);if(d>=9.3&&d<12.6){var a=ang(px-cx,py-cy);if(a%120<7||a%120>113)return;var k=Math.floor(a/120);set(x,y,k<n?C.B:C.D);}else if(dot&&d<=2.7)set(x,y,C.B);});
+  if(check)each(function(x,y,px,py){if(seg(px,py,cx-4.5,cy+0.5,cx-1.5,cy+3.8)<1.3||seg(px,py,cx-1.5,cy+3.8,cx+4.8,cy-3.6)<1.3)set(x,y,C.W);});}
+ switch(f){
+ case 'start':border();var cx=18,cy=16.5;each(function(x,y,px,py){var d=Math.hypot(px-cx,py-cy);var a=ang(px-cx,py-cy);if(d>=7&&d<9.6&&(a>38&&a<322))set(x,y,C.W);if(Math.abs(px-cx)<1.3&&py>cy-10.5&&py<cy-1)set(x,y,C.W);});
+  var lit=Number(a)||1;[34,42,50].forEach(function(x0,i){for(var y=15;y<18;y++)for(var x=x0;x<x0+3;x++)set(x,y,i<lit?C.W:C.DW);});break;
+ case 'reboot':border();var rx=32,ry=16.5;each(function(x,y,px,py){var d=Math.hypot(px-rx,py-ry);var a2=ang(px-rx,py-ry);if(d>=8&&d<10.6&&a2>=40)set(x,y,C.W);});
+  each(function(x,y,px,py){var tx=rx+5,ty=ry-9.3,bx=rx-1;if(px>=bx&&px<=tx){var h=5.2*(tx-px)/(tx-bx);if(Math.abs(py-ty)<=h)set(x,y,C.W);}});break;
+ case 'linkwait':border();ctext('LINK',7,C.W);ctext('WAIT',18,C.W);break;
+ case 'stop':bigX();break;
+ case 'go':bigArrow();break;
+ case 'gocd':smallArrow();ctext(String(a||5),5,C.W,3,30,34);break;
+ case 'hold':ring(0,15.5,16,true,false);ctext('HOLD',12,C.W,1,31,33);break;
+ case 'ring':ring(Number(a)||1,15.5,16,true,false);text((Number(a)||1)+'/3',31,9,C.W,2,1);break;
+ case 'ok':ring(3,15.5,16,false,true);text('OK',37,9,C.W,2,2);break;
+ case 'sensor':border();ctext('SENSOR',3,C.W);ctext(String(a||'C3'),12,C.W);ctext('BROKEN',21,C.W);break;
+ case 'linklost':border();ctext('LINK',7,C.W);ctext('LOST',18,C.W);break;
+ case 'linkok':border();ctext('LINK',7,C.W);ctext('OK',18,C.W);break;
+ case 'config':border();ctext('CONFIG',7,C.W);ctext('ERROR',18,C.W);break;
+ case 'maint':border();each(function(x,y,px,py){if(seg(px,py,6.5,25.5,15.5,16.5)<2.1)set(x,y,C.W);var d=Math.hypot(px-19,py-12.5),a3=ang(px-19,py-12.5);if(d>=2.6&&d<6.4&&!(a3>15&&a3<75))set(x,y,C.W);});ctext('LANE',7,C.W,1,28,34);ctext('OFF',18,C.W,1,28,34);break;
+ case 'stophint':bigX();each(function(x,y,px,py){if(x<48||y<18)return;var d=Math.hypot(px-56,py-25);if(d<1.6||(d>=3.6&&d<5))set(x,y,C.B);});break;
+ case 'allstop':border(2);bigX();break;
+ case 'caution':for(var y=2;y<=29;y++){var hw=Math.floor((y-2)*15/27);for(var x=31-hw;x<=32+hw;x++)set(x,y,C.Y);}break;
+ case 'redcd':for(var yy=0;yy<24;yy++)for(var xx=0;xx<24;xx++){if(Math.abs(xx-yy)<=3||Math.abs(xx+yy-23)<=3)set(4+xx,4+yy,C.R);}ctext(String(a||3),5,C.W,3,30,34);break;
+ case 'update':border();for(var y2=4;y2<=15;y2++)for(var x2=30;x2<=33;x2++)set(x2,y2,C.W);for(var y3=13;y3<=21;y3++){var h3=21-y3;for(var x3=31-h3;x3<=32+h3;x3++)set(x3,y3,C.W);}for(var x4=20;x4<=43;x4++){set(x4,25,C.W);set(x4,26,C.W);}for(var y4=20;y4<=26;y4++){set(20,y4,C.W);set(21,y4,C.W);set(42,y4,C.W);set(43,y4,C.W);}break;
+ case 'left':side(true);break;case 'right':side(false);break;
+ }
+ return m;}
+function draw(cv){var f=cv.getAttribute('data-f'),a=cv.getAttribute('data-a')||'';var m=build(f,a);var s=cv.width/64,ctx=cv.getContext('2d');ctx.fillStyle='#070807';ctx.fillRect(0,0,cv.width,cv.height);
+ for(var y=0;y<32;y++)for(var x=0;x<64;x++){var c=m[x+','+y];ctx.fillStyle=c||'#191b19';ctx.beginPath();ctx.arc(x*s+s/2,y*s+s/2,s*(c?0.44:0.3),0,Math.PI*2);ctx.fill();}}
+var list=document.querySelectorAll('canvas.led');for(var i=0;i<list.length;i++)draw(list[i]);
+})();
+</script>

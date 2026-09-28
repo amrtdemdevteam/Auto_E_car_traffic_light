@@ -26,6 +26,13 @@ def main(argv=None):
     parser.add_argument("--config", default="/etc/trafficlight/settings.json")
     args = parser.parse_args(argv)
     cfg = load_config(args.config)
+    if cfg.get("junction_type") == "t3":
+        # T3 queue controller (docs/T3_DESIGN.md). V1 below is unchanged.
+        from .t3.config import with_defaults
+        from .t3.runner import run as run_t3
+        cfg = with_defaults(cfg)
+        setup_logging(cfg)
+        return run_t3(cfg)
     setup_logging(cfg)
     signal.signal(signal.SIGTERM, _stop)
     signal.signal(signal.SIGINT, _stop)

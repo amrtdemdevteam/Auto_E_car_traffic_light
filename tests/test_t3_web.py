@@ -1,0 +1,209 @@
+"""Web UI server: auth, roles, config versions, control, guards."""
+from __future__ import annotations
+
+import json
+import shutil
+import threading
+import time
+import urllib.error
+import urllib.request
+from http.server import ThreadingHTTPServer
+from pathlib import Path
+
+import pytest
+
+from trafficlight.web.server import App, make_handler
+from trafficlight.web.store import Users
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class FakeState:
+    def __init__(self):
+        self.sent = []
+        self.state = {"state": "IDLE", "active_lane": None, "lanes": []}
+
+    def publish_control(self, cmd):
+        self.sent.append(cmd)
+        return True
+
+    def snapshot(self):
+        return {"state": self.state, "age_s": 0.1, "stale": False}
+
+
+@pytest.fixture()
+def web(tmp_path):
+    shutil.copy(ROOT / "config" / "settings.t3.example.json", tmp_path / "settings.json")
+    Users(tmp_path / "users.json").set("eng", "password1", "editor")
+    Users(tmp_path / "users.json").set("op", "password2", "viewer")
+    state = FakeState()
+    calls = []
+    app = App(tmp_path, state=state, run_cmd=lambda *a, **k: calls.append(a),
+              ota_post=lambda ip, port, pw, data: (200, "OK"))
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(app))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{srv.server_address[1]}"
+    yield base, app, state, calls, tmp_path
+    srv.shutdown()
+
+
+def call(base, path, body=None, cookie=None, csrf=True, raw=None):
+    data = raw if raw is not None else (json.dumps(body).encode() if body is not None else None)
+    req = urllib.request.Request(base + path, data=data, method="POST" if data is not None else "GET")
+    if csrf:
+        req.add_header("X-T3", "1")
+    if cookie:
+        req.add_header("Cookie", cookie)
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return r.status, json.loads(r.read() or b"{}"), r.headers.get("Set-Cookie")
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read() or b"{}"), None
+
+
+def login(base, user, pw):
+    code, _, cookie = call(base, "/api/login", {"user": user, "password": pw})
+    assert code == 200
+    return cookie.split(";")[0]
+
+
+def test_login_and_roles(web):
+    base, app, state, calls, _ = web
+    assert call(base, "/api/state")[0] == 401
+    assert call(base, "/api/login", {"user": "eng", "password": "wrong"})[0] == 401
+    viewer = login(base, "op", "password2")
+    assert call(base, "/api/state", cookie=viewer)[0] == 200
+    cfg = call(base, "/api/config", cookie=viewer)[1]["config"]
+    assert call(base, "/api/config", {"config": cfg}, cookie=viewer)[0] == 403
+    assert call(base, "/api/control", {"cmd": "restart"}, cookie=viewer)[0] == 403
+
+
+def test_csrf_header_required(web):
+    base = web[0]
+    assert call(base, "/api/login", {"user": "eng", "password": "password1"}, csrf=False)[0] == 400
+
+
+def test_save_config_versions_and_rollback(web):
+    base, app, state, calls, tmp = web
+    eng = login(base, "eng", "password1")
+    cfg = call(base, "/api/config", cookie=eng)[1]["config"]
+    cfg["timing"]["special_green_s"] = 6.0
+    code, body, _ = call(base, "/api/config", {"config": cfg, "note": "ทดลอง 6 s"}, cookie=eng)
+    assert code == 200 and body["version"] == 2           # v1 = the config before the first save
+    saved = json.loads((tmp / "settings.json").read_text(encoding="utf-8"))
+    assert saved["timing"]["special_green_s"] == 6.0 and saved["_version"] == 2
+    assert state.sent[-1]["cmd"] == "apply_config" and state.sent[-1]["user"] == "eng"
+    vers = call(base, "/api/versions", cookie=eng)[1]["versions"]
+    assert [v["version"] for v in vers] == [2, 1]
+    assert any(c["key"] == "timing.special_green_s" for c in vers[0]["changes"])
+    code, body, _ = call(base, "/api/rollback", {"version": 1}, cookie=eng)
+    assert code == 200 and body["version"] == 3
+    assert json.loads((tmp / "settings.json").read_text(encoding="utf-8"))["timing"]["special_green_s"] == 5.0
+
+
+def test_invalid_config_rejected(web):
+    base = web[0]
+    eng = login(base, "eng", "password1")
+    cfg = call(base, "/api/config", cookie=eng)[1]["config"]
+    cfg["lanes"][1]["display"] = 1
+    code, body, _ = call(base, "/api/config", {"config": cfg}, cookie=eng)
+    assert code == 422 and any("ซ้ำ" in e for e in body["errors"])
+
+
+def test_control_carries_user_and_unknown_rejected(web):
+    base, app, state, *_ = web
+    eng = login(base, "eng", "password1")
+    assert call(base, "/api/control", {"cmd": "maintenance", "lane": 3, "on": True}, cookie=eng)[0] == 200
+    assert state.sent[-1] == {"cmd": "maintenance", "lane": 3, "on": True, "user": "eng"}
+    assert call(base, "/api/control", {"cmd": "apply_config"}, cookie=eng)[0] == 400
+
+
+def test_reboot_waits_for_idle(web):
+    base, app, state, calls, _ = web
+    eng = login(base, "eng", "password1")
+    state.state["active_lane"] = 2
+    assert call(base, "/api/reboot", {}, cookie=eng)[0] == 409 and not calls
+    state.state["active_lane"] = None
+    assert call(base, "/api/reboot", {}, cookie=eng)[0] == 200
+    assert calls[-1][0] == ["sudo", "-n", "/usr/bin/systemctl", "reboot"]
+
+
+def test_ota_rejects_non_firmware_and_closes_lane_first(web):
+    base, app, state, *_ = web
+    eng = login(base, "eng", "password1")
+    assert call(base, "/api/ota/3", cookie=eng, raw=b"hello")[0] == 400
+    code, body, _ = call(base, "/api/ota/3", cookie=eng, raw=b"\xe9" + b"\x00" * 1000)
+    assert code == 202
+    time.sleep(0.3)
+    assert state.sent[0] == {"cmd": "maintenance", "lane": 3, "on": True, "user": "eng"}
+
+
+def test_static_and_traversal(web):
+    base = web[0]
+    with urllib.request.urlopen(base + "/") as r:
+        assert b"app.js" in r.read()
+    with urllib.request.urlopen(base + "/static/maps/T3.svg") as r:
+        assert b'<svg' in r.read()
+    with pytest.raises(urllib.error.HTTPError):
+        urllib.request.urlopen(base + "/static/../server.py")
+
+
+def test_password_rules(tmp_path):
+    u = Users(tmp_path / "users.json")
+    with pytest.raises(ValueError):
+        u.set("a", "short", "editor")
+    with pytest.raises(ValueError):
+        u.set("bad name!", "longenough", "editor")
+    u.set("ok", "longenough", "viewer")
+    assert u.check("ok", "longenough") == "viewer" and u.check("ok", "nope") is None
+    assert "longenough" not in (tmp_path / "users.json").read_text()
+
+
+def test_layout_saved_by_editor_only_and_validated(web):
+    base, app, state, calls, tmp = web
+    viewer = login(base, "op", "password2")
+    eng = login(base, "eng", "password1")
+    lay = {"lanes": {"1": {"x": 0.42, "y": 0.61, "rot": 90}}}
+    assert call(base, "/api/layout", lay, cookie=viewer)[0] == 403
+    code, body, _ = call(base, "/api/layout", lay, cookie=eng)
+    assert code == 200 and body["lanes"]["1"] == {"x": 0.42, "y": 0.61, "rot": 90}
+    assert call(base, "/api/layout", cookie=viewer)[1]["lanes"]["1"]["rot"] == 90
+    assert call(base, "/api/layout", {"lanes": {"1": {"x": 2, "y": 0}}}, cookie=eng)[0] == 400
+    assert call(base, "/api/layout", {"lanes": {"1": {"x": 0, "y": 0, "rot": 45}}}, cookie=eng)[0] == 400
+    assert not state.sent                       # moving a widget never restarts the controller
+
+
+def test_map_upload_png_and_reset(web):
+    base, app, state, calls, tmp = web
+    eng = login(base, "eng", "password1")
+    assert call(base, "/api/map", cookie=eng)[0] == 404          # default map
+    assert call(base, "/api/map", cookie=eng, raw=b"not an image")[0] == 400
+    png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
+    assert call(base, "/api/map", cookie=eng, raw=png)[0] == 200
+    req = urllib.request.Request(base + "/api/map", headers={"Cookie": eng})
+    with urllib.request.urlopen(req) as r:
+        assert r.headers["Content-Type"] == "image/png" and "default-src 'none'" in r.headers["Content-Security-Policy"]
+        assert r.read() == png
+    assert call(base, "/api/map/reset", {}, cookie=eng)[0] == 200
+    assert call(base, "/api/map", cookie=eng)[0] == 404
+
+
+def test_template_and_identify(web):
+    base, app, state, *_ = web
+    eng = login(base, "eng", "password1")
+    tpl = call(base, "/api/template", cookie=eng)[1]
+    assert len(tpl["lanes"]) == 5 and all(v["port"] == "" for v in tpl["sensors"].values())
+    assert call(base, "/api/control", {"cmd": "identify", "display": 9}, cookie=eng)[0] == 400
+    assert call(base, "/api/control", {"cmd": "identify", "display": 4}, cookie=eng)[0] == 200
+    assert state.sent[-1]["cmd"] == "identify" and state.sent[-1]["display"] == 4
+
+
+def test_new_style_lanes_accepted(web):
+    base, app, state, calls, tmp = web
+    eng = login(base, "eng", "password1")
+    cfg = call(base, "/api/config", cookie=eng)[1]["config"]
+    for lane in cfg["lanes"]:
+        if lane["type"] == "special":
+            lane["type"], lane["mode"] = "manual", "hand"
+    cfg["lanes"][2]["params"] = {"special_green_s": 6.0}
+    assert call(base, "/api/config", {"config": cfg}, cookie=eng)[0] == 200

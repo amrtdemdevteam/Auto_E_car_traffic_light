@@ -1,0 +1,7 @@
+{
+  "name": "EthOTA",
+  "version": "1.1.0-t3",
+  "description": "Vendored subset of JAndrassy/ArduinoOTA 1.1.0 (LGPL-2.1) for ESP32 + W5500",
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}

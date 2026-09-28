@@ -93,3 +93,20 @@ The BOM identifies the exact controller as ArtronShop ESP-HUB75 product 03K26. T
 ```
 
 Current repository unit suite covers directional pair logic, reverse lockout, offline pending reset, state timing, debounce, dolly gap hold, and new-vehicle gap behavior.
+
+## T3 junction (5 lanes, web UI) — separate module
+
+T3 does not change V1. Full spec: `docs/T3_DESIGN.md`. Status: tested by simulation only, **not field-tested**.
+
+```bash
+sudo ./install.sh --t3                       # controller starts in CONFIG mode (no lane) + web UI service
+sudo trafficlight-user add engineer01 --role editor
+# open http://<pi-ip>:8080 → setup page: + add lanes, pick type / display / sensor ports
+#   ("ทดสอบจอ" blinks that display, "หาด้วยมือ" picks the port you cover) → ถัดไป
+# then drag the lanes onto the map; double-click a lane to change it later
+```
+
+- Pi code: `raspberry_pi/trafficlight/t3/` (controller) and `raspberry_pi/trafficlight/web/` (web UI, port 8080)
+- ESP32 firmware: `esp32_display_t3/` — first flash by USB `pio run -e t3_display1 -t upload` (…5), then OTA from the web
+- Change `OTA_PASSWORD` in `esp32_display_t3/include/device_config.h` and `ota.password` in settings.json together
+- Tests: `PYTHONPATH=raspberry_pi python3 -m pytest -q tests`
