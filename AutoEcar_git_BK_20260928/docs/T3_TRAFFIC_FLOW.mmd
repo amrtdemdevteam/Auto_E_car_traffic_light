@@ -1,0 +1,27 @@
+flowchart TD
+    boot["เปิดเครื่อง / reboot<br/>STARTING — non-green"] --> init["เริ่ม controller<br/>ยืนยันสถานะจอและ sensor"]
+    init --> read["อ่าน 6 sensor inputs<br/>C1.1, C1.2, C2–C5"]
+    read --> health{"sensor data valid<br/>และ fresh หรือไม่?"}
+    health -- "ใช่" --> filter["กรองระยะ/strength<br/>debounce + gap hold"]
+    filter --> request{"มี event ขอใช้เลน?"}
+    request -- "ไม่มี" --> idle["ทุกจอ X แดง<br/>active_lane = none"]
+    idle --> read
+    request -- "มี" --> queue["สร้าง/จับคู่ ticket<br/>C1 Auto priority สูงสุด"]
+    queue --> active{"มีเลนกำลังเขียว?"}
+    active -- "มี" --> finish["ห้ามตัดเขียวกลางรอบ<br/>รอเลน active จบเวลาเคลียร์"]
+    finish --> choose["เลือกคิวถัดไป<br/>Auto → manual priority/FIFO<br/>timestamp เท่ากันพอดี: round-robin"]
+    active -- "ไม่มี" --> choose
+    choose --> redbarrier["สั่ง B1–B5 เป็น X<br/>รอ all-red confirmation"]
+    redbarrier -- "ยืนยันครบ" --> green["เปิดเขียวหนึ่งเลนเท่านั้น<br/>จออื่น X แดง"]
+    redbarrier -- "ไม่ครบ/จอ offline" --> safe["คงทุกเลนไม่เขียว<br/>รอระบบปลอดภัย"]
+    safe --> redbarrier
+    green --> served["จบรอบตามชนิดเลน<br/>C1 clear+4 s · C2/C4 clear+3 s<br/>C3/C5 fixed 5 s"]
+    served --> read
+    health -- "ไม่ใช่" --> fault["ทุกจอแจ้ง SENSOR + LANE<br/>ระบุ sensor ที่เสีย"]
+    fault --> isactive{"sensor ของเลนที่เสีย<br/>เป็นเลน active หรือไม่?"}
+    isactive -- "ไม่ใช่" --> isolate["ปิดใช้เฉพาะเลนที่เสีย<br/>เลนอื่นทำงานตามคิว"]
+    isolate --> read
+    isactive -- "ใช่" --> lock["Fault lock<br/>ห้ามเปิดเขียวเลนอื่น"]
+    lock --> reset{"ผู้ดูแลยืนยันพื้นที่ว่าง<br/>และสั่ง reset หรือยัง?"}
+    reset -- "ยัง" --> lock
+    reset -- "แล้ว" --> init

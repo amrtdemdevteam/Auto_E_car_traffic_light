@@ -1,0 +1,25 @@
+[Unit]
+Description=E-Car Traffic Light Controller
+After=network-online.target mosquitto.service
+Wants=network-online.target mosquitto.service
+StartLimitIntervalSec=60
+StartLimitBurst=20
+
+[Service]
+Type=simple
+User=trafficlightsvc
+Group=trafficlightsvc
+SupplementaryGroups=dialout
+WorkingDirectory=/opt/trafficlight/raspberry_pi
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/trafficlight/.venv/bin/python /opt/trafficlight/raspberry_pi/main.py --config /etc/trafficlight/settings.json
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/log/trafficlight
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+logs/
+*.log
+config/settings.json
+config/wifi.local
+.env
+.vscode/
+.idea/
+.pio/
+.DS_Store
+
+# Local experiments, backups and test output
+/ESP32_HUB75_SYMBOLS/
+/ESP32_HUB75_SYMBOLS_D1.zip
+backups/
+/esp32_display/src/main_old.cpp.bak
+.pytest_cache/

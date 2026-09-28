@@ -1,0 +1,62 @@
+{
+  "junction_id": 1,
+  "junction_type": "normal",
+  "loop_hz": 20,
+  "sensor": {
+    "baudrate": 115200,
+    "min_detect_cm": 30,
+    "max_detect_cm": 250,
+    "min_strength": 100,
+    "debounce_ms": 200,
+    "gap_hold_s": 1.2,
+    "offline_timeout_s": 2.0,
+    "recover_stable_s": 1.0,
+    "reopen_interval_s": 2.0,
+    "ports": {
+      "S1": "/dev/traffic-S1",
+      "S2": "/dev/traffic-S2",
+      "S3": "/dev/traffic-S3",
+      "S4": "/dev/traffic-S4"
+    }
+  },
+  "direction": {
+    "pair_window_s": 5.0,
+    "yellow_order": ["S4", "S3"],
+    "red_order": ["S2", "S1"]
+  },
+  "timing": {
+    "red_duration_s": 5.0,
+    "red_clear_delay_s": 1.0,
+    "red_exit_sensor_fresh_timeout_s": 0.5,
+    "return_yellow_s": 5.0,
+    "yellow_clear_delay_s": 5.0
+  },
+  "mqtt": {
+    "broker": "10.77.0.1",
+    "port": 1883,
+    "keepalive_s": 30,
+    "base_topic": "factory/trafficlight",
+    "qos": 1,
+    "retain": true
+  },
+  "display": {
+    "count": 7,
+    "publish_interval_s": 1.0,
+    "state_text": {
+      "idle": "GO",
+      "yellow": "CAUTION",
+      "red": "STOP",
+      "return": "CAUTION"
+    }
+  },
+  "network": {
+    "ethernet_address": "10.77.0.1/24"
+  },
+  "log": {
+    "directory": "/var/log/trafficlight",
+    "rotation": "100 MB",
+    "retention": "7 days",
+    "level": "INFO",
+    "sensor_sample_interval_s": 1.0
+  }
+}

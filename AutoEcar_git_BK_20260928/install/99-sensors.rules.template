@@ -1,0 +1,4 @@
+# Reference only. Prefer scripts/generate_udev_rules.sh because four identical
+# USB-RS485 adapters can have missing/duplicate serial numbers.
+# The generated rules prefer physical USB hub paths and create:
+# /dev/traffic-S1, /dev/traffic-S2, /dev/traffic-S3, /dev/traffic-S4
