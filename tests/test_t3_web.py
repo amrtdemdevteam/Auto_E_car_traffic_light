@@ -98,7 +98,7 @@ def test_save_config_versions_and_rollback(web):
     assert any(c["key"] == "timing.special_green_s" for c in vers[0]["changes"])
     code, body, _ = call(base, "/api/rollback", {"version": 1}, cookie=eng)
     assert code == 200 and body["version"] == 3
-    assert json.loads((tmp / "settings.json").read_text(encoding="utf-8"))["timing"]["special_green_s"] == 5.0
+    assert json.loads((tmp / "settings.json").read_text(encoding="utf-8"))["timing"]["special_green_s"] == 3.0
 
 
 def test_invalid_config_rejected(web):
@@ -207,3 +207,66 @@ def test_new_style_lanes_accepted(web):
             lane["type"], lane["mode"] = "manual", "hand"
     cfg["lanes"][2]["params"] = {"special_green_s": 6.0}
     assert call(base, "/api/config", {"config": cfg}, cookie=eng)[0] == 200
+
+
+def test_layout_scale_is_optional_and_validated(web):
+    base, app, state, calls, tmp = web
+    eng = login(base, "eng", "password1")
+    lay = {"lanes": {"1": {"x": 0.1, "y": 0.2, "rot": 0, "scale": 1.5}, "2": {"x": 0.3, "y": 0.4, "rot": 90}}}
+    code, body, _ = call(base, "/api/layout", lay, cookie=eng)
+    assert code == 200 and body["lanes"]["1"]["scale"] == 1.5 and "scale" not in body["lanes"]["2"]
+    for bad in (0.1, 9, "big", True):
+        assert call(base, "/api/layout", {"lanes": {"1": {"x": 0, "y": 0, "rot": 0, "scale": bad}}}, cookie=eng)[0] == 400
+    assert not state.sent
+
+
+def test_drawing_saved_by_editor_only_and_validated(web):
+    base, app, state, calls, tmp = web
+    viewer = login(base, "op", "password2")
+    eng = login(base, "eng", "password1")
+    assert call(base, "/api/drawing", cookie=viewer)[1] == {"items": []}          # no default map
+    items = [{"id": "a", "type": "road", "x": 10, "y": 20, "w": 300, "h": 90, "fill": "soft", "stroke": "line", "sw": 1.5},
+             {"id": "b", "type": "line", "x1": 0, "y1": 0, "x2": 100, "y2": 0, "arrow": True, "stroke": "faint", "sw": 4},
+             {"id": "c", "type": "text", "x": 5, "y": 5, "text": "เลน 1", "size": 22, "bold": True},
+             {"id": "d", "type": "ellipse", "x": 50, "y": 50, "w": 30, "h": 30, "fill": "panel", "stroke": "accent", "sw": 3}]
+    assert call(base, "/api/drawing", {"items": items}, cookie=viewer)[0] == 403
+    code, body, _ = call(base, "/api/drawing", {"items": items}, cookie=eng)
+    assert code == 200 and [i["type"] for i in body["items"]] == ["road", "line", "text", "ellipse"]
+    assert call(base, "/api/drawing", cookie=viewer)[1]["items"][2]["text"] == "เลน 1"
+    bad = [{"type": "script"}, {"type": "rect", "x": 0, "y": 0, "w": 5, "h": 5, "fill": "#ff0000"},
+           {"type": "text", "x": 0, "y": 0, "text": "x" * 81}, {"type": "rect", "x": "a", "y": 0, "w": 5, "h": 5}]
+    for it in bad:
+        assert call(base, "/api/drawing", {"items": [it]}, cookie=eng)[0] == 400
+    assert call(base, "/api/drawing", {"items": [{"type": "line", "x1": 0, "y1": 0, "x2": 1, "y2": 1}] * 401}, cookie=eng)[0] == 400
+    assert call(base, "/api/drawing", {"items": items}, csrf=False, cookie=eng)[0] in (400, 403)
+    assert not state.sent                       # drawing never touches the controller
+
+
+def test_static_serves_all_ui_scripts(web):
+    base = web[0]
+    with urllib.request.urlopen(base + "/") as r:
+        page = r.read().decode()
+    for name in ("led.js", "draw.js", "diag.js", "timing.js", "vehicles.js", "app.js"):
+        assert f"/static/{name}" in page
+        with urllib.request.urlopen(base + "/static/" + name) as r:
+            assert r.status == 200 and len(r.read()) > 500
+
+
+def test_drawing_3d_height_is_optional_and_limited(web):
+    base, app, state, calls, tmp = web
+    eng = login(base, "eng", "password1")
+    it = {"type": "rect", "x": 0, "y": 0, "w": 50, "h": 40, "ht": 70, "z": 10}
+    code, body, _ = call(base, "/api/drawing", {"items": [it, {"type": "road", "x": 0, "y": 0, "w": 9, "h": 9, "ht": 50}]}, cookie=eng)
+    assert code == 200 and body["items"][0]["ht"] == 70 and body["items"][0]["z"] == 10
+    assert "ht" not in body["items"][1]                       # roads stay flat
+    assert call(base, "/api/drawing", {"items": [dict(it, ht=999)]}, cookie=eng)[0] == 400
+    assert call(base, "/api/drawing", {"items": [dict(it, ht=-1)]}, cookie=eng)[0] == 400
+
+
+def test_layout_vehicle_heading_is_optional_and_validated(web):
+    base, app, state, calls, tmp = web
+    eng = login(base, "eng", "password1")
+    code, body, _ = call(base, "/api/layout", {"lanes": {"1": {"x": 0.1, "y": 0.2, "rot": 0, "dir": 270}, "2": {"x": 0.3, "y": 0.4, "rot": 0}}}, cookie=eng)
+    assert code == 200 and body["lanes"]["1"]["dir"] == 270 and "dir" not in body["lanes"]["2"]
+    for bad in (45, "up", True, 360):
+        assert call(base, "/api/layout", {"lanes": {"1": {"x": 0, "y": 0, "rot": 0, "dir": bad}}}, cookie=eng)[0] == 400

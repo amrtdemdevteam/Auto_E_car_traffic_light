@@ -154,13 +154,13 @@ def test_hand_short_dropout_is_tolerated():
     assert len(sim.ctrl.queue.for_lane(5)) == 1
 
 
-def test_special_lane_fixed_green_5s():
+def test_special_lane_fixed_green_default_3s():
     sim = Sim()
     sim.ready()
     sim.pulse("C3", 3.2)
     sim.until(lambda: sim.shown(3) == F.GO, limit=3)
     t = sim.until(lambda: sim.shown(3) != F.GO, limit=10)
-    assert 4.9 <= t <= 5.3
+    assert 2.9 <= t <= 3.3
 
 
 def test_same_lane_next_car_keeps_green_when_nobody_else_waits():
@@ -206,13 +206,13 @@ def test_active_lane_sensor_fault_ends_green_and_holds_12s():
     assert sim.shown(2) == F.SENSOR
 
 
-def test_special_lane_sensor_fault_during_green_finishes_5s():
+def test_special_lane_sensor_fault_during_green_finishes_its_green():
     sim = Sim()
     sim.ready()
     sim.pulse("C3", 3.2)
     sim.until(lambda: sim.shown(3) == F.GO)
     sim.broken.add("C3")
-    sim.step(2.5)
+    sim.step(2.2)
     assert sim.shown(3) == F.GO
     sim.until(lambda: sim.shown(3) == F.SENSOR, limit=4)
 
@@ -236,7 +236,7 @@ def test_near_sensor_fault_disables_auto_lane():
     assert sim.shown(1) == F.SENSOR
 
 
-def test_dead_display_blocks_next_green_until_its_command_expires():
+def test_dead_display_closes_only_its_lane_and_releases_after_the_timeout():
     sim = Sim()
     sim.ready()
     sim.on("C2")
@@ -248,9 +248,23 @@ def test_dead_display_blocks_next_green_until_its_command_expires():
     sim.link.dead[2] = sim.now                     # B2 cable cut: it never gets the red
     t_dead = sim.now
     sim.until(lambda: sim.shown(4) == F.GO, limit=20)
-    # B2 kept its last green until its own 5 s timeout: B4 must not go before
-    assert sim.now - t_dead >= 5.0
-    assert "display" in sim.ctrl.lanes[2].reasons
+    # B2 may still be showing its last green until its own command expires,
+    # so B4 must not go before display_fault_timeout_s, and must go after it
+    hold = sim.ctrl.t["display_fault_timeout_s"]
+    assert hold <= sim.now - t_dead <= hold + 2.0
+    assert "display" in sim.ctrl.lanes[2].reasons   # only lane 2 is closed
+    assert sim.ctrl.lanes[4].enabled
+
+
+def test_display_lost_while_green_ends_that_green():
+    sim = Sim()
+    sim.ready()
+    sim.on("C2")
+    sim.until(lambda: sim.shown(2) == F.GO)
+    sim.link.dead[2] = sim.now                     # B2 stops answering mid-green
+    t_dead = sim.now
+    sim.until(lambda: sim.ctrl.active_lane is None, limit=5)
+    assert sim.now - t_dead <= sim.ctrl.t["display_ack_timeout_s"] + 0.5
 
 
 def test_maintenance_during_green_waits_for_end_of_green():

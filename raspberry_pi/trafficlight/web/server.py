@@ -24,9 +24,11 @@ from pathlib import Path
 from loguru import logger
 
 from ..t3.config import validate, with_defaults
+from ..t3.flowstats import FlowStats
 from ..t3.ports import discover as list_ports
 from .store import ConfigStore, Users, _atomic_write
 
+SCALE_MIN, SCALE_MAX = 0.4, 4.0
 STATIC = Path(__file__).resolve().parent / "static"
 TEMPLATE = Path(__file__).resolve().parents[3] / "config" / "settings.t3.example.json"
 MAP_TYPES = {"png": "image/png", "jpg": "image/jpeg", "svg": "image/svg+xml"}
@@ -42,6 +44,7 @@ class StateCache:
         self.state: dict | None = None
         self.at = 0.0
         self.results: list[dict] = []
+        self.on_state = None                   # callback(state, wall_time) e.g. the flow summary
         self.displays: dict[int, str] = {}     # display id -> "online" / "offline" (retained LWT)
         self.client = client
         if client is None:
@@ -71,6 +74,11 @@ class StateCache:
             return
         if msg.topic.endswith("/state"):
             self.state, self.at = data, time.time()
+            if self.on_state:
+                try:
+                    self.on_state(data, self.at)
+                except Exception:  # noqa: BLE001  statistics must never break the state feed
+                    logger.exception("WEB flow_stats_error")
         else:
             self.results = (self.results + [data])[-10:]
 
@@ -101,7 +109,7 @@ class StateCache:
 
 
 def _clean_layout(data) -> dict:
-    """Map positions of the lane widgets: {"lanes": {"<id>": {"x": 0..1, "y": 0..1, "rot": 0|90|180|270}}}."""
+    """Map positions of the lane widgets: {"lanes": {"<id>": {"x": 0..1, "y": 0..1, "rot": 0|90|180|270, optional "scale", "dir"}}}."""
     lanes = {}
     for key, v in ((data or {}).get("lanes") or {}).items():
         if not str(key).isdigit() or not isinstance(v, dict):
@@ -109,8 +117,81 @@ def _clean_layout(data) -> dict:
         x, y, rot = v.get("x"), v.get("y"), int(v.get("rot", 0))
         if not all(isinstance(n, (int, float)) and 0 <= n <= 1 for n in (x, y)) or rot not in (0, 90, 180, 270):
             raise ValueError("ข้อมูลตำแหน่งไม่ถูกต้อง")
-        lanes[str(int(key))] = {"x": round(float(x), 4), "y": round(float(y), 4), "rot": rot}
+        item = {"x": round(float(x), 4), "y": round(float(y), 4), "rot": rot}
+        sc = v.get("scale")
+        if sc is not None:
+            if not isinstance(sc, (int, float)) or isinstance(sc, bool) or not (SCALE_MIN <= sc <= SCALE_MAX):
+                raise ValueError("ขนาดกล่องเลนไม่ถูกต้อง")
+            if abs(sc - 1.0) > 1e-6:
+                item["scale"] = round(float(sc), 3)
+        d = v.get("dir")                       # heading of the vehicles of this lane in the 3D view (0 = right, 90 = down)
+        if d is not None:
+            if isinstance(d, bool) or d not in (0, 90, 180, 270):
+                raise ValueError("ทิศทางรถไม่ถูกต้อง")
+            item["dir"] = int(d)
+        lanes[str(int(key))] = item
     return {"lanes": lanes}
+
+
+# ---- hand drawn site map (docs/T3_DESIGN.md 12.2): shapes in a 1000 x 700 space, colours are theme tokens
+DRAW_W, DRAW_H = 1000, 700
+DRAW_MAX_ITEMS = 400
+DRAW_MAX_HEIGHT = 300
+DRAW_TYPES = ("rect", "ellipse", "line", "text", "road", "hatch")
+DRAW_COLORS = ("ink", "mut", "faint", "line", "soft", "fill", "panel", "accent", "grn", "red", "amb", "none")
+
+
+def _num(v, lo, hi, what):
+    if not isinstance(v, (int, float)) or isinstance(v, bool) or not (lo <= v <= hi):
+        raise ValueError(f"ข้อมูลแผนที่ไม่ถูกต้อง: {what}")
+    return round(float(v), 2)
+
+
+def _clean_drawing(data) -> dict:
+    """{"items": [{"type", ...}]}: rect/road/hatch x y w h · ellipse x y w h · line x1 y1 x2 y2 · text x y text size · rect/ellipse may carry ht (3D height) and z (base)."""
+    items_in = (data or {}).get("items") or []
+    if not isinstance(items_in, list) or len(items_in) > DRAW_MAX_ITEMS:
+        raise ValueError("ข้อมูลแผนที่ไม่ถูกต้อง: จำนวนชิ้นส่วนมากเกินไป")
+    out = []
+    for i, it in enumerate(items_in):
+        if not isinstance(it, dict) or it.get("type") not in DRAW_TYPES:
+            raise ValueError("ข้อมูลแผนที่ไม่ถูกต้อง: ชนิดชิ้นส่วน")
+        t = it["type"]
+        c = {"id": str(it.get("id") or f"i{i}")[:24], "type": t}
+        for k in ("stroke", "fill"):
+            v = it.get(k, "none" if k == "fill" else "ink")
+            if v not in DRAW_COLORS:
+                raise ValueError("ข้อมูลแผนที่ไม่ถูกต้อง: สี")
+            c[k] = v
+        c["sw"] = _num(it.get("sw", 2), 0, 40, "ความหนาเส้น")
+        c["rot"] = _num(it.get("rot", 0), -360, 360, "มุมหมุน")
+        if t == "line":
+            for k, hi in (("x1", DRAW_W), ("y1", DRAW_H), ("x2", DRAW_W), ("y2", DRAW_H)):
+                c[k] = _num(it.get(k), -DRAW_W, DRAW_W * 2, k)
+            c["arrow"] = bool(it.get("arrow"))
+            c["dash"] = bool(it.get("dash"))
+            c.pop("rot")
+        elif t == "text":
+            c["x"] = _num(it.get("x"), -DRAW_W, DRAW_W * 2, "x")
+            c["y"] = _num(it.get("y"), -DRAW_H, DRAW_H * 2, "y")
+            c["size"] = _num(it.get("size", 18), 6, 200, "ขนาดตัวอักษร")
+            text = it.get("text", "")
+            if not isinstance(text, str) or len(text) > 80:
+                raise ValueError("ข้อมูลแผนที่ไม่ถูกต้อง: ข้อความยาวเกิน 80 ตัวอักษร")
+            c["text"] = text
+            c["bold"] = bool(it.get("bold"))
+        else:
+            for k in ("x", "y"):
+                c[k] = _num(it.get(k), -DRAW_W, DRAW_W * 2, k)
+            for k in ("w", "h"):
+                c[k] = _num(it.get(k), 1, DRAW_W * 2, k)
+            if t == "rect":
+                c["r"] = _num(it.get("r", 0), 0, 200, "มุมมน")
+            if t in ("rect", "ellipse"):          # 3D view: height of the block and its base above the ground
+                c["ht"] = _num(it.get("ht", 0), 0, DRAW_MAX_HEIGHT, "ความสูง")
+                c["z"] = _num(it.get("z", 0), 0, DRAW_MAX_HEIGHT, "ยกจากพื้น")
+        out.append(c)
+    return {"items": out}
 
 
 def _map_kind(data: bytes) -> str | None:
@@ -139,6 +220,29 @@ class App:
         self.ota_jobs: dict[int, dict] = {}
         self._fail: dict[str, list[float]] = {}
         self.data_dir = Path(data_dir)
+        w = cfg["web"]
+        self.flow = FlowStats(float(w.get("flow_gap_s", 5)), float(w.get("flow_save_s", 30)), self.data_dir / "flow.json")
+        self.flow.load_file()
+        if not self.flow.since:
+            self.flow.since = time.time()
+        self.flow_lock = threading.Lock()
+        if hasattr(self.state, "on_state"):
+            self.state.on_state = self._flow_feed
+
+    def _flow_feed(self, st: dict, at: float) -> None:
+        with self.flow_lock:
+            self.flow.feed(st, at)
+
+    def flow_summary(self) -> dict:
+        with self.flow_lock:
+            return self.flow.summary()
+
+    def flow_reset(self, user: str) -> dict:
+        with self.flow_lock:
+            self.flow.reset(time.time())
+            self.flow.save(time.time())
+        self.store.audit(user, "flow_reset")
+        return self.flow_summary()
 
     def config_changed(self) -> None:
         """apply_config went out on the old topics; now follow the new ones."""
@@ -157,6 +261,18 @@ class App:
         clean = _clean_layout(data)
         _atomic_write(self.data_dir / "layout.json", json.dumps(clean, indent=2))
         self.store.audit(user, "layout_saved", {"lanes": sorted(clean["lanes"])})
+        return clean
+
+    def drawing(self) -> dict:
+        try:
+            return _clean_drawing(json.loads((self.data_dir / "drawing.json").read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            return {"items": []}
+
+    def save_drawing(self, data, user: str) -> dict:
+        clean = _clean_drawing(data)
+        _atomic_write(self.data_dir / "drawing.json", json.dumps(clean, ensure_ascii=False))
+        self.store.audit(user, "drawing_saved", {"items": len(clean["items"])})
         return clean
 
     def map_file(self) -> Path | None:
@@ -343,14 +459,18 @@ def make_handler(app: App):
                 return self._json(200, app.store.get_version(int(path.rsplit("/", 1)[1])))
             if path == "/api/ports":
                 return self._json(200, {"ports": list_ports()})
+            if path == "/api/flow":
+                return self._json(200, app.flow_summary())
             if path == "/api/layout":
                 return self._json(200, app.layout())
+            if path == "/api/drawing":
+                return self._json(200, app.drawing())
             if path == "/api/template":
                 return self._json(200, app.template())
             if path == "/api/map":
                 p = app.map_file()
                 if p is None:
-                    return self._err(404, "ใช้แผนที่เริ่มต้น")
+                    return self._err(404, "ไม่มีรูปพื้นหลัง")
                 return self._send(200, p.read_bytes(), MAP_TYPES[p.suffix[1:]],
                                   {"Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src data:"})
             if path == "/api/users":
@@ -424,8 +544,12 @@ def make_handler(app: App):
                     app.store.audit(user, "reboot_pi")
                     app.run_cmd(["sudo", "-n", "/usr/bin/systemctl", "reboot"], check=False)
                     return self._json(200, {"ok": True})
+                if path == "/api/flow/reset":
+                    return self._json(200, app.flow_reset(user))
                 if path == "/api/layout":
                     return self._json(200, app.save_layout(self._jbody(), user))
+                if path == "/api/drawing":
+                    return self._json(200, app.save_drawing(self._jbody(), user))
                 if path == "/api/map":
                     app.save_map(self._body(), user)
                     return self._json(200, {"ok": True})

@@ -23,7 +23,7 @@ def test_manual_hand_mode_is_the_same_as_special():
     sim.pulse("C3", 3.2)
     sim.until(lambda: sim.shown(3) == F.GO, limit=3)
     t = sim.until(lambda: sim.shown(3) != F.GO, limit=10)
-    assert 4.9 <= t <= 5.3
+    assert 2.9 <= t <= 3.3
 
 
 def test_per_lane_special_green_overrides_type_default_only_for_that_lane():
@@ -37,7 +37,7 @@ def test_per_lane_special_green_overrides_type_default_only_for_that_lane():
     assert 7.9 <= sim.until(lambda: sim.shown(3) != F.GO, limit=12) <= 8.3
     sim.pulse("C5", 3.2)
     sim.until(lambda: sim.shown(5) == F.GO, limit=5)
-    assert 4.9 <= sim.until(lambda: sim.shown(5) != F.GO, limit=10) <= 5.3
+    assert 2.9 <= sim.until(lambda: sim.shown(5) != F.GO, limit=10) <= 3.3
 
 
 def test_per_lane_manual_clear_time():

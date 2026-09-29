@@ -64,11 +64,12 @@ DEFAULTS: dict = {
     "timing": {
         "manual_clear_s": 3.0,
         "auto_clear_s": 4.0,
-        "special_green_s": 5.0,
+        "special_green_s": 3.0,
         "auto_ticket_expiry_s": 7.0,
         "switch_all_red_s": 1.0,
         "display_ack_timeout_s": 2.0,
         "display_link_timeout_s": 5.0,
+        "display_fault_timeout_s": 6.0,
         "command_refresh_s": 1.0,
         "fault_clear_s": 12.0,
         "startup_min_s": 3.0,
@@ -76,11 +77,12 @@ DEFAULTS: dict = {
     "priority": {"auto_first": True},
     # list of lanes, see settings.t3.example.json
     "lanes": [],
-    # display id (string) -> {"ip": "10.77.0.1x"}
+    # display id (string) -> {"ip": "10.77.0.3x"}
+    "display_ip_base": 30,   # display Bn = 10.77.0.(base + n); used by the web UI to suggest the IP, must match DISPLAY_IP_BASE in the firmware
     "displays": {},
     "frames": {"enabled_reserve": []},
     "ota": {"port": 65280, "password": "change-me"},
-    "web": {"bind": "0.0.0.0", "port": 8080, "session_hours": 8},
+    "web": {"bind": "0.0.0.0", "port": 8080, "session_hours": 8, "flow_gap_s": 5, "flow_save_s": 30},
     "log": {
         "directory": "/var/log/trafficlight",
         "rotation": "100 MB",
@@ -152,6 +154,7 @@ def validate(cfg: dict) -> list[str]:
     for key in (
         "manual_clear_s", "auto_clear_s", "special_green_s", "auto_ticket_expiry_s",
         "switch_all_red_s", "display_ack_timeout_s", "display_link_timeout_s",
+        "display_fault_timeout_s",
         "command_refresh_s", "fault_clear_s", "startup_min_s",
     ):
         if not _num(t.get(key)) or t.get(key) <= 0:
@@ -161,6 +164,10 @@ def validate(cfg: dict) -> list[str]:
     if _num(t.get("command_refresh_s")) and _num(t.get("display_link_timeout_s")):
         if t["command_refresh_s"] * 2 > t["display_link_timeout_s"]:
             errors.append("ส่งคำสั่งซ้ำถี่ไม่พอ: command_refresh_s × 2 ต้องไม่เกิน display_link_timeout_s")
+    if _num(t.get("display_fault_timeout_s")) and _num(t.get("display_link_timeout_s")):
+        if t["display_fault_timeout_s"] < t["display_link_timeout_s"] + 1.0:
+            errors.append("เวลาเผื่อจอเสียต้องไม่น้อยกว่า อายุคำสั่งจอ + 1 s "
+                          "(จอต้องเลิกเขียวเองแน่นอนก่อนเปิดเลนอื่น)")
 
     sd = cfg.get("sensor_defaults", {})
     for key in ("min_detect_cm", "max_detect_cm", "min_strength", "debounce_ms",

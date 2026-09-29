@@ -11,13 +11,37 @@
 const S = {
   me: null, page: 'map', cfg: null, defaults: null, errors: [],
   state: null, stale: true, displays: {}, ota: [], ports: [],
-  layout: {lanes: {}}, mapSvg: null, mapUrl: null,
+  layout: {lanes: {}}, mapUrl: null,
+  drawing: {items: []},     // the junction map drawn in the browser (draw.js)
+  dr: null,                 // drawing editor state while editing (draw.js)
+  v3d: false,               // 3D view of the map (view only)
+  cam: {rz: -24, tilt: 54, zoom: 1.1},   // 3D camera
+  theme: null,              // 'light' | 'dark' | null = follow the system
+  alerts: [],               // active diagnostics (diag.js)
   draft: null,              // setup: config being built
   edit: null,               // open lane panel: {id, isNew, lane, sensors, orig}
   finder: null,             // "cover the sensor with a hand" search
   sel: null,                // selected widget on the map
   sys: null, sysTab: 'params', sysCat: 'auto', versions: [], users: [], audit: [],
 };
+
+// ------------------------------------------------------------------ light / dark
+function applyTheme() {
+  const r = document.documentElement;
+  if (S.theme) r.setAttribute('data-theme', S.theme); else r.removeAttribute('data-theme');
+}
+const isDark = () => (S.theme ? S.theme === 'dark' : !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
+function setTheme(t) {
+  S.theme = t;
+  try { localStorage.setItem('t3theme', t); } catch (e) { /* private mode: the choice lasts until reload */ }
+  applyTheme();
+}
+try { const t = localStorage.getItem('t3theme'); if (t === 'light' || t === 'dark') S.theme = t; } catch (e) { /* ignore */ }
+applyTheme();
+try { const v = JSON.parse(localStorage.getItem('t3view') || 'null'); if (v) { S.v3d = !!v.v3d; S.vehOff = !!v.vehOff; if (v.cam) S.cam = {...S.cam, ...v.cam}; } } catch (e) { /* ignore */ }
+try { S.dirs = JSON.parse(localStorage.getItem('t3dirs') || '{}') || {}; } catch (e) { S.dirs = {}; }
+function keepDirs() { try { localStorage.setItem('t3dirs', JSON.stringify(S.dirs)); } catch (e) { /* ignore */ } }
+function keepView() { try { localStorage.setItem('t3view', JSON.stringify({v3d: S.v3d, vehOff: !!S.vehOff, cam: S.cam})); } catch (e) { /* ignore */ } }
 
 // ------------------------------------------------------------------ words
 const KIND_TH = {auto: 'Auto', vehicle: 'Manual', hand: 'Manual'};
@@ -30,6 +54,7 @@ const DISPLAY_IDS = [1, 2, 3, 4, 5, 6, 7];
 
 // definitions shown by the ⓘ buttons
 const INFO = {
+  heading: ['ทิศทางรถวิ่ง', 'ทิศที่รถของเลนนี้วิ่งเข้าหาเส้นหยุดบนแผนที่ 3 มิติ ใช้แสดงรถจำลองเท่านั้น ไม่กระทบการทำงานของไฟ'],
   kind: ['ประเภทเลน', 'Auto = รถ Auto วิ่งตามเส้น ใช้เซนเซอร์ 2 ตัว · Manual = รถมีคนขับ เลือกวิธีขอทางต่อด้านล่าง'],
   mode: ['วิธีขอทาง (Manual)', 'เซนเซอร์จับรถ: เซนเซอร์มองพื้น รถจอดทับ = ขอทาง ไฟเขียวจนรถพ้นแล้วนับเวลาเคลียร์\nยื่นมือ: เซนเซอร์ข้างเลน คนขับยื่นมือค้าง = ขอทาง ไฟเขียวตามเวลาที่ตั้ง'],
   display: ['จอ', 'จอ LED ของเลนนี้ หนึ่งจอใช้ได้เลนเดียว กด “ทดสอบ” แล้วจอนั้นจะขึ้นคำว่า TEST 5 วินาที'],
@@ -58,6 +83,7 @@ const INFO = {
   switch_all_red_s: ['สลับเลน', 'ก่อนเลนใหม่ได้ไฟเขียว ทุกจอเป็น X อย่างน้อยเท่านี้'],
   display_ack_timeout_s: ['รอจอยืนยัน', 'จอต้องตอบยืนยันภายในเวลานี้ ไม่งั้นถือว่าจอเสีย'],
   display_link_timeout_s: ['อายุคำสั่งจอ', 'จอไม่ได้คำสั่งใหม่นานเท่านี้ จะขึ้น LINK LOST เอง · ต้องไม่เกินค่าในเฟิร์มแวร์'],
+  display_fault_timeout_s: ['เวลาเผื่อจอเสีย', 'จอไม่ตอบ = ปิดเลนของจอนั้น และรอเท่านี้ (จอเลิกเขียวเองแน่นอน) ก่อนให้เลนอื่นได้เขียวต่อ'],
   command_refresh_s: ['ส่งคำสั่งซ้ำ', 'ส่งคำสั่งเดิมซ้ำไปที่จอทุกกี่วินาที'],
   fault_clear_s: ['หยุดทุกเลนเมื่อเซนเซอร์เสีย', 'เซนเซอร์ของเลนที่กำลังเขียวเสีย ทุกเลนเป็น X นานเท่านี้ให้รถเคลียร์แยก'],
   startup_min_s: ['รอตอนเริ่มระบบ', 'หลังเปิดระบบ รออย่างน้อยเท่านี้ก่อนเริ่มควบคุม'],
@@ -102,6 +128,7 @@ const CATS = [
     ['การสลับเลน', [['num', 'timing.switch_all_red_s', 'สลับเลน · ทุกจอ X', 's', 0.5, 10, 0.1], ['num', 'timing.fault_clear_s', 'หยุดทุกเลนเมื่อเซนเซอร์เสีย', 's', 1, 60, 0.5],
       ['bool', 'priority.auto_first', 'Auto ได้คิวก่อน']]],
     ['การสื่อสารกับจอ', [['num', 'timing.display_ack_timeout_s', 'รอจอยืนยัน', 's', 0.5, 10, 0.5], ['num', 'timing.display_link_timeout_s', 'อายุคำสั่งจอ', 's', 1, 5, 0.5],
+      ['num', 'timing.display_fault_timeout_s', 'เวลาเผื่อจอเสีย', 's', 2, 30, 0.5],
       ['num', 'timing.command_refresh_s', 'ส่งคำสั่งซ้ำ', 's', 0.2, 2.5, 0.1], ['num', 'timing.startup_min_s', 'รอตอนเริ่มระบบ', 's', 1, 30, 0.5]]]]],
   ['display', 'จอ', [
     ['เฟรมสำรอง', [['reserve', 'STOPHINT'], ['reserve', 'GO_N'], ['reserve', 'STOP_N']]],
@@ -230,6 +257,13 @@ function laneMissing(cfg, l, sensors) {
   return miss;
 }
 function portLabel(path) { const p = allPorts().find((x) => x.path === path); return p ? p.label : (path || '—'); }
+// who already uses this port: another lane (saved) or another sensor of the lane being edited
+function portUsedBy(cfg, E, path, exceptSid) {
+  const o = portOwner(cfg, path, E.id);
+  if (o) return o;
+  const same = Object.entries(E.sensors || {}).find(([k, v]) => k !== exceptSid && v.port === path);
+  return same ? {lane: E.id, sid: same[0]} : null;
+}
 function portOwner(cfg, path, exceptLane) {
   for (const l of cfg.lanes || []) {
     if (l.id === exceptLane) continue;
@@ -284,14 +318,13 @@ async function loadConfig() {
 }
 async function loadLayout() { try { S.layout = await api('/api/layout'); } catch (e) { S.layout = {lanes: {}}; } }
 async function loadPorts() { try { S.ports = (await api('/api/ports')).ports; } catch (e) { S.ports = []; } }
+// optional picture behind the drawing (an uploaded floor plan); there is no built-in map
 async function loadMap() {
-  S.mapUrl = null; S.mapSvg = null;
-  const r = await fetch('/api/map', {headers: {'X-T3': '1'}});
-  if (r.ok) { S.mapUrl = '/api/map?v=' + Date.now(); return; }
+  S.mapUrl = null;
   try {
-    const d = await fetch('/static/maps/' + encodeURIComponent((S.cfg && S.cfg.junction_id) || 'T3') + '.svg');
-    S.mapSvg = d.ok ? await d.text() : '';
-  } catch (e) { S.mapSvg = ''; }
+    const r = await fetch('/api/map', {headers: {'X-T3': '1'}});
+    if (r.ok) S.mapUrl = '/api/map?v=' + Date.now();
+  } catch (e) { /* no picture */ }
 }
 async function pollState() {
   try {
@@ -317,7 +350,14 @@ function render() {
   else if (S.page === 'system') body = systemView();
   else body = mainView();
   app.innerHTML = headerView() + body;
+  if (S._pageKey !== S.page) {           // entrance animation only when the page changes, not on every refresh
+    S._pageKey = S.page;
+    app.classList.remove('enter'); void app.offsetWidth; app.classList.add('enter');
+  }
   $$('canvas.led').forEach((c) => { c._key = null; });
+  fitMapFull(); fit3d();
+  afterRenderDraw();
+  S._alertSig = null;                    // the alert widgets were rebuilt: fill them again
   updateLive();
   if (S.focus) { const el = document.getElementById(S.focus); if (el) el.focus(); S.focus = null; }
 }
@@ -327,11 +367,14 @@ function headerView() {
   const nav = S.page === 'setup' ? '' : `<nav>${[['map', 'แผนที่'], ['system', 'ระบบ']].map(([id, t]) =>
     `<a href="#${id}" class="${S.page === id ? 'on' : ''}">${t}</a>`).join('')}</nav>`;
   return `<header>
-    <span class="jn"><b>${esc((cfg && cfg.junction_id) || '')}</b><span class="mut small">${esc((cfg && cfg.junction_name) || '')}</span></span>
+    <span class="jn"><img class="logo" src="/static/logo.jpg" alt="${esc((cfg && cfg.junction_id) || 'T3')}"></span>
     ${nav}
     <span class="pill" id="hdr-state"><i></i><span>—</span></span>
     <span class="qchips" id="hdr-queue"></span>
-    <span class="who"><span class="mono">${esc(S.me.user)}</span>
+    <button class="alertbadge" id="hdr-alerts" data-act="alerts" hidden aria-label="การแจ้งเตือน"></button>
+    <span class="who">
+      <label class="themesw" title="สลับโหมดสว่าง / มืด"><span aria-hidden="true">☀</span><span class="sw"><input type="checkbox" data-theme-toggle aria-label="โหมดมืด" ${isDark() ? 'checked' : ''}><span></span></span><span aria-hidden="true">☾</span></label>
+      <span class="mono">${esc(S.me.user)}</span>
       <button class="sec sm" data-act="logout">ออกจากระบบ</button></span>
   </header>`;
 }
@@ -364,7 +407,7 @@ function setupView() {
         <h2>เพิ่มเลนแรก</h2>
         <button class="plain" data-act="template">หรือใช้ผัง T3 ตามแบบ (5 เลน)</button></div>`);
   return `<main><div class="wiz">
-    <div class="wiz-head"><h1>ตั้งค่าแยก</h1><span class="mut">เพิ่มเลนทีละเลน ครบแล้วกดถัดไปเพื่อวางเลนบนแผนที่</span></div>
+    <div class="wiz-head"><h1>ตั้งค่าแยก</h1><span class="mut">เพิ่มเลนทีละเลน ครบแล้วกดถัดไป แล้ววาดแผนที่และวางเลนบนแผนที่</span></div>
     <div class="list">
       <div class="li-row"><span class="lab">รหัสแยก</span><span class="val"><input type="text" style="width:120px" data-g="junction_id" value="${esc(d.junction_id || '')}" aria-label="รหัสแยก"></span></div>
       <div class="li-row"><span class="lab">ชื่อแยก</span><span class="val"><input type="text" style="width:280px;max-width:52vw" data-g="junction_name" value="${esc(d.junction_name || '')}" aria-label="ชื่อแยก"></span></div>
@@ -430,6 +473,11 @@ function editorHtml(ctx) {
   const dispSec = `<div><div class="sec-t">จอ${infoBtn('display')}</div><div class="list">
     <div class="li-row"><span class="lab"><select data-e="display" aria-label="จอของเลน ${l.id}" ${ro}><option value="">เลือกจอ</option>${dispOpts}</select></span>
       <span class="val"><button class="sec sm" data-act="identify" data-disp="${l.display || ''}" ${l.display ? '' : 'disabled'}>ทดสอบ</button></span></div></div></div>`;
+  const hd = laneHeading(l);
+  const dirSec = `<div><div class="sec-t">ทิศทางรถวิ่ง${infoBtn('heading')}</div>
+    <div class="seg dirseg" role="group" aria-label="ทิศทางรถวิ่งเลน ${l.id}" ${segDis}>${[[270, '↑', 'ขึ้น'], [90, '↓', 'ลง'], [180, '←', 'ซ้าย'], [0, '→', 'ขวา']].map(([d, a, t]) =>
+      `<button class="${hd === d ? 'on' : ''}" data-act="setdir" data-lane="${l.id}" data-d="${d}" title="รถวิ่ง${t}" aria-label="รถวิ่ง${t}" ${ro}>${a}</button>`).join('')}</div>
+    <div class="small mut" style="margin-top:6px">ใช้กับรถจำลองบนแผนที่ 3 มิติ · ปรับทีหลังได้ที่ปุ่ม “ทิศรถ ↻” บนไอคอนเลน</div></div>`;
   const sensSec = `<div><div class="sec-t">เซนเซอร์${infoBtn('port')}</div><div class="list">${laneSensors(l).map(({sid, role}) => sensorRow(E, cfg, sid, role, ro)).join('')}</div></div>`;
   const params = LANE_PARAMS[k].map(([key, label, unit, min, max, step]) => {
     const dflt = key in (cfg.timing || {}) ? cfg.timing[key] : (cfg.hand || {})[key];
@@ -458,7 +506,7 @@ function editorHtml(ctx) {
       <label class="filebtn">อัปเดตเฟิร์มแวร์<input type="file" accept=".bin" data-ota="${l.display}" aria-label="ไฟล์เฟิร์มแวร์ B${l.display}" hidden></label>
       <span class="small">${otaStatus(l.display)}</span></div>` : '';
   return `<div class="ed" data-editor="${l.id}">
-    ${ops}${typeSec}${dispSec}${sensSec}${more}
+    ${ops}${typeSec}${dispSec}${dirSec}${sensSec}${more}
     <div class="edfoot">
       ${isEditor() && !E.isNew ? '<button class="danger" data-act="dellane">ลบเลน</button>' : ''}
       <span class="sp"></span>
@@ -471,9 +519,10 @@ function sensorRow(E, cfg, sid, role, ro) {
   const sens = E.sensors[sid] || {port: ''};
   const ports = allPorts();
   const opts = ports.map((p) => {
-    const owner = portOwner(cfg, p.path, E.id);
+    const owner = portUsedBy(cfg, E, p.path, sid);
     const cm = effCm(p);
-    return `<option value="${esc(p.path)}" ${sens.port === p.path ? 'selected' : ''}>${esc(p.label)}${cm != null ? ` — ${cm} cm` : ''}${owner ? ` (${owner.sid})` : ''}</option>`;
+    // a port already given to another sensor cannot be picked again (the server rejects it too)
+    return `<option value="${esc(p.path)}" ${sens.port === p.path ? 'selected' : ''} ${owner && sens.port !== p.path ? 'disabled' : ''}>${esc(p.label)}${cm != null ? ` — ${cm} cm` : ''}${owner ? ` · ใช้กับ ${owner.sid} แล้ว` : ''}</option>`;
   }).join('');
   const missing = sens.port && !ports.find((p) => p.path === sens.port) ? `<option value="${esc(sens.port)}" selected>${esc(sens.port)} · ไม่พบ</option>` : '';
   const f = S.finder && S.finder.sid === sid;
@@ -501,42 +550,67 @@ function mainView() {
   else if (st && st.errors && st.errors.length) banners.push(`<div class="banner"><b>config ใช้ไม่ได้ · ไม่ควบคุมไฟ</b><br>${st.errors.map(esc).join('<br>')}</div>`);
   const edit = isEditor();
   const widgets = (cfg.lanes || []).filter((l) => S.layout.lanes[String(l.id)]).map((l) => widgetHtml(l)).join('');
-  const bg = S.mapUrl ? `<img src="${esc(S.mapUrl)}" alt="แผนที่แยก">` : (S.mapSvg || '<div style="height:420px"></div>');
+  const drawing = drawEditing();
+  const v3 = S.v3d && !drawing;
+  const bg = v3 ? `<div class="stage" id="stage">${mapBgHtml()}${scene3dHtml((S.drawing && S.drawing.items) || [])}<div class="vehs" id="vehs"></div>${widgets}</div>` : mapBgHtml();
   const list = (cfg.lanes || []).map((l) => listItem(l)).join('');
   const newItem = S.edit && S.edit.isNew ? `<div class="lane open" id="lane-${S.edit.id}"><div class="lrow"><span class="num">${S.edit.id}</span><span class="mut small">เลนใหม่</span></div>${editorHtml('main')}</div>` : '';
   return `<main>${banners.join('')}
     <div class="mainwrap">
       <div>
-        <div class="card mapcard">
-          <div class="mapbox" id="map"><div class="bg">${bg}</div>${widgets}
-            ${edit ? `<div class="maptools"><label>เปลี่ยนรูปแผนที่<input type="file" accept="image/png,image/jpeg,image/svg+xml,.svg" data-mapfile hidden></label>
-              ${S.mapUrl ? '<button class="sec sm" data-act="mapreset">แผนที่เริ่มต้น</button>' : ''}</div>` : ''}
+        <div class="card mapcard${S.mapFull ? ' full' : ''}" id="mapcard">
+          ${drawing ? '<div class="dtools" id="dtools"></div>' : ''}
+          <div class="mapbox${drawing ? ' drawing' : ''}${v3 ? ' v3d' : ''}" id="map"><div class="bg">${bg}</div>${v3 ? '' : widgets}
+            ${drawing ? '' : `<div class="maptools">${v3 ? '<span class="camtools"><button class="sec sm" data-act="cam" data-k="rl" aria-label="หมุนซ้าย">⟲</button><button class="sec sm" data-act="cam" data-k="rr" aria-label="หมุนขวา">⟳</button><button class="sec sm" data-act="cam" data-k="tu" aria-label="เงยขึ้น">▲</button><button class="sec sm" data-act="cam" data-k="td" aria-label="ก้มลง">▼</button><button class="sec sm" data-act="cam" data-k="zi" aria-label="ซูมเข้า">＋</button><button class="sec sm" data-act="cam" data-k="zo" aria-label="ซูมออก">−</button><button class="sec sm" data-act="vehs" aria-pressed="${!S.vehOff}" title="แสดง/ซ่อนรถจำลอง">🚜 รถ</button></span>' : ''}
+              <button class="sec sm" data-act="v3d" aria-pressed="${S.v3d}">${S.v3d ? '2D' : '3D'}</button>
+              ${edit ? `<button class="sec sm" data-dact="start">✎ วาดแผนที่</button>
+              <label>รูปพื้นหลัง<input type="file" accept="image/png,image/jpeg,image/svg+xml,.svg" data-mapfile hidden></label>
+              ${S.mapUrl ? '<button class="sec sm" data-act="mapreset">ลบรูปพื้นหลัง</button>' : ''}` : ''}
+              <button class="sec sm" data-act="mapfull" aria-label="แผนที่เต็มจอ">${S.mapFull ? '✕ ปิดเต็มจอ' : '⛶ เต็มจอ'}</button></div>`}
           </div>
-          <div class="legend"><span><span class="sd ok"></span>ว่าง</span><span><span class="sd raw"></span>เห็นวัตถุ</span><span><span class="sd on"></span>เจอรถ/มือ</span><span><span class="sd bad"></span>เสีย</span>
-            <span class="sp"></span><span>${edit ? 'ลากเลนมาวาง · คลิกเพื่อหมุน · ดับเบิลคลิกเพื่อตั้งค่า' : 'ดับเบิลคลิกเพื่อดูรายละเอียด'}</span></div>
+          <div class="legend">${drawing ? '<span>วาดแผนที่ · ลากเลนที่วางไว้จะทำได้หลังบันทึก</span>' : `<span><span class="sd ok"></span>ว่าง</span><span><span class="sd raw"></span>เห็นวัตถุ</span><span><span class="sd on"></span>เจอรถ/มือ</span><span><span class="sd bad"></span>เสีย</span>
+            <span class="sp"></span><span>${v3 ? 'ลากเพื่อหมุนมุมมอง · ล้อเมาส์ซูม · รถเป็นการจำลองจากเซนเซอร์/คิว ไม่ใช่ตำแหน่งจริง · ลากวางเลนในโหมด 2D' : edit ? 'ลากเลนมาวาง · คลิกเลือกแล้วหมุน/ย่อขยาย · ดับเบิลคลิกเพื่อตั้งค่า' : 'ดับเบิลคลิกเพื่อดูรายละเอียด'}</span>`}</div>
         </div>
+        <section class="card tlcard" id="tlcard" aria-label="ไทม์ไลน์">
+          <div class="card-h">ไทม์ไลน์ · เวลาเขียวและเวลารอ<span class="sp"></span><span class="mut small" id="tl-sub"></span></div>
+          <div id="tl"></div>
+          <div class="legend"><span><i class="lg tgrn"></i>เขียว (จริง)</span><span><i class="lg twait"></i>รอคิว (จริง)</span><span><i class="lg tplan"></i>≈ คาดการณ์จากค่าเฉลี่ยจริงของเลนนั้น</span><span><i class="lg tred"></i>ทุกจอ X</span></div>
+        </section>
+        <section class="card flowcard" id="flowcard" aria-label="สรุปการไหลของรถ">
+          <div class="card-h">สรุปตั้งแต่เปิดเครื่อง · การไหลของรถแต่ละเลน<span class="sp"></span><span class="mut small" id="flow-sub"></span>${isEditor() ? '<button class="plain sm" data-act="flowreset">เริ่มนับใหม่</button>' : ''}</div>
+          <div id="flow"></div>
+        </section>
         <div class="below">
           <section class="card"><div class="card-h">คิว</div><div class="log" id="queue"></div></section>
           <section class="card"><div class="card-h">เหตุการณ์ล่าสุด</div><div class="log" id="events"></div></section>
         </div>
       </div>
+      <div class="side-col">
+      <section class="card alertcard" id="alertcard" aria-label="การแจ้งเตือน" hidden></section>
       <aside class="card lanes" aria-label="รายการเลน">
         <div class="card-h">เลน</div>
         ${list}${newItem}
         ${edit && !S.edit ? '<button class="addrow" data-act="addlane">＋ เพิ่มเลน</button>' : ''}
       </aside>
+      </div>
     </div></main>`;
 }
 function widgetHtml(l) {
   const pos = S.layout.lanes[String(l.id)] || {x: 0, y: 0, rot: 0};
-  const edit = isEditor();
+  const edit = isEditor() && !drawEditing();
   const cls = `${edit ? 'edit' : ''} ${S.edit && S.edit.id === l.id ? 'open' : ''} ${S.sel === l.id ? 'sel' : ''}`;
   return `<div class="wg ${cls}" data-widget="${l.id}" tabindex="0"
-      style="left:${pos.x * 100}%;top:${pos.y * 100}%;--rot:${pos.rot || 0}deg" aria-label="เลน ${l.id} จอ B${l.display}">
-    ${edit ? `<span class="tools"><button data-act="rot" data-lane="${l.id}">หมุน 90°</button><button data-act="toggle" data-lane="${l.id}">ตั้งค่า</button><button data-act="unplace" data-lane="${l.id}">เอาออก</button></span>` : ''}
+      style="left:${pos.x * 100}%;top:${pos.y * 100}%;--rot:${pos.rot || 0}deg;--sc:${pos.scale || 1}" aria-label="เลน ${l.id} จอ B${l.display}">
+    ${edit ? `<span class="tools"><button data-act="rot" data-lane="${l.id}">หมุน 90°</button><button data-act="dir" data-lane="${l.id}" title="ทิศที่รถของเลนนี้วิ่ง (มุมมอง 3D)">ทิศรถ ↻</button><button data-act="zoom" data-lane="${l.id}" data-d="-1" aria-label="ย่อ">−</button><button data-act="zoom" data-lane="${l.id}" data-d="1" aria-label="ขยาย">＋</button><button data-act="toggle" data-lane="${l.id}">ตั้งค่า</button><button data-act="unplace" data-lane="${l.id}">เอาออก</button></span><span class="rz" data-rz="${l.id}" title="ลากเพื่อย่อ/ขยาย"></span>` : ''}
     <span class="n">${l.id}</span>${ledHtml(l.display)}
     <span class="ss">${laneSensors(l).map(({sid}) => `<span class="sd" data-sid="${esc(sid)}" data-lane="${l.id}"></span>`).join('')}</span>
   </div>`;
+}
+// Auto / Manual (and how a Manual lane asks for the way) shown on every lane row
+function kindBadge(l) {
+  const k = kindOf(l);
+  if (!k) return '';
+  return `<span class="kbadge ${k === 'auto' ? 'auto' : 'man'}">${k === 'auto' ? 'Auto' : 'Manual'}${k === 'hand' ? ' · ยื่นมือ' : k === 'vehicle' ? ' · จับรถ' : ''}</span>`;
 }
 function listItem(l) {
   const open = S.edit && S.edit.id === l.id;
@@ -544,7 +618,8 @@ function listItem(l) {
   return `<div class="lane ${open ? 'open' : ''}" id="lane-${l.id}">
     <div class="lrow ${isEditor() ? 'edit' : ''}" data-draglane="${l.id}">
       <span class="num">${l.id}</span>${ledHtml(l.display)}
-      <span class="hint">${placed ? '' : (isEditor() ? 'ลากไปวางบนแผนที่' : 'ยังไม่อยู่บนแผนที่')}</span>
+      <span class="lmeta">${kindBadge(l)}<span class="lcodes" data-lcodes="${l.id}"></span>${placed ? '' : `<span class="hint">${isEditor() ? 'ลากไปวางบนแผนที่' : 'ยังไม่อยู่บนแผนที่'}</span>`}</span>
+      <span class="lq" data-lq="${l.id}"></span>
       <button class="icon" data-act="toggle" data-lane="${l.id}" aria-expanded="${open}" aria-label="${open ? 'ปิด' : 'เปิด'}รายละเอียดเลน ${l.id}">${open ? '−' : '+'}</button>
     </div>
     ${open ? editorHtml('main') : ''}
@@ -598,7 +673,8 @@ function sysParams() {
     content = `<div class="group"><div class="list">
       <div class="li-row"><span class="lab">รีสตาร์ตระบบควบคุม</span><span class="val"><button class="sec sm" data-act="restart" ${ro}>รีสตาร์ต</button></span></div>
       <div class="li-row"><span class="lab">รีบูต Pi</span><span class="val"><button class="sec sm" data-act="reboot" ${ro} style="color:var(--red)">รีบูต</button></span></div>
-    </div><span class="mut small" style="margin-left:16px">ทั้งสองอย่างรอให้แยกว่างก่อน ระหว่างนั้นทุกจอเป็น X</span></div>`;
+    </div><span class="mut small" style="margin-left:16px">ทั้งสองอย่างรอให้แยกว่างก่อน ระหว่างนั้นทุกจอเป็น X</span></div>
+    <div class="group"><div class="eyebrow">รหัสแจ้งเตือน</div><div class="list">${codeTableHtml()}</div></div>`;
   } else {
     content = cat[2].map(([title, rows]) => `<div class="group"><div class="eyebrow">${esc(title)}</div><div class="list">${rows.map((r) => sysRow(r, ro)).join('')}</div></div>`).join('');
   }
@@ -661,6 +737,7 @@ function hideInfo() {
 // ------------------------------------------------------------------ live updates (no re-render)
 function updateLive() {
   const st = S.state;
+  flowFetch();
   const pill = $('#hdr-state');
   if (pill) {
     let cls = '', txt = 'ไม่มีข้อมูลจากระบบควบคุม';
@@ -694,7 +771,13 @@ function updateLive() {
   $$('.wg[data-widget]').forEach((w) => {
     const l = (S.cfg.lanes || []).find((x) => x.id === Number(w.dataset.widget));
     if (l) w.classList.toggle('off', !displayOnline(l.display));
+    w.classList.toggle('live', !!(st && !S.stale && st.state === 'GREEN' && st.active_lane === Number(w.dataset.widget)));
   });
+  updateAlerts();
+  tlTrack();
+  vehSync();
+  updateLaneQueue();
+  tlRender();
   $$('.sd[data-sid]').forEach((d) => {
     const sid = d.dataset.sid, laneId = Number(d.dataset.lane);
     const cfg = srcCfg();
@@ -740,7 +823,7 @@ function runFinder() {
     const b = f.base[p.path];
     if (b == null) return;
     const change = Math.abs(b - effCm(p));
-    if (change >= Math.max(40, b * 0.3)) cands.push([p.path, change]);
+    if (change >= Math.max(40, b * 0.3) && !(S.edit && portUsedBy(srcCfg(), S.edit, p.path, f.sid))) cands.push([p.path, change]);
   });
   Object.keys(f.hits).forEach((p) => { if (!cands.find((c) => c[0] === p)) f.hits[p] = 0; });
   cands.forEach(([p]) => { f.hits[p] = (f.hits[p] || 0) + 1; });
@@ -748,9 +831,8 @@ function runFinder() {
   if (found.length && S.edit && S.edit.sensors[f.sid]) {
     const path = found[0][0];
     S.edit.sensors[f.sid].port = path;
-    const owner = portOwner(srcCfg(), path, S.edit.id);
     S.finder = null;
-    toast(`${f.sid} = ${portLabel(path)}${owner ? ` · พอร์ตนี้ใช้กับ ${owner.sid} อยู่` : ''}`, !!owner);
+    toast(`${f.sid} = ${portLabel(path)}`);
     render();
   } else if (Date.now() > f.until) {
     S.finder = null;
@@ -786,6 +868,13 @@ function addLane() {
 }
 async function saveLane() {
   const E = S.edit;
+  const seen = {};
+  for (const [sid, v] of Object.entries(E.sensors)) {
+    if (!v.port) continue;
+    const o = portUsedBy(srcCfg(), E, v.port, sid) || (seen[v.port] ? {sid: seen[v.port]} : null);
+    if (o) { toast(`พอร์ต ${portLabel(v.port)} ซ้ำกับ ${o.sid} · เลือกใหม่ก่อนบันทึก`, true); return; }
+    seen[v.port] = sid;
+  }
   if (S.page === 'setup') {
     applyEdit(S.draft, E);
     S.edit = null; S.finder = null;
@@ -827,6 +916,10 @@ async function finishSetup() {
     if (S.pendingLayout && !Object.keys(S.layout.lanes).length) {
       try { S.layout = await api('/api/layout', {method: 'POST', body: S.pendingLayout}); } catch (e) { /* place by hand */ }
     }
+    if (S.pendingDrawing && !(S.drawing.items || []).length) {
+      try { S.drawing = await api('/api/drawing', {method: 'POST', body: {items: drawStarter()}}); } catch (e) { /* draw by hand */ }
+    }
+    S.pendingDrawing = false;
     try { localStorage.removeItem('t3draft'); } catch (e) { /* ignore */ }
     await loadConfig();
     S.page = 'map'; location.hash = '#map';
@@ -839,8 +932,9 @@ async function finishSetup() {
 async function useTemplate() {
   const t = await api('/api/template');
   S.draft.lanes = t.lanes; S.draft.sensors = t.sensors; S.draft.displays = {...(S.draft.displays || {}), ...t.displays};
-  const at = {1: [580, 315], 2: [460, 315], 3: [372, 282], 4: [580, 272], 5: [700, 272]};   // default T3 map, viewBox 20 10 840 585
+  const at = {1: [580, 315], 2: [460, 315], 3: [372, 282], 4: [580, 272], 5: [700, 272]};   // T3 layout, old map units (viewBox 20 10 840 585)
   S.pendingLayout = {lanes: {}};
+  S.pendingDrawing = true;
   t.lanes.forEach((l) => { const p = at[l.id]; if (p) S.pendingLayout.lanes[String(l.id)] = {x: (p[0] - 20) / 840, y: (p[1] - 10) / 585, rot: l.id === 3 ? 90 : 0}; });
   keepDraft(); render();
   toast('ใส่ผัง T3 แล้ว · เลือกพอร์ตเซนเซอร์ของแต่ละเลน');
@@ -853,13 +947,24 @@ async function saveLayout() {
   try { S.layout = await api('/api/layout', {method: 'POST', body: S.layout}); }
   catch (e) { toast('บันทึกตำแหน่งไม่ได้: ' + e.message, true); }
 }
+const SCALE_MIN = 0.5, SCALE_MAX = 3;      // the server accepts 0.4 .. 4
+const clampScale = (v) => Math.round(Math.max(SCALE_MIN, Math.min(SCALE_MAX, v)) * 20) / 20;
 function selectWidget(id) {
   S.sel = id;
   $$('.wg[data-widget]').forEach((w) => w.classList.toggle('sel', Number(w.dataset.widget) === id));
 }
 document.addEventListener('pointerdown', (e) => {
   if (!e.target.closest('.wg') && !e.target.closest('#pop') && S.sel !== null) selectWidget(null);
-  if (!isEditor() || S.page !== 'map' || e.button !== 0) return;
+  if (S.v3d && S.page === 'map' && e.button === 0) { const w3 = e.target.closest('[data-widget]'); if (w3 && !e.target.closest('button,select,input,label,a')) selectWidget(Number(w3.dataset.widget)); return; }
+  if (!isEditor() || S.page !== 'map' || e.button !== 0 || drawEditing()) return;
+  const rz = e.target.closest('[data-rz]');
+  if (rz) {                                    // corner handle: resize the widget
+    const w0 = rz.closest('.wg'), r0 = w0.getBoundingClientRect(), key = rz.dataset.rz;
+    const cx = r0.left + r0.width / 2, cy = r0.top + r0.height / 2, cur = (S.layout.lanes[key] || {}).scale || 1;
+    drag = {lane: Number(key), el: w0, resize: true, cx, cy, d0: Math.hypot(e.clientX - cx, e.clientY - cy) || 1, s0: cur, moved: false, x0: e.clientX, y0: e.clientY};
+    w0.setPointerCapture(e.pointerId); e.preventDefault();
+    return;
+  }
   if (e.target.closest('button,select,input,label,a')) return;
   const w = e.target.closest('[data-widget]');
   const h = e.target.closest('[data-draglane]');
@@ -871,6 +976,12 @@ document.addEventListener('pointermove', (e) => {
   if (!drag) return;
   if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 5) return;
   drag.moved = true;
+  if (drag.resize) {
+    const sc = clampScale(drag.s0 * Math.hypot(e.clientX - drag.cx, e.clientY - drag.cy) / drag.d0);
+    drag.scale = sc;
+    drag.el.style.setProperty('--sc', String(sc));
+    return;
+  }
   const r = mapRect();
   if (drag.fromMap) {
     drag.el.classList.add('dragging');
@@ -900,6 +1011,10 @@ document.addEventListener('pointerup', async (e) => {
   if (d.ghost) d.ghost.remove();
   const m = $('#map');
   if (m) m.classList.remove('drop');
+  if (d.resize) {
+    if (d.moved && d.scale) { const o = S.layout.lanes[String(d.lane)]; if (o) { o.scale = d.scale; await saveLayout(); } }
+    return;
+  }
   if (!d.moved) { if (d.fromMap) selectWidget(d.lane); return; }
   const r = mapRect();
   const inside = r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
@@ -907,6 +1022,8 @@ document.addEventListener('pointerup', async (e) => {
   const key = String(d.lane);
   const old = S.layout.lanes[key] || {rot: 0};
   S.layout.lanes[key] = {x: Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), y: Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)), rot: old.rot || 0};
+  if (old.scale) S.layout.lanes[key].scale = old.scale;
+  if (old.dir !== undefined) S.layout.lanes[key].dir = old.dir;
   S.sel = d.lane;               // keep the tools visible after a drop
   await saveLayout();
   render();
@@ -915,8 +1032,73 @@ document.addEventListener('dblclick', (e) => {
   const w = e.target.closest('[data-widget]');
   if (w && S.page === 'map' && !e.target.closest('.tools')) { e.preventDefault(); openLane(Number(w.dataset.widget)); }
 });
+// Full-screen map for the operator view. Widgets are placed by fraction of the map,
+// so only their size needs scaling (--ws); the map keeps its own aspect ratio (--ar).
+function fitMapFull() {
+  const card = document.getElementById('mapcard'), box = document.getElementById('map');
+  if (!card || !box) return;
+  card.classList.toggle('full', !!S.mapFull);
+  if (!S.mapFull) { box.style.removeProperty('--ar'); card.style.removeProperty('--ws'); return; }
+  const svg = box.querySelector('svg'), img = box.querySelector('img');
+  let ar = S.v3d ? 1 / 0.62 : 1.4;
+  if (S.v3d) { /* fixed 3D aspect */ } else if (svg && svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.height) ar = svg.viewBox.baseVal.width / svg.viewBox.baseVal.height;
+  else if (img && img.naturalHeight) ar = img.naturalWidth / img.naturalHeight;
+  box.style.setProperty('--ar', ar);
+  const w = Math.min(window.innerWidth, (window.innerHeight - 64) * ar);
+  card.style.setProperty('--ws', String(Math.max(1, Math.min(3, w / 760))));
+}
+// 3D view: the drawing stays a flat 1000 x 700 plane, tilted and scaled to the box with CSS 3D
+function fit3d() {
+  const box = document.getElementById('map'), st = document.getElementById('stage');
+  if (!box) return;
+  if (!st) { box.style.removeProperty('height'); box.style.removeProperty('perspective'); return; }
+  const W = box.clientWidth;
+  if (!W) return;
+  const H = Math.round(W * 0.62), c = S.cam, k = W / 1000 * 0.9 * (c.zoom || 1);
+  box.style.height = H + 'px'; box.style.perspective = Math.round(W * 1.7) + 'px';
+  st.style.setProperty('--rz', c.rz + 'deg'); st.style.setProperty('--tilt', c.tilt + 'deg');
+  st.style.transform = `translate(${W / 2}px,${H * 0.54}px) rotateX(${c.tilt}deg) rotateZ(${c.rz}deg) scale(${k}) translate(-500px,-350px)`;
+}
+let orbit = null;
+document.addEventListener('pointerdown', (e) => {
+  if (!S.v3d || S.page !== 'map' || e.button !== 0 || e.target.closest('.wg,button,label,.maptools')) return;
+  const box = e.target.closest('#map');
+  if (!box) return;
+  orbit = {x: e.clientX, y: e.clientY, rz: S.cam.rz, tilt: S.cam.tilt};
+  const st = document.getElementById('stage'); if (st) st.classList.add('orbiting');
+  try { box.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+});
+document.addEventListener('pointermove', (e) => {
+  if (!orbit) return;
+  S.cam.rz = Math.round(orbit.rz + (e.clientX - orbit.x) * 0.4);
+  S.cam.tilt = Math.max(15, Math.min(80, Math.round(orbit.tilt + (e.clientY - orbit.y) * 0.3)));
+  fit3d();
+});
+document.addEventListener('pointerup', () => {
+  if (!orbit) return;
+  orbit = null; keepView();
+  const st = document.getElementById('stage'); if (st) st.classList.remove('orbiting');
+});
+document.addEventListener('wheel', (e) => {
+  if (!S.v3d || !e.target.closest('#map')) return;
+  e.preventDefault();
+  S.cam.zoom = Math.max(0.5, Math.min(2.5, Math.round((S.cam.zoom - Math.sign(e.deltaY) * 0.1) * 10) / 10));
+  fit3d(); keepView();
+}, {passive: false});
+function setMapFull(on) {
+  S.mapFull = !!on;
+  const b = document.querySelector('[data-act="mapfull"]');
+  if (b) b.textContent = S.mapFull ? '✕ ปิดเต็มจอ' : '⛶ เต็มจอ';
+  fitMapFull(); fit3d();
+  try {
+    if (S.mapFull && !document.fullscreenElement && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+    else if (!S.mapFull && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  } catch (err) { /* browser refused: the overlay still works */ }
+}
+window.addEventListener('resize', () => { if (S.mapFull) fitMapFull(); fit3d(); });
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && S.mapFull) setMapFull(false); });
 document.addEventListener('keydown', async (e) => {
-  if (e.key === 'Escape') { hideInfo(); if (S.sel !== null) selectWidget(null); }
+  if (e.key === 'Escape') { hideInfo(); if (S.mapFull) setMapFull(false); else if (S.sel !== null && !drawEditing()) selectWidget(null); }
   const w = e.target.closest && e.target.closest('[data-widget]');
   if (!w || e.target !== w) return;
   const id = Number(w.dataset.widget);
@@ -932,6 +1114,9 @@ document.addEventListener('keydown', async (e) => {
     clearTimeout(w._t); w._t = setTimeout(saveLayout, 600);
   } else if (e.key === 'r' || e.key === 'R') {
     pos.rot = ((pos.rot || 0) + 90) % 360; w.style.setProperty('--rot', pos.rot + 'deg'); saveLayout();
+  } else if (e.key === '+' || e.key === '=' || e.key === '-' || e.key === '_') {
+    pos.scale = clampScale((pos.scale || 1) + (e.key === '-' || e.key === '_' ? -0.1 : 0.1)); w.style.setProperty('--sc', String(pos.scale));
+    clearTimeout(w._t); w._t = setTimeout(saveLayout, 600);
   }
 });
 window.addEventListener('scroll', hideInfo, {passive: true});
@@ -994,12 +1179,39 @@ document.addEventListener('click', async (ev) => {
     } else if (act === 'findstop') { S.finder = null; render(); }
     else if (act === 'maint') { await api('/api/control', {method: 'POST', body: {cmd: 'maintenance', lane, on: b.dataset.on === '1'}}); toast('ส่งคำสั่งแล้ว'); }
     else if (act === 'clearq') { if (await confirmDialog(`ล้างคิวเลน ${lane}?`, '<p class="mut">ใช้เมื่อรถที่ขอคิวไว้ออกไปแล้ว</p>', 'ล้างคิว')) await api('/api/control', {method: 'POST', body: {cmd: 'clear_queue', lane}}); }
+    else if (act === 'vehs') { S.vehOff = !S.vehOff; keepView(); render(); }
+    else if (act === 'flowreset') {
+      if (await confirmDialog('เริ่มนับสรุปใหม่?', '<p class="mut">ตัวเลขสรุปทั้งหมดจะเริ่มจากศูนย์ ไม่กระทบการทำงานของไฟ</p>', 'เริ่มนับใหม่')) { FLOW.data = await api('/api/flow/reset', {method: 'POST', body: {}}); FLOW.at = Date.now(); flowRender(); toast('เริ่มนับใหม่แล้ว'); }
+    }
+    else if (act === 'setdir') {
+      const id = Number(b.dataset.lane), d = Number(b.dataset.d);
+      S.dirs[String(id)] = d; keepDirs();
+      const o = S.layout.lanes[String(id)];
+      if (o) { o.dir = d; await saveLayout(); }
+      render();
+    }
+    else if (act === 'dir') {
+      const o = S.layout.lanes[String(lane)], l = (S.cfg.lanes || []).find((x) => x.id === lane);
+      if (o && l) { o.dir = (laneHeading(l) + 90) % 360; await saveLayout(); render(); toast(`ทิศรถเลน ${lane}: ${{0: '→ ขวา', 90: '↓ ลง', 180: '← ซ้าย', 270: '↑ ขึ้น'}[o.dir]}`); }
+    }
+    else if (act === 'v3d') { S.v3d = !S.v3d; keepView(); render(); }
+    else if (act === 'cam') {
+      const c = S.cam, k = b.dataset.k;
+      if (k === 'rl') c.rz -= 15; else if (k === 'rr') c.rz += 15;
+      else if (k === 'tu') c.tilt = Math.max(15, c.tilt - 8); else if (k === 'td') c.tilt = Math.min(80, c.tilt + 8);
+      else if (k === 'zi') c.zoom = Math.min(2.5, Math.round((c.zoom + 0.1) * 10) / 10); else if (k === 'zo') c.zoom = Math.max(0.5, Math.round((c.zoom - 0.1) * 10) / 10);
+      fit3d(); keepView();
+    } else if (act === 'zoom') {
+      const o = S.layout.lanes[String(lane)];
+      if (o) { o.scale = clampScale((o.scale || 1) + Number(b.dataset.d) * 0.1); await saveLayout(); render(); }
+    } else if (act === 'alerts') { const c = document.getElementById('alertcard'); if (c) c.scrollIntoView({behavior: 'smooth', block: 'center'}); }
     else if (act === 'rot' || act === 'unplace') {
       const key = String(lane);
       if (act === 'rot') S.layout.lanes[key].rot = ((S.layout.lanes[key].rot || 0) + 90) % 360;
       else { delete S.layout.lanes[key]; S.sel = null; }
       await saveLayout(); render();
-    } else if (act === 'mapreset') { await api('/api/map/reset', {method: 'POST', body: {}}); await loadMap(); render(); }
+    } else if (act === 'mapfull') { setMapFull(!S.mapFull); }
+    else if (act === 'mapreset') { await api('/api/map/reset', {method: 'POST', body: {}}); await loadMap(); render(); }
     else if (act === 'template') await useTemplate();
     else if (act === 'resetdraft') {
       if (await confirmDialog('เริ่มใหม่?', '<p class="mut">ลบเลนทั้งหมดที่ตั้งไว้ในหน้านี้</p>', 'เริ่มใหม่')) { try { localStorage.removeItem('t3draft'); } catch (e) { /* ignore */ } S.draft = clone(S.cfg); S.draft.lanes = []; S.edit = null; render(); }
@@ -1050,6 +1262,7 @@ document.addEventListener('input', (ev) => {
 document.addEventListener('change', async (ev) => {
   const t = ev.target;
   try {
+    if (t.dataset.themeToggle !== undefined) { setTheme(t.checked ? 'dark' : 'light'); return; }
     if (S.edit && t.dataset.e) {
       const k = t.dataset.e;
       let v = t.value;
@@ -1067,6 +1280,8 @@ document.addEventListener('change', async (ev) => {
       const v = readNum(t);
       if (v === undefined) delete s[t.dataset.sk]; else s[t.dataset.sk] = v;
     } else if (S.edit && t.dataset.port) {
+      const used = t.value && portUsedBy(srcCfg(), S.edit, t.value, t.dataset.port);
+      if (used) { toast(`พอร์ตนี้ใช้กับ ${used.sid} อยู่แล้ว`, true); render(); return; }
       S.edit.sensors[t.dataset.port].port = t.value;
       render();
     } else if (t.dataset.g !== undefined) {
@@ -1125,12 +1340,12 @@ document.addEventListener('submit', async (ev) => {
 });
 
 window.addEventListener('beforeunload', (e) => {
-  if (dirtyEdit() || (S.sys && S.cfg && S.page === 'system' && diff(S.cfg, S.sys).length)) { e.preventDefault(); e.returnValue = ''; }
+  if (dirtyEdit() || (S.dr && S.dr.dirty) || (S.sys && S.cfg && S.page === 'system' && diff(S.cfg, S.sys).length)) { e.preventDefault(); e.returnValue = ''; }
 });
 window.addEventListener('hashchange', () => {
   const p = (location.hash || '#map').slice(1);
   if (!['map', 'system'].includes(p)) return;
-  S.edit = null; S.finder = null; S.sel = null;
+  S.edit = null; S.finder = null; S.sel = null; S.dr = null;
   S.page = p;
   if (p === 'system') S.sys = clone(S.cfg);
   render();
@@ -1141,7 +1356,7 @@ async function start() {
   if (!me.user) { S.me = null; S.setupNeeded = me.setup_needed; render(); return; }
   S.me = me;
   await loadConfig();
-  await Promise.all([loadLayout(), loadMap(), loadPorts()]);
+  await Promise.all([loadLayout(), loadMap(), loadPorts(), loadDrawing()]);
   if (!(S.cfg.lanes || []).length) initDraft();
   const p = (location.hash || '#map').slice(1);
   S.page = ['map', 'system'].includes(p) ? p : 'map';

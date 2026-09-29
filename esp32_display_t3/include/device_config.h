@@ -21,7 +21,11 @@ static_assert(DISPLAY_ID >= 1 && DISPLAY_ID <= 7, "DISPLAY_ID must be 1..7");
 #endif
 
 // ---------------------------------------------------------------- network
-static IPAddress DEVICE_IP(10, 77, 0, 10 + DISPLAY_ID);
+// display Bn = 10.77.0.(DISPLAY_IP_BASE + n): T3 uses .31 .32 ... (other junctions T1, T2 ... take other blocks)
+#ifndef DISPLAY_IP_BASE
+#define DISPLAY_IP_BASE 30
+#endif
+static IPAddress DEVICE_IP(10, 77, 0, DISPLAY_IP_BASE + DISPLAY_ID);
 static IPAddress DNS_IP(10, 77, 0, 1);
 static IPAddress GATEWAY_IP(0, 0, 0, 0);
 static IPAddress SUBNET_MASK(255, 255, 255, 0);

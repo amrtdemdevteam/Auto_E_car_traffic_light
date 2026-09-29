@@ -39,10 +39,9 @@ class Ack:
 
 @dataclass
 class _Dirty:
-    """A display that was (or may have been) green and must confirm non-green."""
+    """A display that must confirm it is showing a non-green frame."""
     seq: int
     issued_at: float
-    deadline: float
     timed_out: bool = False
 
 
@@ -306,7 +305,7 @@ class T3Controller:
             online = self._ack_online(lane.display, now)
             if online and "display" in lane.reasons:
                 self._enable(lane, "display")
-            elif not online and "display" not in lane.reasons and self.active_lane != lane.id:
+            elif not online and "display" not in lane.reasons:
                 self._disable(lane, "display", now, drop=False)
 
     # -------------------------------------------------------------- states
@@ -346,27 +345,36 @@ class T3Controller:
         self._log(f"สลับเลน → เลน {head.lane} (ทุกจอ X)", "barrier_start", lane=head.lane)
 
     def _barrier_clear(self, now: float) -> bool:
+        """Every display must confirm a non-green frame before any lane goes green.
+
+        A display that does not answer is handled the same way whatever it was
+        showing: its own lane is closed (that display shows the fault) and the
+        barrier waits timing.display_fault_timeout_s -- long enough for the
+        display's command to expire so it drops out of green by itself -- then
+        releases, so the other lanes keep working without anyone resetting it.
+        """
         clear = True
-        link_timeout = float(self.t["display_link_timeout_s"])
+        ack_timeout = float(self.t["display_ack_timeout_s"])
+        fault_timeout = float(self.t["display_fault_timeout_s"])
         for disp, d in list(self.dirty.items()):
             ack = self.link.last_ack(disp)
             if ack is not None and ack.epoch == self.link.epoch and ack.seq >= d.seq and not ack.green:
                 del self.dirty[disp]
                 continue
-            if now < d.deadline:
-                clear = False
-                continue
-            if not d.timed_out:
+            if not d.timed_out and now >= d.issued_at + ack_timeout:
                 d.timed_out = True
-                self._log(f"จอ B{disp} ไม่ยืนยัน X ภายในเวลา รอให้จอหมดอายุคำสั่งเอง",
+                self._log(f"จอ B{disp} ไม่ยืนยัน X ภายในเวลา ปิดเลนของจอนี้",
                           "display_ack_timeout", display=disp)
                 for lane in self.lanes.values():
                     if lane.display == disp:
                         self._disable(lane, "display", now, drop=False)
-            if now < d.issued_at + link_timeout + 1.0:
-                clear = False
-            else:
+            if now >= d.issued_at + fault_timeout:
+                if d.timed_out:
+                    self._log(f"ครบเวลาเผื่อจอ B{disp} เสีย เลนอื่นทำงานต่อได้",
+                              "display_fault_release", display=disp)
                 del self.dirty[disp]
+            else:
+                clear = False
         return clear
 
     def _tick_switching(self, now: float) -> None:
@@ -397,6 +405,10 @@ class T3Controller:
     def _tick_green(self, now: float) -> None:
         lane = self.lanes[self.active_lane]
         svc = self.service
+        if not self._ack_online(lane.display, now):
+            # the display of the green lane stopped answering: stop here
+            self._end_green(now, reason="display_lost")
+            return
         if lane.kind == "special":
             done = now >= svc.end_at
         else:
@@ -441,7 +453,7 @@ class T3Controller:
         frame, arg = self._frame_for(lane, now)
         seq = self.link.command(lane.display, frame, arg, now)
         self._frames[lane.display] = (frame, arg)
-        self.dirty[lane.display] = _Dirty(seq, now, now + float(self.t["display_ack_timeout_s"]))
+        self.dirty[lane.display] = _Dirty(seq, now)
 
     # -------------------------------------------------------------- frames
     def _frame_for(self, lane: Lane, now: float) -> tuple[str, str]:
@@ -483,7 +495,7 @@ class T3Controller:
             if self._first_frames:
                 # after (re)start any display may still show an old green until it
                 # confirms our first command or its own command timeout expires
-                self.dirty[disp] = _Dirty(seq, now, now + float(self.t["display_ack_timeout_s"]))
+                self.dirty[disp] = _Dirty(seq, now)
             self._frames[disp] = (frame, arg)
         self._first_frames = False
 
