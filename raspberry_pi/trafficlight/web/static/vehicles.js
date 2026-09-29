@@ -104,7 +104,7 @@ function vbox(x0, y0, z0, x1, y1, z1, color, cls = '') {
 }
 function vehModelHtml(kind) {
   const GREY = '#66686d', DARK = '#1c1c1e', CREAM = '#efe9d3';
-  const ORG = kind === 'auto' ? '#e8722a' : '#2e9e5b';                            // Auto orange, Manual green (Toyota 7CBTY style)
+  const ORG = kind === 'auto' ? '#e8722a' : '#7cc4a2';                            // Auto orange, Manual green (Toyota 7CBTY style)
   let m = vbox(-36, -15, 6, 36, 15, 16, GREY)                                   // chassis
     + vbox(8, -13, 16, 36, 13, 30, '#7c7e83')                                   // front cover
     + vbox(-34, -19, 10, 20, -15, 27, ORG) + vbox(-34, 15, 10, 20, 19, 27, ORG) // fenders
@@ -114,11 +114,15 @@ function vehModelHtml(kind) {
     m += vbox(-31, -9, 16, -17, 9, 64, CREAM) + vbox(-17, -6, 30, -15, 6, 52, DARK)   // mast + panel
       + vbox(-27, -4, 64, -21, 4, 70, null, 'lamp lr') + vbox(-27, -4, 70, -21, 4, 76, null, 'lamp la') + vbox(-27, -4, 76, -21, 4, 82, null, 'lamp lg');  // tower lamp
   } else {
-    m += vbox(-2, -3, 16, 4, 3, 52, DARK) + vbox(-5, -9, 52, 7, 9, 56, DARK)          // control column
-      + vbox(-20, -7, 16, -13, -1, 40, '#141416') + vbox(-20, 1, 16, -13, 7, 40, '#141416')   // legs
-      + vbox(-22, -10, 40, -11, 10, 62, '#141416') + vbox(-21, -5, 62, -12, 5, 72, '#141416') // torso + head
-      + [[-30, -13], [-30, 12], [-6, -13], [-6, 12]].map(([x, y]) => vbox(x, y, 36, x + 2, y + 2, 84, '#1f6b3e')).join('')   // overhead guard posts
-      + vbox(-32, -14, 84, -2, 14, 87, '#1f6b3e');                                                                      // overhead guard roof
+    const MINT = '#7cc4a2', WHT = '#f2f4f3', BK = '#141416';           // Toyota 7CBT: scooter style, seated driver
+    m += vbox(-38, -14, 10, -4, 14, 40, MINT) + vbox(-4, -11, 10, 8, 11, 16, MINT)      // rear cowl + floor
+      + vbox(-40, -8, 40, -34, 8, 66, MINT)                                             // backrest post
+      + vbox(-39, -8, 50, -33, 8, 64, BK)                                               // backrest pad
+      + vbox(-26, -8, 40, -6, 8, 44, BK)                                                // seat
+      + vbox(10, -8, 14, 22, 8, 56, WHT) + vbox(12, -5, 56, 20, 5, 62, BK)              // front column + steering head
+      + vbox(12, -14, 61, 18, 14, 64, BK) + vbox(14, -14, 64, 17, -12, 72, GREY) + vbox(14, 12, 64, 17, 14, 72, GREY)   // handlebar + mirrors
+      + vbox(-24, -6, 44, -12, 6, 66, BK) + vbox(-22, -4, 66, -14, 4, 76, BK)           // torso + head
+      + vbox(-12, -6, 44, 8, -1, 50, BK) + vbox(-12, 1, 44, 8, 6, 50, BK) + vbox(6, -6, 16, 10, -1, 46, BK) + vbox(6, 1, 16, 10, 6, 46, BK);  // thighs + shins
   }
   return `<div class="mdl">${m}</div>`;
 }
@@ -126,7 +130,7 @@ function vehModelHtml(kind) {
 // ------------------------------------------------------------------ drawing (runs every animation frame)
 function vehRender(dt) {
   const host = document.getElementById('vehs');
-  if (!host || !S.v3d || S.vehOff) { if (VEH.host) { VEH.els.clear(); VEH.host = null; } return; }
+  if (!host || S.vehOff) { if (VEH.host) { VEH.els.clear(); VEH.host = null; } return; }
   if (VEH.host !== host) { VEH.host = host; VEH.els.clear(); }
   const alive = new Set();
   VEH.list.forEach((v) => {

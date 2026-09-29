@@ -41,6 +41,10 @@ applyTheme();
 try { const v = JSON.parse(localStorage.getItem('t3view') || 'null'); if (v) { S.v3d = !!v.v3d; S.vehOff = !!v.vehOff; if (v.cam) S.cam = {...S.cam, ...v.cam}; } } catch (e) { /* ignore */ }
 try { S.dirs = JSON.parse(localStorage.getItem('t3dirs') || '{}') || {}; } catch (e) { S.dirs = {}; }
 function keepDirs() { try { localStorage.setItem('t3dirs', JSON.stringify(S.dirs)); } catch (e) { /* ignore */ } }
+function vehBtn() {
+  const off = !!S.vehOff;
+  return `<button class="sec sm vsw ${off ? '' : 'on'}" data-act="vehs" aria-pressed="${!off}" title="${off ? 'กดเพื่อแสดงรถจำลองบนแผนที่' : 'กดเพื่อซ่อนรถจำลองบนแผนที่'}">🚜 รถจำลอง <i>${off ? 'ซ่อน' : 'แสดง'}</i></button>`;
+}
 function keepView() { try { localStorage.setItem('t3view', JSON.stringify({v3d: S.v3d, vehOff: !!S.vehOff, cam: S.cam})); } catch (e) { /* ignore */ } }
 
 // ------------------------------------------------------------------ words
@@ -238,7 +242,7 @@ function applyEdit(cfg, E) {
     cfg.sensors[sid] = c;
   });
   cfg.displays = cfg.displays || {};
-  if (lane.display && !cfg.displays[String(lane.display)]) cfg.displays[String(lane.display)] = {ip: '10.77.0.' + (10 + lane.display)};
+  if (lane.display && !cfg.displays[String(lane.display)]) cfg.displays[String(lane.display)] = {ip: '10.77.0.' + ((cfg.display_ip_base ?? 30) + lane.display)};
   return cfg;
 }
 function removeLane(cfg, id) {
@@ -367,14 +371,14 @@ function headerView() {
   const nav = S.page === 'setup' ? '' : `<nav>${[['map', 'แผนที่'], ['system', 'ระบบ']].map(([id, t]) =>
     `<a href="#${id}" class="${S.page === id ? 'on' : ''}">${t}</a>`).join('')}</nav>`;
   return `<header>
-    <span class="jn"><img class="logo" src="/static/logo.jpg" alt="${esc((cfg && cfg.junction_id) || 'T3')}"></span>
+    <span class="jn"><img class="logo" src="/static/logo.png" alt="${esc((cfg && cfg.junction_id) || 'T3')}"></span>
     ${nav}
     <span class="pill" id="hdr-state"><i></i><span>—</span></span>
     <span class="qchips" id="hdr-queue"></span>
     <button class="alertbadge" id="hdr-alerts" data-act="alerts" hidden aria-label="การแจ้งเตือน"></button>
     <span class="who">
       <label class="themesw" title="สลับโหมดสว่าง / มืด"><span aria-hidden="true">☀</span><span class="sw"><input type="checkbox" data-theme-toggle aria-label="โหมดมืด" ${isDark() ? 'checked' : ''}><span></span></span><span aria-hidden="true">☾</span></label>
-      <span class="mono">${esc(S.me.user)}</span>
+      ${avBtn(S.me.user, S.me.icon, 'avview')}<span class="mono">${esc(S.me.user)}</span>
       <button class="sec sm" data-act="logout">ออกจากระบบ</button></span>
   </header>`;
 }
@@ -560,8 +564,8 @@ function mainView() {
       <div>
         <div class="card mapcard${S.mapFull ? ' full' : ''}" id="mapcard">
           ${drawing ? '<div class="dtools" id="dtools"></div>' : ''}
-          <div class="mapbox${drawing ? ' drawing' : ''}${v3 ? ' v3d' : ''}" id="map"><div class="bg">${bg}</div>${v3 ? '' : widgets}
-            ${drawing ? '' : `<div class="maptools">${v3 ? '<span class="camtools"><button class="sec sm" data-act="cam" data-k="rl" aria-label="หมุนซ้าย">⟲</button><button class="sec sm" data-act="cam" data-k="rr" aria-label="หมุนขวา">⟳</button><button class="sec sm" data-act="cam" data-k="tu" aria-label="เงยขึ้น">▲</button><button class="sec sm" data-act="cam" data-k="td" aria-label="ก้มลง">▼</button><button class="sec sm" data-act="cam" data-k="zi" aria-label="ซูมเข้า">＋</button><button class="sec sm" data-act="cam" data-k="zo" aria-label="ซูมออก">−</button><button class="sec sm" data-act="vehs" aria-pressed="${!S.vehOff}" title="แสดง/ซ่อนรถจำลอง">🚜 รถ</button></span>' : ''}
+          <div class="mapbox${drawing ? ' drawing' : ''}${v3 ? ' v3d' : ''}" id="map"><div class="bg">${bg}</div>${v3 ? '' : (drawing ? '' : '<div class="vehs" id="vehs"></div>') + widgets}
+            ${drawing ? '' : `<div class="maptools">${v3 ? '<span class="camtools"><button class="sec sm" data-act="cam" data-k="rl" aria-label="หมุนซ้าย">⟲</button><button class="sec sm" data-act="cam" data-k="rr" aria-label="หมุนขวา">⟳</button><button class="sec sm" data-act="cam" data-k="tu" aria-label="เงยขึ้น">▲</button><button class="sec sm" data-act="cam" data-k="td" aria-label="ก้มลง">▼</button><button class="sec sm" data-act="cam" data-k="zi" aria-label="ซูมเข้า">＋</button><button class="sec sm" data-act="cam" data-k="zo" aria-label="ซูมออก">−</button>' + vehBtn() + '</span>' : ''}
               <button class="sec sm" data-act="v3d" aria-pressed="${S.v3d}">${S.v3d ? '2D' : '3D'}</button>
               ${edit ? `<button class="sec sm" data-dact="start">✎ วาดแผนที่</button>
               <label>รูปพื้นหลัง<input type="file" accept="image/png,image/jpeg,image/svg+xml,.svg" data-mapfile hidden></label>
@@ -569,7 +573,7 @@ function mainView() {
               <button class="sec sm" data-act="mapfull" aria-label="แผนที่เต็มจอ">${S.mapFull ? '✕ ปิดเต็มจอ' : '⛶ เต็มจอ'}</button></div>`}
           </div>
           <div class="legend">${drawing ? '<span>วาดแผนที่ · ลากเลนที่วางไว้จะทำได้หลังบันทึก</span>' : `<span><span class="sd ok"></span>ว่าง</span><span><span class="sd raw"></span>เห็นวัตถุ</span><span><span class="sd on"></span>เจอรถ/มือ</span><span><span class="sd bad"></span>เสีย</span>
-            <span class="sp"></span><span>${v3 ? 'ลากเพื่อหมุนมุมมอง · ล้อเมาส์ซูม · รถเป็นการจำลองจากเซนเซอร์/คิว ไม่ใช่ตำแหน่งจริง · ลากวางเลนในโหมด 2D' : edit ? 'ลากเลนมาวาง · คลิกเลือกแล้วหมุน/ย่อขยาย · ดับเบิลคลิกเพื่อตั้งค่า' : 'ดับเบิลคลิกเพื่อดูรายละเอียด'}</span>`}</div>
+            <span class="sp"></span><span>${v3 ? 'ลากเพื่อหมุนมุมมอง · ล้อเมาส์ซูม · รถเป็นการจำลองจากเซนเซอร์/คิว ไม่ใช่ตำแหน่งจริง · ลากเลนมาวางได้ทั้ง 2D และ 3D' : edit ? 'ลากเลนมาวาง · คลิกเลือกแล้วหมุน/ย่อขยาย · ดับเบิลคลิกเพื่อตั้งค่า' : 'ดับเบิลคลิกเพื่อดูรายละเอียด'}</span>`}</div>
         </div>
         <section class="card tlcard" id="tlcard" aria-label="ไทม์ไลน์">
           <div class="card-h">ไทม์ไลน์ · เวลาเขียวและเวลารอ<span class="sp"></span><span class="mut small" id="tl-sub"></span></div>
@@ -695,15 +699,68 @@ function sysHistory() {
     <td style="text-align:right">${i === 0 ? '<span class="g small">ใช้อยู่</span>' : (isEditor() ? `<button class="sec sm" data-act="rollback" data-v="${v.version}">ย้อนกลับ</button>` : '')}</td></tr>`).join('');
   return `<div class="maxw"><div class="list">${vers ? `<table>${vers}</table>` : '<div class="li-row mut">ยังไม่มีการบันทึกจากหน้าเว็บ</div>'}</div></div>`;
 }
+const USER_ICONS = ['', '🧑‍🔧', '👷', '🚜', '🛠️', '🔧', '⚡', '🚦', '🛡️', '⭐', '🦸', '🧙', '🐱', '🐶', '🦊', '🐼'];
+const iconOpts = (cur) => USER_ICONS.map((i) => `<option value="${i}" ${cur === i ? 'selected' : ''}>${i || 'ตัวอักษรแรก'}</option>`).join('');
+const isImg = (i) => typeof i === 'string' && i.startsWith('data:image/');
+const userAv = (name, icon) => `<span class="uav" aria-hidden="true">${isImg(icon) ? `<img src="${icon}" alt="">` : (icon ? esc(icon) : esc((name || '?').charAt(0).toUpperCase()))}</span>`;
+const avBtn = (name, icon, act = 'avpick') => `<button class="uavb" data-act="${act}" data-name="${esc(name)}" title="${act === 'avview' ? 'ดูรูปใหญ่' : 'เปลี่ยนรูปโปรไฟล์'}" aria-label="${act === 'avview' ? 'ดูรูปโปรไฟล์' : 'เปลี่ยนรูปโปรไฟล์'} ${esc(name)}">${userAv(name, icon)}</button>`;
+// choose a picture: preset icons, the presets a build adds (window.T3_AVATARS), or an own upload (shrunk to 128 px in the browser)
+async function setUserIcon(name, icon) {
+  if (name === S.me.user) { await api('/api/me/icon', {method: 'POST', body: {icon}}); S.me.icon = icon; }
+  else await api('/api/users', {method: 'POST', body: {name, icon}});
+  if (S.me.role === 'editor') { const u = await api('/api/users'); S.users = u.users; }
+  closeAvPick(); render(); toast('เปลี่ยนรูปโปรไฟล์แล้ว');
+}
+function closeAvPick() { const m = document.getElementById('avpk'); if (m) m.remove(); }
+function openAvPick(name) {
+  closeAvPick();
+  const cur = name === S.me.user ? S.me.icon : ((S.users || []).find((u) => u.name === name) || {}).icon;
+  const item = (v, label) => `<button class="avopt ${cur === v ? 'on' : ''}" data-avset="${esc(v)}" title="${esc(label)}">${userAv(name, v)}</button>`;
+  const extra = (window.T3_AVATARS || []).map((v, i) => item(v, `รูปที่ ${i + 1}`)).join('');
+  const m = document.createElement('div');
+  m.id = 'avpk';
+  m.innerHTML = `<div class="avcard" role="dialog" aria-label="รูปโปรไฟล์ ${esc(name)}"><div class="avh"><b>รูปโปรไฟล์ของ ${esc(name)}</b><button class="plain sm" data-avclose>ปิด</button></div>
+    <div class="avgrid">${item('', 'ตัวอักษรแรก')}${USER_ICONS.filter((i) => i).map((i) => item(i, i)).join('')}${extra}</div>
+    <label class="filebtn avup">อัปโหลดรูปของคุณ<input type="file" accept="image/*" data-avfile hidden></label><span class="mut small">ระบบย่อรูปเป็นวงกลม 256 pxให้เอง</span></div>`;
+  m.dataset.name = name;
+  document.body.appendChild(m);
+}
+function shrinkImage(file) {
+  return new Promise((ok, no) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, 320 / Math.max(img.width, img.height)), c = document.createElement('canvas');   // keep the whole picture, longest side 320 px
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); ok(c.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); no(new Error('อ่านรูปไม่ได้')); };
+    img.src = url;
+  });
+}
+document.addEventListener('click', (e) => {
+  const m = document.getElementById('avpk');
+  if (!m) return;
+  const set = e.target.closest('[data-avset]');
+  if (set) setUserIcon(m.dataset.name, set.dataset.avset).catch((err) => toast(err.message, true));
+  else if (e.target.closest('[data-avclose]') || e.target === m) closeAvPick();
+});
+document.addEventListener('change', async (e) => {
+  const f = e.target.closest('[data-avfile]'), m = document.getElementById('avpk');
+  if (!f || !m || !f.files[0]) return;
+  try { await setUserIcon(m.dataset.name, await shrinkImage(f.files[0])); } catch (err) { toast(err.message, true); }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAvPick(); });
 function sysUsers() {
-  const users = S.users.map((u) => `<tr><td>${esc(u.name)}</td>
+  const users = S.users.map((u) => `<tr><td>${avBtn(u.name, u.icon)} ${esc(u.name)}</td>
+
     <td><select aria-label="สิทธิ์ ${esc(u.name)}" data-userrole="${esc(u.name)}">${[['editor', 'แก้ไขได้'], ['viewer', 'ดูอย่างเดียว']].map(([k, t]) => `<option value="${k}" ${u.role === k ? 'selected' : ''}>${t}</option>`).join('')}</select></td>
     <td style="text-align:right"><button class="plain sm" data-act="userpw" data-name="${esc(u.name)}">ตั้งรหัสใหม่</button>
     ${u.name !== S.me.user ? `<button class="danger sm" data-act="userdel" data-name="${esc(u.name)}">ลบ</button>` : ''}</td></tr>`).join('');
   const audit = S.audit.map((a) => `<div><span class="mono">${esc(a.t)}</span><span>${esc(a.user)} · ${esc(a.action)}</span></div>`).join('');
   return `<div class="maxw" style="display:flex;flex-direction:column;gap:24px">
     <div class="group"><div class="eyebrow">บัญชีผู้ใช้</div><div class="list"><table>${users}</table>
-      <form class="li-row" id="adduser"><input type="text" id="nu" aria-label="ชื่อผู้ใช้ใหม่" placeholder="ชื่อผู้ใช้ใหม่" required style="flex:1">
+      <form class="li-row" id="adduser"><select id="ni" class="iconsel" aria-label="ไอคอน">${iconOpts('')}</select><input type="text" id="nu" aria-label="ชื่อผู้ใช้ใหม่" placeholder="ชื่อผู้ใช้ใหม่" required style="flex:1">
         <input type="password" id="np" aria-label="รหัสผ่าน" placeholder="รหัสผ่าน ≥ 8 ตัว" required minlength="8" style="flex:1">
         <select id="nr" aria-label="สิทธิ์"><option value="viewer">ดูอย่างเดียว</option><option value="editor">แก้ไขได้</option></select>
         <button type="submit" class="sm">เพิ่ม</button></form></div></div>
@@ -942,6 +999,30 @@ async function useTemplate() {
 
 // ------------------------------------------------------------------ layout (drag on map)
 let drag = null;
+// Map position (0..1) under the pointer. In 3D the pointer is projected back onto the floor of the stage
+// (same transform chain as fit3d), so a lane can be dragged or dropped in 3D exactly as in 2D.
+function mapPoint(e) {
+  const r = mapRect();
+  if (!r) return null;
+  if (!S.v3d) return {x: Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), y: Math.max(0, Math.min(1, (e.clientY - r.top) / r.height))};
+  const W = r.width, H = Math.round(W * 0.62), c = S.cam, k = W / 1000 * 0.9 * (c.zoom || 1), d = Math.round(W * 1.7);
+  const rz = c.rz * Math.PI / 180, tl = c.tilt * Math.PI / 180, sx = e.clientX - r.left, sy = e.clientY - r.top;
+  const fwd = (gx, gy) => {
+    const x = (gx - 500) * k, y = (gy - 350) * k;
+    const x1 = x * Math.cos(rz) - y * Math.sin(rz), y1 = x * Math.sin(rz) + y * Math.cos(rz);
+    const X = W / 2 + x1, Y = H * 0.54 + y1 * Math.cos(tl), f = d / (d - y1 * Math.sin(tl));
+    return [W / 2 + (X - W / 2) * f, H / 2 + (Y - H / 2) * f];
+  };
+  let gx = 500, gy = 350;
+  for (let i = 0; i < 12; i++) {                 // Newton steps with a numeric Jacobian
+    const [px, py] = fwd(gx, gy), [ax, ay] = fwd(gx + 1, gy), [bx, by] = fwd(gx, gy + 1);
+    const a = ax - px, b = bx - px, cc = ay - py, dd = by - py, det = a * dd - b * cc;
+    if (Math.abs(det) < 1e-9) break;
+    const ex = sx - px, ey = sy - py;
+    gx += (dd * ex - b * ey) / det; gy += (-cc * ex + a * ey) / det;
+  }
+  return {x: Math.max(0, Math.min(1, gx / 1000)), y: Math.max(0, Math.min(1, gy / 700))};
+}
 function mapRect() { const m = $('#map'); return m && m.getBoundingClientRect(); }
 async function saveLayout() {
   try { S.layout = await api('/api/layout', {method: 'POST', body: S.layout}); }
@@ -955,7 +1036,7 @@ function selectWidget(id) {
 }
 document.addEventListener('pointerdown', (e) => {
   if (!e.target.closest('.wg') && !e.target.closest('#pop') && S.sel !== null) selectWidget(null);
-  if (S.v3d && S.page === 'map' && e.button === 0) { const w3 = e.target.closest('[data-widget]'); if (w3 && !e.target.closest('button,select,input,label,a')) selectWidget(Number(w3.dataset.widget)); return; }
+  if (S.v3d && S.page === 'map' && e.button === 0) { const w3 = e.target.closest('[data-widget]'); if (w3 && !e.target.closest('button,select,input,label,a')) selectWidget(Number(w3.dataset.widget)); if (!w3 && !e.target.closest('[data-draglane]')) return; }
   if (!isEditor() || S.page !== 'map' || e.button !== 0 || drawEditing()) return;
   const rz = e.target.closest('[data-rz]');
   if (rz) {                                    // corner handle: resize the widget
@@ -985,8 +1066,9 @@ document.addEventListener('pointermove', (e) => {
   const r = mapRect();
   if (drag.fromMap) {
     drag.el.classList.add('dragging');
-    drag.el.style.left = Math.max(0, Math.min(100, 100 * (e.clientX - r.left) / r.width)) + '%';
-    drag.el.style.top = Math.max(0, Math.min(100, 100 * (e.clientY - r.top) / r.height)) + '%';
+    const mp = mapPoint(e);
+    drag.el.style.left = (mp.x * 100) + '%';
+    drag.el.style.top = (mp.y * 100) + '%';
   } else {
     if (!drag.ghost) {
       const l = S.cfg.lanes.find((x) => x.id === drag.lane);
@@ -1021,7 +1103,8 @@ document.addEventListener('pointerup', async (e) => {
   if (!inside && !d.fromMap) return;
   const key = String(d.lane);
   const old = S.layout.lanes[key] || {rot: 0};
-  S.layout.lanes[key] = {x: Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), y: Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)), rot: old.rot || 0};
+  const mp = mapPoint(e);
+  S.layout.lanes[key] = {x: mp.x, y: mp.y, rot: old.rot || 0};
   if (old.scale) S.layout.lanes[key].scale = old.scale;
   if (old.dir !== undefined) S.layout.lanes[key].dir = old.dir;
   S.sel = d.lane;               // keep the tools visible after a drop
@@ -1051,7 +1134,12 @@ function fitMapFull() {
 function fit3d() {
   const box = document.getElementById('map'), st = document.getElementById('stage');
   if (!box) return;
-  if (!st) { box.style.removeProperty('height'); box.style.removeProperty('perspective'); return; }
+  if (!st) {
+    box.style.removeProperty('height'); box.style.removeProperty('perspective');
+    const v2 = document.getElementById('vehs');       // 2D: same vehicles, drawn flat over the map
+    if (v2 && box.clientWidth) v2.style.transform = `scale3d(${box.clientWidth / 1000},${box.clientHeight / 700},${box.clientWidth / 1000})`;
+    return;
+  }
   const W = box.clientWidth;
   if (!W) return;
   const H = Math.round(W * 0.62), c = S.cam, k = W / 1000 * 0.9 * (c.zoom || 1);
@@ -1150,6 +1238,12 @@ document.addEventListener('click', async (ev) => {
   const act = b.dataset.act;
   const lane = b.dataset.lane !== undefined ? Number(b.dataset.lane) : undefined;
   try {
+    if (act === 'avpick') { openAvPick(b.dataset.name); return; }
+    if (act === 'avview') {                                  // header avatar: just show it large
+      const m = document.createElement('div'); m.id = 'avpk'; m.className = 'avbig';
+      m.innerHTML = `<div class="avcard bigone"><div class="bigav ${isImg(S.me.icon) ? 'pic' : ''}">${isImg(S.me.icon) ? `<img src="${S.me.icon}" alt="">` : `<span>${S.me.icon ? esc(S.me.icon) : esc(S.me.user.charAt(0).toUpperCase())}</span>`}</div><b>${esc(S.me.user)}</b><span class="mut small">${isEditor() ? 'เปลี่ยนรูปได้ที่ ระบบ › ผู้ใช้' : ''}</span></div>`;
+      document.body.appendChild(m); return;
+    }
     if (act === 'logout') { await api('/api/logout', {method: 'POST', body: {}}); S.me = null; render(); }
     else if (act === 'toggle') openLane(lane);
     else if (act === 'addlane') addLane();
@@ -1303,6 +1397,10 @@ document.addEventListener('change', async (ev) => {
       if (t.checked) list.add(t.dataset.reserve); else list.delete(t.dataset.reserve);
       setPath(S.sys, 'frames.enabled_reserve', [...list]);
       refreshSavebar();
+    } else if (t.dataset.usericon !== undefined) {
+      await api('/api/users', {method: 'POST', body: {name: t.dataset.usericon, icon: t.value}});
+      if (t.dataset.usericon === S.me.user) S.me.icon = t.value;
+      const u = await api('/api/users'); S.users = u.users; render(); toast('เปลี่ยนไอคอนแล้ว');
     } else if (t.dataset.userrole) {
       await api('/api/users', {method: 'POST', body: {name: t.dataset.userrole, role: t.value}}); toast('เปลี่ยนสิทธิ์แล้ว');
     } else if (t.dataset.ota) {
@@ -1331,7 +1429,7 @@ document.addEventListener('submit', async (ev) => {
       await api('/api/login', {method: 'POST', body: {user: f.querySelector('#lu').value, password: f.querySelector('#lp').value}});
       await start();
     } else if (f.id === 'adduser') {
-      await api('/api/users', {method: 'POST', body: {name: f.querySelector('#nu').value, password: f.querySelector('#np').value, role: f.querySelector('#nr').value}});
+      await api('/api/users', {method: 'POST', body: {name: f.querySelector('#nu').value, password: f.querySelector('#np').value, icon: f.querySelector('#ni').value, role: f.querySelector('#nr').value}});
       const u = await api('/api/users'); S.users = u.users; S.audit = u.audit; render(); toast('เพิ่มผู้ใช้แล้ว');
     }
   } catch (e) {

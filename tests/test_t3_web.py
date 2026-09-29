@@ -270,3 +270,29 @@ def test_layout_vehicle_heading_is_optional_and_validated(web):
     assert code == 200 and body["lanes"]["1"]["dir"] == 270 and "dir" not in body["lanes"]["2"]
     for bad in (45, "up", True, 360):
         assert call(base, "/api/layout", {"lanes": {"1": {"x": 0, "y": 0, "rot": 0, "dir": bad}}}, cookie=eng)[0] == 400
+
+
+def test_user_icon_set_by_editor_and_by_self_and_validated(web):
+    base, app, state, calls, tmp = web
+    viewer = login(base, "op", "password2")
+    eng = login(base, "eng", "password1")
+    assert call(base, "/api/me", cookie=viewer)[1]["icon"] == ""
+    assert call(base, "/api/me/icon", {"icon": "🚜"}, cookie=viewer)[0] == 200      # anyone may set their own
+    assert call(base, "/api/me", cookie=viewer)[1]["icon"] == "🚜"
+    assert call(base, "/api/users", {"name": "op", "icon": "⭐"}, cookie=viewer)[0] == 403
+    assert call(base, "/api/users", {"name": "op", "icon": "⭐"}, cookie=eng)[0] == 200
+    assert {u["name"]: u["icon"] for u in call(base, "/api/users", cookie=eng)[1]["users"]}["op"] == "⭐"
+    assert call(base, "/api/users", {"name": "new1", "password": "password3", "role": "viewer", "icon": "🦸"}, cookie=eng)[0] == 200
+    for bad in ("<b>", "x" * 20, "a\nb"):
+        assert call(base, "/api/me/icon", {"icon": bad}, cookie=viewer)[0] in (400, 500)
+
+
+def test_user_icon_accepts_small_jpeg_data_url_only(web):
+    base, app, state, calls, tmp = web
+    viewer = login(base, "op", "password2")
+    ok = "data:image/jpeg;base64," + "A" * 2000
+    assert call(base, "/api/me/icon", {"icon": ok}, cookie=viewer)[0] == 200
+    assert call(base, "/api/me", cookie=viewer)[1]["icon"] == ok
+    for bad in ("data:image/svg+xml;base64,AAAA", "data:image/jpeg;base64," + "A" * 100000, "data:image/jpeg;base64,<x>"):
+        assert call(base, "/api/me/icon", {"icon": bad}, cookie=viewer)[0] in (400, 500)
+    assert call(base, "/api/me", cookie=viewer)[1]["icon"] == ok

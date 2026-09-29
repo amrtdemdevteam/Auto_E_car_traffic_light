@@ -440,7 +440,7 @@ def make_handler(app: App):
                 return self._static(path[len("/static/"):])
             if path == "/api/me":
                 s = app.session(self._token())
-                return self._json(200, {"user": s[0], "role": s[1]} if s else {"user": None,
+                return self._json(200, {"user": s[0], "role": s[1], "icon": app.users.icon(s[0])} if s else {"user": None,
                                   "setup_needed": app.users.count() == 0})
             s = self._user()
             if not s:
@@ -504,6 +504,12 @@ def make_handler(app: App):
                 if path == "/api/logout":
                     app.sessions.pop(self._token() or "", None)
                     return self._json(200, {"ok": True}, {"Set-Cookie": f"{COOKIE}=; Max-Age=0; Path=/"})
+                if path == "/api/me/icon":            # everybody may change their own icon
+                    s = self._user()
+                    if not s:
+                        return
+                    app.users.set_icon(s[0], self._jbody().get("icon", ""))
+                    return self._json(200, {"ok": True, "icon": app.users.icon(s[0])})
                 s = self._user(editor=True)
                 if not s:
                     return
@@ -562,6 +568,8 @@ def make_handler(app: App):
                 if path == "/api/users":
                     b = self._jbody()
                     app.users.set(b.get("name", ""), b.get("password") or None, b.get("role") or None)
+                    if "icon" in b:
+                        app.users.set_icon(b.get("name", ""), b.get("icon") or "")
                     app.store.audit(user, "user_set", {"name": b.get("name"), "role": b.get("role"),
                                                        "password_changed": bool(b.get("password"))})
                     return self._json(200, {"ok": True})

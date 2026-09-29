@@ -11,11 +11,11 @@
 const DRAW_W = 1000, DRAW_H = 700;
 const DCOL = {ink: 'var(--ink)', mut: 'var(--mut)', faint: 'var(--faint)', line: 'var(--line)', soft: 'var(--soft)', fill: 'var(--fill)',
   panel: 'var(--panel)', accent: 'var(--accent)', grn: 'var(--grn)', red: 'var(--red)', amb: 'var(--amb)', none: 'none'};
-const DSWATCH = ['ink', 'faint', 'accent', 'grn', 'red', 'amb'];
+const DSWATCH = ['ink', 'mut', 'faint', 'line', 'accent', 'grn', 'red', 'amb', 'none'];
 const DFILLS = [['none', 'ไม่เติมสี'], ['soft', 'เทาอ่อน'], ['fill', 'เทา'], ['panel', 'ขาว/ดำ'], ['accent', 'น้ำเงิน'], ['grn', 'เขียว'], ['red', 'แดง'], ['amb', 'เหลือง'], ['ink', 'ดำ']];
 const DTOOLS = [['select', 'เลือก / ย้าย', '↖'], ['rect', 'สี่เหลี่ยม', '▭'], ['ellipse', 'วงกลม', '◯'], ['line', 'เส้นตรง', '╱'], ['arrow', 'ลูกศร', '➜'], ['text', 'ข้อความ', 'T']];
 const DPRESETS = [['road-v', 'ถนน ตั้ง'], ['road-h', 'ถนน นอน'], ['arr-up', '↑'], ['arr-down', '↓'], ['arr-left', '←'], ['arr-right', '→'],
-  ['junction', 'พื้นที่แยก'], ['pillar', 'pillar'], ['boxA', 'กล่อง A'], ['sensor', 'เซนเซอร์'], ['tof', 'ToF'], ['label', 'ป้ายเลน'], ['exit', 'ทางออก']];
+  ['junction', 'พื้นที่แยก'], ['building', 'อาคาร 3D'], ['pillar', 'pillar'], ['boxA', 'กล่อง A'], ['sensor', 'เซนเซอร์'], ['tof', 'ToF'], ['label', 'ป้ายเลน'], ['exit', 'ทางออก']];
 let drawSeq = 0;
 let drawDrag = null;
 
@@ -102,7 +102,7 @@ function drawToolsHtml() {
   const tools = DTOOLS.map(([t, label, ic]) => `<button class="tool ${D.tool === t ? 'on' : ''}" data-dact="tool" data-t="${t}" title="${label}" aria-pressed="${D.tool === t}"><i>${ic}</i><span>${label}</span></button>`).join('');
   const presets = DPRESETS.map(([p, label]) => b('preset', label, `data-p="${p}"`)).join('');
   const cur = sel ? sel.stroke : D.color;
-  const swatches = DSWATCH.map((c) => `<button class="swatch ${cur === c ? 'on' : ''}" data-dact="color" data-c="${c}" style="--c:${dcol(c)}" aria-label="สี ${c}"></button>`).join('');
+  const swatches = '';
   const fillNow = sel && sel.type !== 'line' && sel.type !== 'text' ? sel.fill : D.fill;
   const swNow = sel ? sel.sw : D.sw;
   let ctx = '';
@@ -115,15 +115,26 @@ function drawToolsHtml() {
     ctx += `<label class="dfield chk"><input type="checkbox" data-dfield="arrow" ${sel.arrow ? 'checked' : ''}> หัวลูกศร</label>
       <label class="dfield chk"><input type="checkbox" data-dfield="dash" ${sel.dash ? 'checked' : ''}> เส้นประ</label>`;
   }
-  if (sel) ctx += b('rot', 'หมุน 90°') + b('front', 'ขึ้นบนสุด') + b('back', 'ไปหลังสุด') + b('dup', 'ทำซ้ำ') + b('del', 'ลบ', '', 'danger sm');
-  return `<div class="dt-row"><div class="dt-tools" role="toolbar" aria-label="เครื่องมือวาด">${tools}</div>
-      <div class="dt-group"><span class="dt-l">สี</span>${swatches}</div>
-      <label class="dfield">เติมสี<select data-dfield="fill" ${sel && (sel.type === 'line' || sel.type === 'text') ? 'disabled' : ''}>${DFILLS.map(([v, l]) => `<option value="${v}" ${fillNow === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="dfield">หนา<select data-dfield="sw">${[1, 2, 3, 4, 6, 10].map((v) => `<option value="${v}" ${Number(swNow) === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
-      <label class="dfield chk"><input type="checkbox" data-dfield="snap" ${D.snap ? 'checked' : ''}> ชิดกริด</label></div>
-    <div class="dt-row"><span class="dt-l">สำเร็จรูป</span><div class="dt-presets">${presets}</div></div>
-    <div class="dt-row">${ctx}<span class="sp"></span>
-      ${b('undo', '↶ ย้อน', D.undo.length ? '' : 'disabled')}${b('starter', 'ผังถนนตามแบบ T3')}${b('clear', 'ล้างทั้งหมด', '', 'danger sm')}
+  if (sel && (sel.type === 'rect' || sel.type === 'ellipse')) {
+    ctx += `<label class="dfield" title="ความสูงในมุมมอง 3D (0 = แบน)">สูง 3D<input type="number" data-dfield="ht" min="0" max="300" step="5" value="${sel.ht || 0}" style="width:64px"></label>
+      <label class="dfield" title="ยกจากพื้นในมุมมอง 3D">ยก<input type="number" data-dfield="z" min="0" max="300" step="5" value="${sel.z || 0}" style="width:64px"></label>`;
+  }
+  if (sel) ctx += b('rot', 'หมุน 90°') + b('bwd', '↓ ถอยหลัง', 'title="ลงหลังชิ้นถัดไป (Bring backward · [)"') + b('fwd', '↑ ขึ้นหน้า', 'title="ขึ้นหน้าชิ้นถัดไป (Bring forward · ])"')
+    + b('back', 'ไปหลังสุด') + b('front', 'ขึ้นหน้าสุด') + b('dup', 'ทำซ้ำ') + b('del', 'ลบ', '', 'danger sm');
+  const PL = Object.fromEntries(DPRESETS);
+  const pg = (t, ids) => `<div class="dt-pg"><span class="dt-l">${t}</span><div class="dt-btns">${ids.map((p) => b('preset', PL[p], `data-p="${p}"`)).join('')}</div></div>`;
+  const picker = (label, act, cur, list, dis) => `<details class="cpick ${dis ? 'dis' : ''}"><summary title="${label}"><span class="cpl">${label}</span><i class="cpc ${cur === 'none' ? 'none' : ''}" style="--c:${dcol(cur)}"></i><b>▾</b></summary>
+    <div class="cpp">${list.map(([v, l]) => `<button class="swatch ${cur === v ? 'on' : ''} ${v === 'none' ? 'none' : ''}" data-dact="${act}" data-c="${v}" style="--c:${dcol(v)}" title="${l}" aria-label="${label} ${l}"></button>`).join('')}</div></details>`;
+  const fillDis = sel && (sel.type === 'line' || sel.type === 'text') ? 'disabled' : '';
+  const selBar = sel ? `<div class="dt-sel"><span class="dt-l">ชิ้นที่เลือก</span>${ctx}</div>` : '';
+  return `<div class="dt-top"><div class="dt-tools" role="toolbar" aria-label="เครื่องมือวาด">${tools}</div>
+      <div class="dt-style">${picker('สีเส้น', 'color', cur, DSWATCH.map((c) => [c, c === 'none' ? 'ไม่มีเส้น' : c]), '')}${picker('สีเติม', 'fillc', fillNow, DFILLS, fillDis)}
+        <label class="dfield">หนา<select data-dfield="sw">${[1, 2, 3, 4, 6, 10].map((v) => `<option value="${v}" ${Number(swNow) === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+        <label class="dfield chk"><input type="checkbox" data-dfield="snap" ${D.snap ? 'checked' : ''}> ชิดกริด</label></div></div>
+    <div class="dt-presets2"><span class="dt-l">สำเร็จรูป</span>
+      ${pg('ถนน', ['road-v', 'road-h', 'junction', 'exit'])}${pg('ทิศทาง', ['arr-up', 'arr-down', 'arr-left', 'arr-right'])}${pg('สิ่งก่อสร้าง', ['building', 'pillar', 'boxA'])}${pg('อุปกรณ์', ['sensor', 'tof', 'label'])}</div>
+    ${selBar}
+    <div class="dt-foot">${b('undo', '↶ ย้อน', D.undo.length ? '' : 'disabled')}${b('starter', 'ผังถนนตามแบบ T3')}${b('clear', 'ล้างทั้งหมด', '', 'danger sm')}<span class="sp"></span>
       ${b('cancel', 'ยกเลิก')}${b('save', 'บันทึกแผนที่', '', 'sm')}</div>`;
 }
 function renderDrawTools() {
@@ -150,10 +161,11 @@ function presetItems(name, cx, cy) {
     case 'arr-left': return [R({type: 'line', x1: cx + 45, y1: cy, x2: cx - 45, y2: cy, stroke: 'faint', sw: 5, arrow: true})];
     case 'arr-right': return [R({type: 'line', x1: cx - 45, y1: cy, x2: cx + 45, y2: cy, stroke: 'faint', sw: 5, arrow: true})];
     case 'junction': return [R({type: 'hatch', x: cx - 150, y: cy - 50, w: 300, h: 100, stroke: 'line', sw: 1})];
-    case 'pillar': return [R({type: 'rect', x: cx - 75, y: cy - 40, w: 150, h: 80, fill: 'fill', stroke: 'none', sw: 0}), T(cx - 22, cy - 10, 'pillar', {size: 16, stroke: 'mut'})];
-    case 'boxA': return [R({type: 'rect', x: cx - 26, y: cy - 20, w: 52, h: 40, fill: 'ink', stroke: 'none', sw: 0, r: 3}), T(cx - 7, cy - 12, 'A', {size: 24, bold: true, stroke: 'panel'})];
-    case 'sensor': return [R({type: 'rect', x: cx - 32, y: cy - 14, w: 64, h: 28, fill: 'panel', stroke: 'faint', sw: 1.5, r: 3}), T(cx - 14, cy - 8, 'C1', {size: 15})];
-    case 'tof': return [R({type: 'ellipse', x: cx - 17, y: cy - 17, w: 34, h: 34, fill: 'panel', stroke: 'accent', sw: 3}), T(cx - 10, cy - 8, 'C3', {size: 14, bold: true, stroke: 'accent'})];
+    case 'building': return [R({type: 'rect', x: cx - 50, y: cy - 40, w: 100, h: 80, ht: 110, fill: 'soft', stroke: 'faint', sw: 1})];
+    case 'pillar': return [R({type: 'rect', x: cx - 75, y: cy - 40, w: 150, h: 80, ht: 70, fill: 'fill', stroke: 'none', sw: 0}), T(cx - 22, cy - 10, 'pillar', {size: 16, stroke: 'mut'})];
+    case 'boxA': return [R({type: 'rect', x: cx - 26, y: cy - 20, w: 52, h: 40, ht: 40, fill: 'ink', stroke: 'none', sw: 0, r: 3}), T(cx - 7, cy - 12, 'A', {size: 24, bold: true, stroke: 'panel'})];
+    case 'sensor': return [R({type: 'rect', x: cx - 32, y: cy - 14, w: 64, h: 28, ht: 12, fill: 'panel', stroke: 'faint', sw: 1.5, r: 3}), T(cx - 14, cy - 8, 'C1', {size: 15})];
+    case 'tof': return [R({type: 'ellipse', x: cx - 17, y: cy - 17, w: 34, h: 34, ht: 26, fill: 'panel', stroke: 'accent', sw: 3}), T(cx - 10, cy - 8, 'C3', {size: 14, bold: true, stroke: 'accent'})];
     case 'label': return [T(cx - 24, cy - 12, 'เลน 1', {size: 22, bold: true})];
     case 'exit': return [T(cx - 24, cy - 40, 'ทางออก', {size: 15, stroke: 'mut'}), R({type: 'line', x1: cx - 45, y1: cy, x2: cx + 45, y2: cy, stroke: 'faint', sw: 5, arrow: true})];
     default: return [];
@@ -168,18 +180,18 @@ function drawStarter() {
   const text = (x, y, s, o = {}) => out.push({id: newDid(), type: 'text', x: X(x), y: Y(y), text: s, size: 18, sw: 0, rot: 0, stroke: 'ink', fill: 'none', bold: false, ...o});
   box('road', 400, 20, 360, 560, {fill: 'soft'}); box('road', 30, 250, 370, 90, {fill: 'soft'}); box('hatch', 400, 250, 360, 90);
   line(520, 20, 520, 580, {sw: 1.5, stroke: 'line', dash: true}); line(640, 20, 640, 580, {sw: 1.5, stroke: 'line', dash: true});
-  box('rect', 250, 340, 150, 80, {fill: 'fill', stroke: 'none', sw: 0}); text(305, 384, 'pillar', {size: 15, stroke: 'mut'});
-  box('rect', 342, 346, 44, 34, {fill: 'ink', stroke: 'none', sw: 0, r: 3}); text(357, 350, 'A', {size: 24, bold: true, stroke: 'panel'});
+  box('rect', 250, 340, 150, 80, {fill: 'fill', stroke: 'none', sw: 0, ht: 70}); text(305, 384, 'pillar', {size: 15, stroke: 'mut'});
+  box('rect', 342, 346, 44, 34, {fill: 'ink', stroke: 'none', sw: 0, r: 3, ht: 34, z: 70}); text(357, 350, 'A', {size: 24, bold: true, stroke: 'panel'});
   text(140, 358, 'กล่องควบคุม', {size: 15, stroke: 'mut'});
   [[50, 295, 120, 295], [460, 575, 460, 520], [580, 575, 580, 520], [600, 25, 600, 80], [700, 25, 700, 80], [790, 200, 850, 200], [790, 390, 850, 390]]
     .forEach(([a, b, c, d]) => line(a, b, c, d, {arrow: true}));
   [['เลน 3', 132, 222], ['เลน 2', 400, 548], ['เลน 1', 620, 548], ['เลน 4', 545, 32], ['เลน 5', 712, 32]].forEach(([s, x, y]) => text(x, y, s, {size: 22, bold: true}));
   text(650, 312, 'พื้นที่แยก', {size: 15, stroke: 'mut'}); text(795, 170, 'ทางออก', {size: 14, stroke: 'mut'});
   [['C2', 444, 400, 32], ['C1.1', 556, 400, 48], ['C1.2', 556, 480, 48], ['C4', 584, 168, 32]].forEach(([s, x, y, w]) => {
-    box('rect', x, y, w, 22, {fill: 'panel', stroke: 'faint', sw: 1.5, r: 3}); text(x + 5, y + 3, s, {size: 14});
+    box('rect', x, y, w, 22, {fill: 'panel', stroke: 'faint', sw: 1.5, r: 3, ht: 12}); text(x + 5, y + 3, s, {size: 14});
   });
   [['C3', 347, 312], ['C5', 627, 170]].forEach(([s, x, y]) => {
-    box('ellipse', x, y, 26, 26, {fill: 'panel', stroke: 'accent', sw: 3}); text(x + 4, y + 8, s, {size: 13, bold: true, stroke: 'accent'});
+    box('ellipse', x, y, 26, 26, {fill: 'panel', stroke: 'accent', sw: 3, ht: 26}); text(x + 4, y + 8, s, {size: 13, bold: true, stroke: 'accent'});
   });
   line(580, 422, 580, 480, {sw: 1.5, dash: true}); text(612, 443, '14 m สาย', {size: 14, stroke: 'mut'});
   return out;
@@ -188,7 +200,7 @@ window.T3_STARTER = drawStarter;
 
 function startDrawing() {
   S.dr = {on: true, items: dclone((S.drawing && S.drawing.items) || []), tool: 'select', sel: null, color: 'ink', fill: 'none', sw: 2, snap: true, undo: [], dirty: false};
-  S.sel = null;
+  S.sel = null; S.v3d = false;
   if (S.mapFull && typeof setMapFull === 'function') setMapFull(false);
   render();
 }
@@ -309,10 +321,13 @@ document.addEventListener('click', async (e) => {
   const D = S.dr, it = dsel();
   if (act === 'tool') { D.tool = b.dataset.t; renderDrawTools(); }
   else if (act === 'preset') { insertItems(presetItems(b.dataset.p, 500 + (Math.random() * 60 - 30), 350 + (Math.random() * 60 - 30))); }
+  else if (act === 'fillc') { D.fill = b.dataset.c; if (it && it.type !== 'line' && it.type !== 'text') { dpush(); it.fill = b.dataset.c; redrawDrawing(); } renderDrawTools(); }
   else if (act === 'color') { D.color = b.dataset.c; if (it) { dpush(); it.stroke = b.dataset.c; redrawDrawing(); } renderDrawTools(); }
   else if (act === 'undo') { if (D.undo.length) { D.items = JSON.parse(D.undo.pop()); if (!D.items.find((x) => x.id === D.sel)) D.sel = null; renderDrawTools(); redrawDrawing(); } }
   else if (act === 'del' && it) { dpush(); D.items = D.items.filter((x) => x !== it); D.sel = null; renderDrawTools(); redrawDrawing(); }
   else if (act === 'dup' && it) { dpush(); const c = dclone(it); c.id = newDid(); moveItem(c, it, 20, 20); D.items.push(c); D.sel = c.id; renderDrawTools(); redrawDrawing(); }
+  else if (act === 'fwd' && it) { const i = D.items.indexOf(it); if (i < D.items.length - 1) { dpush(); D.items.splice(i, 1); D.items.splice(i + 1, 0, it); redrawDrawing(); } }
+  else if (act === 'bwd' && it) { const i = D.items.indexOf(it); if (i > 0) { dpush(); D.items.splice(i, 1); D.items.splice(i - 1, 0, it); redrawDrawing(); } }
   else if (act === 'front' && it) { dpush(); D.items = D.items.filter((x) => x !== it).concat(it); redrawDrawing(); }
   else if (act === 'back' && it) { dpush(); D.items = [it].concat(D.items.filter((x) => x !== it)); redrawDrawing(); }
   else if (act === 'rot' && it) {
@@ -339,6 +354,10 @@ function drawField(e) {
   if (k === 'fill') { D.fill = v; if (it && it.type !== 'line' && it.type !== 'text') { dpush(); it.fill = v; redrawDrawing(); } return; }
   if (k === 'sw') { D.sw = Number(v); if (it) { dpush(); it.sw = Number(v); redrawDrawing(); } return; }
   if (!it) return;
+  if (k === 'ht' || k === 'z') {
+    if (e.type === 'change') { dpush(); it[k] = Math.max(0, Math.min(300, Number(v) || 0)); redrawDrawing(); }
+    return;
+  }
   if (e.type === 'change' || k === 'text' || k === 'size') {
     if (e.type === 'input' && !D._typing) { dpush(); D._typing = true; }
     if (e.type === 'change') D._typing = false;
@@ -356,6 +375,7 @@ document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); const b = document.querySelector('[data-dact="undo"]'); if (b) b.click(); }
   else if (e.key === 'Delete' || e.key === 'Backspace') { if (it) { e.preventDefault(); document.querySelector('[data-dact="del"]').click(); } }
   else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') { if (it) { e.preventDefault(); document.querySelector('[data-dact="dup"]').click(); } }
+  else if (e.key === ']' || e.key === '[') { if (it) document.querySelector(`[data-dact="${e.key === ']' ? 'fwd' : 'bwd'}"]`).click(); }
   else if (e.key === 'Escape') { D.tool = 'select'; dselect(null); }
   else if (it && e.key.startsWith('Arrow')) {
     e.preventDefault(); dpush();
@@ -364,3 +384,33 @@ document.addEventListener('keydown', (e) => {
   }
 });
 function afterRenderDraw() { if (drawEditing()) { renderDrawTools(); redrawDrawing(); } }
+
+// ------------------------------------------------------------------ 3D view
+// Every rect / ellipse with a height (ht) becomes a block standing on the drawing:
+// a rect is a box made of 5 CSS faces, an ellipse a stack of slices. Everything else
+// stays flat in the ground svg. All sizes are in the 1000 x 700 drawing units; the
+// stage is scaled to the screen by app.js (fit3d).
+function scene3dHtml(items) {
+  let out = '';
+  for (const it of items || []) {
+    const H = Number(it.ht) || 0;
+    if (!(H > 0) || (it.type !== 'rect' && it.type !== 'ellipse')) continue;
+    const z = Number(it.z) || 0, fl = dcol(it.fill), st = dcol(it.stroke), sw = it.stroke === 'none' ? 0 : (it.sw || 0);
+    const color = it.fill === 'none' ? 'var(--soft)' : fl;
+    const rot = it.rot ? `rotate(${it.rot}deg)` : '';
+    if (it.type === 'ellipse') {
+      const n = Math.max(2, Math.min(28, Math.ceil(H / 4)));
+      let sl = '';
+      for (let i = 0; i <= n; i++) sl += `<i class="sl" style="transform:translateZ(${(z + H * i / n).toFixed(1)}px);filter:brightness(${(0.78 + 0.22 * i / n).toFixed(2)})"></i>`;
+      out += `<div class="bx cyl" style="left:${it.x}px;top:${it.y}px;width:${it.w}px;height:${it.h}px;--c:${color};--s:${st};--sw:${sw}px;transform:${rot}">${sl}</div>`;
+    } else {
+      out += `<div class="bx" style="left:${it.x}px;top:${it.y}px;width:${it.w}px;height:${it.h}px;--c:${color};--s:${st};--sw:${sw}px;--r:${it.r || 0}px;transform:${rot}">`
+        + `<i class="fc top" style="transform:translateZ(${z + H}px)"></i>`
+        + `<i class="fc side" style="left:0;top:0;width:${it.w}px;height:${H}px;transform-origin:0 0;transform:translateZ(${z}px) rotateX(90deg);filter:brightness(.86)"></i>`
+        + `<i class="fc side" style="left:0;top:${it.h}px;width:${it.w}px;height:${H}px;transform-origin:0 0;transform:translateZ(${z}px) rotateX(90deg);filter:brightness(.72)"></i>`
+        + `<i class="fc side" style="left:0;top:0;width:${H}px;height:${it.h}px;transform-origin:0 0;transform:translateZ(${z}px) rotateY(-90deg);filter:brightness(.8)"></i>`
+        + `<i class="fc side" style="left:${it.w}px;top:0;width:${H}px;height:${it.h}px;transform-origin:0 0;transform:translateZ(${z}px) rotateY(-90deg);filter:brightness(.66)"></i></div>`;
+    }
+  }
+  return out;
+}

@@ -12,6 +12,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import secrets
 import threading
 import time
@@ -25,6 +26,10 @@ def _atomic_write(path: Path, data: str) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(data, encoding="utf-8")
     os.replace(tmp, path)
+
+
+ICON_IMG_MAX = 90000     # characters of a data URL (a 256 px JPEG is ~ 25 KB)
+ICON_MAX_LEN = 8       # characters (one emoji can be several code points)
 
 
 class Users:
@@ -49,7 +54,27 @@ class Users:
         return hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PBKDF2_ROUNDS).hex()
 
     def list(self) -> list[dict]:
-        return [{"name": n, "role": u["role"], "created": u.get("created")} for n, u in sorted(self._load().items())]
+        return [{"name": n, "role": u["role"], "created": u.get("created"), "icon": u.get("icon", "")}
+                for n, u in sorted(self._load().items())]
+
+    def icon(self, name: str) -> str:
+        return self._load().get(name, {}).get("icon", "")
+
+    def set_icon(self, name: str, icon: str) -> None:
+        """A short emoji / symbol shown next to the user name. Empty = none (the UI shows the initial)."""
+        icon = (icon or "").strip()
+        if icon.startswith("data:image/jpeg;base64,"):          # own picture, already shrunk by the browser
+            body = icon.split(",", 1)[1]
+            if len(icon) > ICON_IMG_MAX or not re.fullmatch(r"[A-Za-z0-9+/=]+", body):
+                raise ValueError("รูปโปรไฟล์ไม่ถูกต้องหรือใหญ่เกินไป")
+        elif len(icon) > ICON_MAX_LEN or any(c in icon for c in "<>&\"'") or any(ord(c) < 32 for c in icon):
+            raise ValueError("ไอคอนไม่ถูกต้อง")
+        with self._lock:
+            users = self._load()
+            if name not in users:
+                raise ValueError("ไม่พบผู้ใช้")
+            users[name]["icon"] = icon
+            self._save(users)
 
     def count(self) -> int:
         return len(self._load())
