@@ -350,7 +350,7 @@ function render() {
   if (!needSetup && S.page === 'setup') S.page = 'map';
   let body;
   if (S.page === 'setup') body = setupView();
-  else if (needSetup && S.page !== 'system') body = '<main><div class="card empty"><h2>ยังไม่ได้ตั้งค่าแยกนี้</h2><span class="mut">ให้ผู้ที่มีสิทธิ์แก้ไขเข้าสู่ระบบเพื่อตั้งค่า</span></div></main>';
+  else if (needSetup && S.page !== 'system') body = '<main id="main" tabindex="-1"><div class="card empty"><h2>ยังไม่ได้ตั้งค่าแยกนี้</h2><span class="mut">ให้ผู้ที่มีสิทธิ์แก้ไขเข้าสู่ระบบเพื่อตั้งค่า</span></div></main>';
   else if (S.page === 'system') body = systemView();
   else body = mainView();
   app.innerHTML = headerView() + body;
@@ -370,10 +370,10 @@ function headerView() {
   const cfg = S.page === 'setup' ? S.draft : S.cfg;
   const nav = S.page === 'setup' ? '' : `<nav>${[['map', 'แผนที่'], ['system', 'ระบบ']].map(([id, t]) =>
     `<a href="#${id}" class="${S.page === id ? 'on' : ''}">${t}</a>`).join('')}</nav>`;
-  return `<header>
+  return `<a class="skip" href="#main">ข้ามไปเนื้อหาหลัก</a><header>
     <span class="jn"><img class="logo" src="/static/logo.png" alt="${esc((cfg && cfg.junction_id) || 'T3')}"></span>
     ${nav}
-    <span class="pill" id="hdr-state"><i></i><span>—</span></span>
+    <span class="pill" id="hdr-state" role="status" aria-live="polite"><i></i><span>—</span></span>
     <span class="qchips" id="hdr-queue"></span>
     <button class="alertbadge" id="hdr-alerts" data-act="alerts" hidden aria-label="การแจ้งเตือน"></button>
     <span class="who">
@@ -410,7 +410,7 @@ function setupView() {
     : `<div class="card empty"><button class="bigplus" data-act="addlane" aria-label="เพิ่มเลน 1">+</button>
         <h2>เพิ่มเลนแรก</h2>
         <button class="plain" data-act="template">หรือใช้ผัง T3 ตามแบบ (5 เลน)</button></div>`);
-  return `<main><div class="wiz">
+  return `<main id="main" tabindex="-1"><div class="wiz">
     <div class="wiz-head"><h1>ตั้งค่าแยก</h1><span class="mut">เพิ่มเลนทีละเลน ครบแล้วกดถัดไป แล้ววาดแผนที่และวางเลนบนแผนที่</span></div>
     <div class="list">
       <div class="li-row"><span class="lab">รหัสแยก</span><span class="val"><input type="text" style="width:120px" data-g="junction_id" value="${esc(d.junction_id || '')}" aria-label="รหัสแยก"></span></div>
@@ -559,18 +559,18 @@ function mainView() {
   const bg = v3 ? `<div class="stage" id="stage">${mapBgHtml()}${scene3dHtml((S.drawing && S.drawing.items) || [])}<div class="vehs" id="vehs"></div>${widgets}</div>` : mapBgHtml();
   const list = (cfg.lanes || []).map((l) => listItem(l)).join('');
   const newItem = S.edit && S.edit.isNew ? `<div class="lane open" id="lane-${S.edit.id}"><div class="lrow"><span class="num">${S.edit.id}</span><span class="mut small">เลนใหม่</span></div>${editorHtml('main')}</div>` : '';
-  return `<main>${banners.join('')}
+  return `<main id="main" tabindex="-1">${banners.join('')}
     <div class="mainwrap">
       <div>
         <div class="card mapcard${S.mapFull ? ' full' : ''}" id="mapcard">
           ${drawing ? '<div class="dtools" id="dtools"></div>' : ''}
-          <div class="mapbox${drawing ? ' drawing' : ''}${v3 ? ' v3d' : ''}" id="map"><div class="bg">${bg}</div>${v3 ? '' : (drawing ? '' : '<div class="vehs" id="vehs"></div>') + widgets}
-            ${drawing ? '' : `<div class="maptools">${v3 ? '<span class="camtools"><button class="sec sm" data-act="cam" data-k="rl" aria-label="หมุนซ้าย">⟲</button><button class="sec sm" data-act="cam" data-k="rr" aria-label="หมุนขวา">⟳</button><button class="sec sm" data-act="cam" data-k="tu" aria-label="เงยขึ้น">▲</button><button class="sec sm" data-act="cam" data-k="td" aria-label="ก้มลง">▼</button><button class="sec sm" data-act="cam" data-k="zi" aria-label="ซูมเข้า">＋</button><button class="sec sm" data-act="cam" data-k="zo" aria-label="ซูมออก">−</button>' + vehBtn() + '</span>' : ''}
+          ${drawing ? '' : `<div class="maptools">${v3 ? '<span class="camtools"><button class="sec sm" data-act="cam" data-k="rl" aria-label="หมุนซ้าย">⟲</button><button class="sec sm" data-act="cam" data-k="rr" aria-label="หมุนขวา">⟳</button><button class="sec sm" data-act="cam" data-k="tu" aria-label="เงยขึ้น">▲</button><button class="sec sm" data-act="cam" data-k="td" aria-label="ก้มลง">▼</button><button class="sec sm" data-act="cam" data-k="zi" aria-label="ซูมเข้า">＋</button><button class="sec sm" data-act="cam" data-k="zo" aria-label="ซูมออก">−</button></span>' : ''}${vehBtn()}
               <button class="sec sm" data-act="v3d" aria-pressed="${S.v3d}">${S.v3d ? '2D' : '3D'}</button>
               ${edit ? `<button class="sec sm" data-dact="start">✎ วาดแผนที่</button>
               <label>รูปพื้นหลัง<input type="file" accept="image/png,image/jpeg,image/svg+xml,.svg" data-mapfile hidden></label>
               ${S.mapUrl ? '<button class="sec sm" data-act="mapreset">ลบรูปพื้นหลัง</button>' : ''}` : ''}
-              <button class="sec sm" data-act="mapfull" aria-label="แผนที่เต็มจอ">${S.mapFull ? '✕ ปิดเต็มจอ' : '⛶ เต็มจอ'}</button></div>`}
+              <button class="sec sm" data-act="mapfull" aria-label="แผนที่เต็มจอ">${S.mapFull ? '✕ ปิดเต็มจอ' : '⛶ เต็มจอ'}</button></div>`}<div class="mapbox${drawing ? ' drawing' : ''}${v3 ? ' v3d' : ''}" id="map"><div class="bg">${bg}</div>${v3 ? '' : (drawing ? '' : '<div class="vehs" id="vehs"></div>') + widgets}
+            
           </div>
           <div class="legend">${drawing ? '<span>วาดแผนที่ · ลากเลนที่วางไว้จะทำได้หลังบันทึก</span>' : `<span><span class="sd ok"></span>ว่าง</span><span><span class="sd raw"></span>เห็นวัตถุ</span><span><span class="sd on"></span>เจอรถ/มือ</span><span><span class="sd bad"></span>เสีย</span>
             <span class="sp"></span><span>${v3 ? 'ลากเพื่อหมุนมุมมอง · ล้อเมาส์ซูม · รถเป็นการจำลองจากเซนเซอร์/คิว ไม่ใช่ตำแหน่งจริง · ลากเลนมาวางได้ทั้ง 2D และ 3D' : edit ? 'ลากเลนมาวาง · คลิกเลือกแล้วหมุน/ย่อขยาย · ดับเบิลคลิกเพื่อตั้งค่า' : 'ดับเบิลคลิกเพื่อดูรายละเอียด'}</span>`}</div>
@@ -590,7 +590,7 @@ function mainView() {
         </div>
       </div>
       <div class="side-col">
-      <section class="card alertcard" id="alertcard" aria-label="การแจ้งเตือน" hidden></section>
+      <section class="card alertcard" id="alertcard" aria-label="การแจ้งเตือน" aria-live="polite" hidden></section>
       <aside class="card lanes" aria-label="รายการเลน">
         <div class="card-h">เลน</div>
         ${list}${newItem}
@@ -638,7 +638,7 @@ function systemView() {
   if (S.sysTab === 'params') body = sysParams();
   if (S.sysTab === 'history') body = sysHistory();
   if (S.sysTab === 'users') body = sysUsers();
-  return `<main>${head}${body}</main><div id="savebar">${sysSavebar()}</div>`;
+  return `<main id="main" tabindex="-1">${head}${body}</main><div id="savebar">${sysSavebar()}</div>`;
 }
 function sysRow(row, ro) {
   const c = S.sys;
@@ -809,6 +809,7 @@ function updateLive() {
     pill.className = 'pill ' + cls;
     pill.lastElementChild.textContent = txt;
   }
+  $$('.lane').forEach((el) => el.classList.toggle('go', !!(st && !S.stale && st.state === 'GREEN' && el.id === 'lane-' + st.active_lane)));
   const q = (st && st.queue) || [];
   const hq = $('#hdr-queue');
   if (hq) hq.innerHTML = q.length ? 'คิว ' + q.slice(0, 6).map((t) => `<b>${t.lane}</b>`).join('') : '';

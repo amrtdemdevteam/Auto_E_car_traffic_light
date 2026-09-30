@@ -431,7 +431,7 @@ button.swatch.on{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--accent)}
 .lanes .lrow{grid-template-columns:28px 64px minmax(0,1fr) auto auto}
 .lq{display:flex;flex-direction:column;align-items:flex-end;line-height:1.25;font-size:13px;min-width:74px;text-align:right}
 .lq:empty{min-width:0}
-.lq b{font-weight:700}.lq .mono{font-size:11px;color:var(--mut)}
+.lq b{font-weight:700}.lq .mono{font-size:12px;color:var(--mut)}
 
 /* ===================================================================== v4: 3D map, timeline, lane bars */
 .lq{min-width:104px}
@@ -442,9 +442,9 @@ button.swatch.on{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--accent)}
 #tl{padding:0 18px 6px}
 #tl svg{display:block;width:100%;height:auto}
 #tl .tg{stroke:var(--line);stroke-width:1}
-#tl .tt{fill:var(--mut);font-size:11px}
+#tl .tt{fill:var(--mut);font-size:12px}
 #tl .tl1{fill:var(--ink);font-size:14px;font-weight:600}
-#tl .tk{fill:var(--mut);font-weight:500;font-size:11px}
+#tl .tk{fill:var(--mut);font-weight:500;font-size:12px}
 #tl .tgrn{fill:var(--grn)}
 #tl .twait{fill:var(--amb);opacity:.55}
 #tl .tplan{fill:color-mix(in srgb,var(--grn) 16%,transparent);stroke:var(--grn);stroke-width:1.5;stroke-dasharray:4 3}
@@ -490,9 +490,9 @@ button.swatch.on{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--accent)}
 .fchips b{display:block;font-size:18px;color:var(--ink)}
 .ftable{overflow-x:auto;padding:0 12px}
 .ftable table{width:100%;border-collapse:collapse;font-size:13px;min-width:720px}
-.ftable th{text-align:left;font-weight:600;color:var(--mut);font-size:11px;padding:6px 8px;border-bottom:1px solid var(--line)}
+.ftable th{text-align:left;font-weight:600;color:var(--mut);font-size:12px;padding:6px 8px;border-bottom:1px solid var(--line)}
 .ftable td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
-.ftable small{display:block;color:var(--mut);font-size:11px;font-weight:400}
+.ftable small{display:block;color:var(--mut);font-size:12px;font-weight:400}
 .ftable .lbar{margin:6px 0 2px;height:6px}
 .fnotes{margin:10px 18px 14px;padding-left:18px;font-size:13px;line-height:1.6}
 .dirseg button{min-width:44px;padding:0 12px;font-size:16px}
@@ -503,20 +503,20 @@ button.swatch.on{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--accent)}
 .dt-presets2{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:flex-start;padding-top:10px;border-top:1px solid var(--line)}
 .dt-presets2>.dt-l{align-self:center}
 .dt-pg{display:flex;flex-direction:column;gap:4px}
-.dt-pg .dt-l{font-weight:500;font-size:11px}
+.dt-pg .dt-l{font-weight:500;font-size:12px}
 .dt-btns{display:flex;flex-wrap:wrap;gap:4px}
 .dt-sel{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;padding:8px 12px;border-radius:12px;background:color-mix(in srgb,var(--accent) 8%,var(--panel));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent)}
 .dt-foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-top:10px;border-top:1px solid var(--line)}
 .dt-foot .sp{flex:1}
 
-.vsw i{font-style:normal;font-size:11px;font-weight:600;padding:1px 8px;border-radius:9px;margin-left:4px;background:var(--fill);color:var(--mut)}
+.vsw i{font-style:normal;font-size:12px;font-weight:600;padding:1px 8px;border-radius:9px;margin-left:4px;background:var(--fill);color:var(--mut)}
 .vsw.on i{background:var(--grn);color:#fff}
 
 /* Excel-style colour pickers */
 .cpick{position:relative}
 .cpick summary{list-style:none;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:9px;cursor:pointer;font-size:13px;color:var(--ink);background:var(--panel);box-shadow:inset 0 0 0 1px var(--line)}
 .cpick summary::-webkit-details-marker{display:none}
-.cpick summary b{font-size:10px;color:var(--mut);font-weight:400}
+.cpick summary b{font-size:12px;color:var(--mut);font-weight:400}
 .cpick[open] summary{box-shadow:inset 0 0 0 1.5px var(--accent)}
 .cpick.dis{opacity:.4;pointer-events:none}
 .cpc{display:inline-block;width:18px;height:18px;border-radius:5px;background:var(--c);box-shadow:inset 0 0 0 1px var(--line)}
@@ -548,3 +548,23 @@ button.avopt .uav{width:40px;height:40px;font-size:20px;margin:0}button.avopt.on
 .bigav.pic{width:auto;height:auto;max-width:min(88vw,420px);border-radius:14px;background:transparent}
 .bigav.pic img{width:auto;height:auto;max-width:100%;max-height:60vh;object-fit:contain;border-radius:14px;display:block}
 .bigone:has(.pic){width:auto;max-width:92vw}
+
+/* UX pass (ui-ux-pro-max): skip link, readable minimum text, bigger touch targets on touch screens */
+.skip{position:absolute;left:8px;top:-60px;z-index:100000;padding:10px 16px;border-radius:10px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600;transition:top .15s}
+.skip:focus{top:8px}
+main:focus{outline:none}
+@media (pointer:coarse){
+  button,button.sm,select,input[type=text],input[type=password],input[type=number]{min-height:44px}
+  button.swatch,.cpp .swatch,button.avopt .uav{min-height:0}
+  button.swatch{width:32px;height:32px}
+  .lane .lrow button,.side button{min-height:44px}
+}
+/* UX pass: toolbar bar above map (no overlap with lane labels), green lane highlight, clearer status pill */
+
+.mapcard:not(.full)>.maptools{position:static;justify-content:flex-end;flex-wrap:wrap;padding:10px 14px}
+.mapcard:not(.full)>.maptools label{box-shadow:none;border:1px solid var(--line)}
+.lane.go{box-shadow:inset 4px 0 0 var(--grn);background:color-mix(in srgb,var(--grn) 8%,transparent)}
+.lane.go .num{color:var(--grn);font-weight:800}
+header .pill{font-size:14px;font-weight:600;padding:6px 14px}
+header .pill.g{background:color-mix(in srgb,var(--grn) 16%,transparent);color:var(--grn)}
+header .pill.r{background:color-mix(in srgb,var(--red,#d33) 14%,transparent);color:var(--red,#d33)}
