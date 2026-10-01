@@ -11,6 +11,7 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 #include <esp_ota_ops.h>
+#include <esp_task_wdt.h>
 #include <math.h>
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #include "EthOTA.h"
@@ -422,8 +423,25 @@ void connectMqtt() {
   }
 }
 
+// ------------------------------------------------------------------ watchdog
+bool wdtOn = false;
+void wdtStart() {
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+  esp_task_wdt_config_t c = {WDT_TIMEOUT_MS, 0, true};   // timeout_ms, idle_core_mask, trigger_panic
+  if (esp_task_wdt_reconfigure(&c) != ESP_OK) esp_task_wdt_init(&c);
+#else
+  esp_task_wdt_init(WDT_TIMEOUT_MS / 1000, true);
+#endif
+  esp_task_wdt_add(NULL);
+  wdtOn = true;
+}
+
 // ------------------------------------------------------------------ OTA
 void otaStart() {
+  if (wdtOn) {                             // the upload blocks loop(): pause the watchdog
+    esp_task_wdt_delete(NULL);
+    wdtOn = false;
+  }
   updating = true;
   updateStartMs = millis();
   render(true);
@@ -468,6 +486,7 @@ void setup() {
   matrix->setBrightness8(MATRIX_BRIGHTNESS);
   matrix->setRotation(0);
   render(true);                           // START: never green at boot
+  wdtStart();
 
   prefs.begin("t3", false);
   otaPending = prefs.getBool("ota_pending", false);
@@ -502,6 +521,8 @@ void loop() {
   OtaServer.handle();
   checkRollback();
   if (updating && millis() - updateStartMs > 60000UL) updating = false;  // upload failed
+  if (!updating && !wdtOn) wdtStart();
+  if (wdtOn) esp_task_wdt_reset();
   render();
   if (millis() - lastHeartbeatLog > 10000) {
     lastHeartbeatLog = millis();

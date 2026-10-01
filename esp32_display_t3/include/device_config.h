@@ -57,6 +57,10 @@ static IPAddress MQTT_IP(10, 77, 0, 1);
 // A command is valid for its ttl_ms (sent by the Pi, capped here). No fresh
 // command -> LINK LOST (never green).
 #define CMD_TTL_MAX_MS 5000UL
+// Hardware watchdog: if loop() stops running for this long (hang) the display
+// restarts itself, so it can never keep showing an old green. Not active while
+// an OTA upload is in progress.
+#define WDT_TIMEOUT_MS 8000UL
 // After an OTA update the new firmware must receive a valid controller
 // command within this window, otherwise it boots the previous firmware.
 #define OTA_ROLLBACK_WINDOW_MS 120000UL

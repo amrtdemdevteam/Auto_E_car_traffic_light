@@ -645,7 +645,7 @@ header .pill.r{background:color-mix(in srgb,var(--red) 14%,transparent);color:va
 <dialog id="dlg"></dialog>
 <div id="pop" role="tooltip"></div>
 <div id="toast" role="status" aria-live="polite"></div>
-<script>window.__T3_EXAMPLE__ = {"junction_id": "T3", "junction_name": "แยกพิเศษหน้า pillar", "junction_type": "t3", "loop_hz": 20, "mqtt": {"broker": "10.77.0.1", "port": 1883, "keepalive_s": 30, "base_topic": "factory/trafficlight"}, "sensor_defaults": {"baudrate": 115200, "min_detect_cm": 30, "max_detect_cm": 250, "min_strength": 100, "debounce_ms": 200, "gap_hold_s": 1.2, "offline_timeout_s": 2.0, "recover_stable_s": 1.0, "fresh_timeout_s": 0.5, "reopen_interval_s": 2.0}, "sensors": {"C1.1": {"port": "/dev/ttyUSB0"}, "C1.2": {"port": "/dev/ttyUSB1"}, "C2": {"port": "/dev/ttyUSB2"}, "C3": {"port": "/dev/ttyUSB3"}, "C4": {"port": "/dev/ttyUSB4"}, "C5": {"port": "/dev/ttyUSB5"}}, "hand": {"hold_s": 3.0, "grace_ms": 300, "confirm_show_s": 1.0, "rearm_clear_s": 0.5, "max_pending_per_lane": 1}, "timing": {"manual_clear_s": 3.0, "auto_clear_s": 4.0, "special_green_s": 3.0, "auto_ticket_expiry_s": 7.0, "switch_all_red_s": 1.0, "display_ack_timeout_s": 2.0, "display_link_timeout_s": 5.0, "display_fault_timeout_s": 6.0, "command_refresh_s": 1.0, "fault_clear_s": 12.0, "startup_min_s": 3.0}, "priority": {"auto_first": true}, "lanes": [{"id": 1, "name": "เลน 1 Auto", "type": "auto", "approach": "S", "near_sensor": "C1.1", "far_sensor": "C1.2", "display": 1, "enabled": true, "priority": 0, "green_frame": "GO"}, {"id": 2, "name": "เลน 2 Manual", "type": "manual", "approach": "S", "sensor": "C2", "display": 2, "enabled": true, "priority": 0, "green_frame": "GO"}, {"id": 3, "name": "เลน 3 Manual พิเศษ", "type": "special", "approach": "W", "sensor": "C3", "display": 3, "enabled": true, "priority": 0, "green_frame": "GO"}, {"id": 4, "name": "เลน 4 Manual", "type": "manual", "approach": "N", "sensor": "C4", "display": 4, "enabled": true, "priority": 0, "green_frame": "GO"}, {"id": 5, "name": "เลน 5 Manual พิเศษ", "type": "special", "approach": "N", "sensor": "C5", "display": 5, "enabled": true, "priority": 0, "green_frame": "GO"}], "display_ip_base": 30, "displays": {"1": {"ip": "10.77.0.31"}, "2": {"ip": "10.77.0.32"}, "3": {"ip": "10.77.0.33"}, "4": {"ip": "10.77.0.34"}, "5": {"ip": "10.77.0.35"}}, "frames": {"enabled_reserve": []}, "ota": {"port": 65280, "password": "change-me"}, "web": {"bind": "0.0.0.0", "port": 8080, "session_hours": 8}, "log": {"directory": "/var/log/trafficlight", "rotation": "100 MB", "retention": "7 days", "level": "INFO", "sensor_sample_interval_s": 1.0}};
+<script>window.__T3_EXAMPLE__ = {"junction_id": "T3", "junction_name": "แยกพิเศษหน้า pillar", "junction_type": "t3", "loop_hz": 20, "mqtt": {"broker": "10.77.0.1", "port": 1883, "keepalive_s": 30, "base_topic": "factory/trafficlight"}, "sensor_defaults": {"baudrate": 115200, "min_detect_cm": 30, "max_detect_cm": 250, "min_strength": 100, "debounce_ms": 200, "gap_hold_s": 1.2, "manual_gap_hold_s": 0.2, "offline_timeout_s": 2.0, "recover_stable_s": 1.0, "fresh_timeout_s": 0.5, "reopen_interval_s": 2.0}, "sensors": {"C1.1": {"port": "/dev/ttyUSB0"}, "C1.2": {"port": "/dev/ttyUSB1"}, "C2": {"port": "/dev/ttyUSB2"}, "C3": {"port": "/dev/ttyUSB3"}, "C4": {"port": "/dev/ttyUSB4"}, "C5": {"port": "/dev/ttyUSB5"}}, "hand": {"hold_s": 3.0, "grace_ms": 300, "confirm_show_s": 1.0, "rearm_clear_s": 0.5, "max_pending_per_lane": 1}, "timing": {"manual_clear_s": 3.0, "auto_clear_s": 4.0, "special_green_s": 3.0, "auto_ticket_expiry_s": 7.0, "switch_all_red_s": 1.0, "display_ack_timeout_s": 2.0, "display_link_timeout_s": 5.0, "display_fault_timeout_s": 6.0, "command_refresh_s": 1.0, "startup_min_s": 3.0}, "priority": {"auto_first": true}, "lanes": [{"id": 1, "name": "เลน 1 Auto", "type": "auto", "approach": "S", "near_sensor": "C1.1", "far_sensor": "C1.2", "display": 1, "enabled": true, "priority": 0, "green_frame": "GO"}, {"id": 2, "name": "เลน 2 Manual", "type": "manual", "approach": "S", "sensor": "C2", "display": 2, "enabled": true, "priority": 0, "green_frame": "GO"}, {"id": 3, "name": "เลน 3 Manual พิเศษ", "type": "special", "approach": "W", "sensor": "C3", "display": 3, "enabled": true, "priority": 0, "green_frame": "GO"}, {"id": 4, "name": "เลน 4 Manual", "type": "manual", "approach": "N", "sensor": "C4", "display": 4, "enabled": true, "priority": 0, "green_frame": "GO"}, {"id": 5, "name": "เลน 5 Manual พิเศษ", "type": "special", "approach": "N", "sensor": "C5", "display": 5, "enabled": true, "priority": 0, "green_frame": "GO"}], "display_ip_base": 30, "displays": {"1": {"ip": "10.77.0.31"}, "2": {"ip": "10.77.0.32"}, "3": {"ip": "10.77.0.33"}, "4": {"ip": "10.77.0.34"}, "5": {"ip": "10.77.0.35"}}, "frames": {"enabled_reserve": []}, "ota": {"port": 65280, "password": "change-me"}, "web": {"bind": "0.0.0.0", "port": 8080, "session_hours": 8}, "log": {"directory": "/var/log/trafficlight", "rotation": "100 MB", "retention": "7 days", "level": "INFO", "sensor_sample_interval_s": 1.0}};
 window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 840 585\" role=\"img\" aria-label=\"แผนที่พื้นหลังแยก T3: 5 เลน กล่องควบคุม A ข้าง pillar และตำแหน่งติดตั้งเซนเซอร์\">\n<defs>\n<marker id=\"a1m\" viewBox=\"0 0 10 10\" refX=\"8\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto\"><path d=\"M0 0L10 5L0 10z\" class=\"ahm\"/></marker>\n</defs>\n<!-- lanes -->\n<rect x=\"400\" y=\"20\" width=\"360\" height=\"560\" class=\"fs\"/>\n<rect x=\"30\" y=\"250\" width=\"370\" height=\"90\" class=\"fs\"/>\n<rect x=\"400\" y=\"250\" width=\"360\" height=\"90\" class=\"fh\" opacity=\".28\"/>\n<line x1=\"400\" y1=\"20\" x2=\"400\" y2=\"250\" class=\"lm\"/><line x1=\"400\" y1=\"340\" x2=\"400\" y2=\"580\" class=\"lm\"/>\n<line x1=\"520\" y1=\"20\" x2=\"520\" y2=\"580\" class=\"ll\" stroke-dasharray=\"6 6\"/>\n<line x1=\"640\" y1=\"20\" x2=\"640\" y2=\"580\" class=\"ll\" stroke-dasharray=\"6 6\"/>\n<line x1=\"760\" y1=\"20\" x2=\"760\" y2=\"580\" class=\"lm\"/>\n<line x1=\"30\" y1=\"250\" x2=\"400\" y2=\"250\" class=\"lm\"/><line x1=\"30\" y1=\"340\" x2=\"400\" y2=\"340\" class=\"lm\"/>\n<text x=\"752\" y=\"334\" text-anchor=\"end\" class=\"tm\" font-size=\"12\" letter-spacing=\"2\">พื้นที่แยก</text>\n<!-- pillar & A -->\n<rect x=\"250\" y=\"340\" width=\"150\" height=\"80\" class=\"fh\" opacity=\".35\"/>\n<text x=\"325\" y=\"408\" text-anchor=\"middle\" class=\"tm\" font-size=\"12\">pillar</text>\n<rect x=\"342\" y=\"346\" width=\"44\" height=\"34\" class=\"fi\"/>\n<text x=\"364\" y=\"369\" text-anchor=\"middle\" class=\"fb\" font-size=\"16\" font-weight=\"600\" style=\"fill:var(--bg)\">A</text>\n<text x=\"240\" y=\"370\" text-anchor=\"end\" class=\"tm\" font-size=\"12\">กล่องควบคุม</text>\n<!-- flow arrows -->\n<g stroke-width=\"3\">\n<line x1=\"50\" y1=\"295\" x2=\"120\" y2=\"295\" class=\"lm\" marker-end=\"url(#a1m)\"/>\n<line x1=\"460\" y1=\"575\" x2=\"460\" y2=\"520\" class=\"lm\" marker-end=\"url(#a1m)\"/>\n<line x1=\"580\" y1=\"575\" x2=\"580\" y2=\"520\" class=\"lm\" marker-end=\"url(#a1m)\"/>\n<line x1=\"600\" y1=\"25\" x2=\"600\" y2=\"80\" class=\"lm\" marker-end=\"url(#a1m)\"/>\n<line x1=\"700\" y1=\"25\" x2=\"700\" y2=\"80\" class=\"lm\" marker-end=\"url(#a1m)\"/>\n<line x1=\"790\" y1=\"200\" x2=\"850\" y2=\"200\" class=\"lm\" marker-end=\"url(#a1m)\"/>\n<line x1=\"790\" y1=\"390\" x2=\"850\" y2=\"390\" class=\"lm\" marker-end=\"url(#a1m)\"/>\n</g>\n<text x=\"820\" y=\"185\" text-anchor=\"middle\" class=\"tm\" font-size=\"12\">ทางออก</text>\n<!-- lane labels -->\n<g font-size=\"15\" font-weight=\"600\" class=\"t\">\n<text x=\"140\" y=\"240\">เลน 3</text>\n<text x=\"436\" y=\"560\" text-anchor=\"end\">เลน 2</text>\n<text x=\"620\" y=\"560\">เลน 1</text>\n<text x=\"590\" y=\"45\" text-anchor=\"end\">เลน 4</text>\n<text x=\"712\" y=\"45\">เลน 5</text>\n</g>\n<!-- sensors: squares ink; ToF side-mounted: circles cyan -->\n<g font-size=\"12\" font-family=\"IBM Plex Mono, monospace\">\n<rect x=\"444\" y=\"400\" width=\"32\" height=\"22\" class=\"box\"/><text x=\"460\" y=\"416\" text-anchor=\"middle\" class=\"tn\">C2</text>\n<rect x=\"556\" y=\"400\" width=\"48\" height=\"22\" class=\"box\"/><text x=\"580\" y=\"416\" text-anchor=\"middle\" class=\"tn\">C1.1</text>\n<rect x=\"556\" y=\"480\" width=\"48\" height=\"22\" class=\"box\"/><text x=\"580\" y=\"496\" text-anchor=\"middle\" class=\"tn\">C1.2</text>\n<rect x=\"584\" y=\"168\" width=\"32\" height=\"22\" class=\"box\"/><text x=\"600\" y=\"184\" text-anchor=\"middle\" class=\"tn\">C4</text>\n<circle cx=\"360\" cy=\"325\" r=\"13\" class=\"fp sc\" stroke-width=\"2.5\"/><text x=\"360\" y=\"329\" text-anchor=\"middle\" class=\"tc\" font-weight=\"600\">C3</text>\n<circle cx=\"640\" cy=\"183\" r=\"13\" class=\"fp sc\" stroke-width=\"2.5\"/><text x=\"640\" y=\"187\" text-anchor=\"middle\" class=\"tc\" font-weight=\"600\">C5</text>\n</g>\n<line x1=\"580\" y1=\"422\" x2=\"580\" y2=\"480\" class=\"lm\" stroke-dasharray=\"3 4\"/>\n<text x=\"612\" y=\"455\" class=\"tm\" font-size=\"12\">14 m สาย</text>\n</svg>";</script>
 <script>// 64x32 HUB75 frame renderer (same pixels as esp32_display_t3/src/main.cpp).
 (function () {
@@ -820,10 +820,12 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
   // ------------------------------------------------------------ controller simulation
   class Sensor {
     constructor(id, port, p) { Object.assign(this, {id, port, p}); this.online = false; this.raw = false; this.occupied = false; this.cm = null; this.strength = null; this.lastFrame = null; this.rawSince = null; this.lastRaw = null; this.recoverSince = null; this.ever = false; this.lastClear = null; this.events = []; }
+    fresh(t) { return this.lastFrame != null && t - this.lastFrame <= this.p.fresh_timeout_s; }
     step(t) {
       const pt = PORTS.find((x) => x.path === this.port);
       const cm = pt ? portCm(pt, t) : null;
       if (cm != null) {
+        if (this.lastFrame != null && t - this.lastFrame > this.p.fresh_timeout_s) { this.recoverSince = null; this.rawSince = null; if (this.occupied) this.lastRaw = t; }   // data gap: debounce / gap hold start again
         this.lastFrame = t; this.cm = cm; this.strength = 900;
         const raw = cm >= this.p.min_detect_cm && cm <= this.p.max_detect_cm;
         this.raw = raw;
@@ -840,7 +842,7 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
       if (this.online && (this.lastFrame == null || t - this.lastFrame > this.p.offline_timeout_s)) {
         this.online = false; this.occupied = false; this.raw = false; this.recoverSince = null; this.events.push('offline'); return;
       }
-      if (this.online && this.occupied && this.lastRaw != null && t - this.lastRaw > this.p.gap_hold_s) {
+      if (this.online && this.occupied && this.fresh(t) && !this.raw && this.lastRaw != null && t - this.lastRaw > this.p.gap_hold_s) {   // clear needs a fresh frame showing nothing
         this.occupied = false; this.lastClear = t; this.events.push('clear');
       }
     }
@@ -852,7 +854,7 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
     const c = withDefaults(cfg);
     const errors = validate(cfg);
     C = {cfg: c, errors, state: errors.length ? 'CONFIG_ERROR' : 'STARTING', started: now(), lanes: [], sensors: {}, queue: [], tid: 0,
-      active: null, svc: null, barrier: 0, faultUntil: 0, exit: false, events: [], ident: {}, lastServed: null, version: cfg._version || null};
+      active: null, svc: null, barrier: 0, exit: false, events: [], ident: {}, lastServed: null, version: cfg._version || null};
     if (errors.length) return;
     c.lanes.forEach((l) => {
       const p = {...c.timing, ...c.hand, ...(l.params || {})};
@@ -861,7 +863,7 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
         reasons: new Set(l.enabled === false ? ['config_disabled'] : []), pendingMaint: false, test: 0,
         hand: {phase: 'idle', start: null, seen: null, until: 0}, prio: l.priority || 0};
       lane.sids = [lane.near, lane.far, lane.sensor].filter(Boolean);
-      lane.sids.forEach((sid) => { C.sensors[sid] = new Sensor(sid, ((c.sensors[sid] || {}).port) || '', {...c.sensor_defaults, ...(c.sensors[sid] || {})}); });
+      lane.sids.forEach((sid) => { C.sensors[sid] = new Sensor(sid, ((c.sensors[sid] || {}).port) || '', {...c.sensor_defaults, ...(l.type === 'manual' || l.type === 'special' ? {gap_hold_s: c.sensor_defaults.manual_gap_hold_s} : {}), ...(c.sensors[sid] || {})}); });
       C.lanes.push(lane);
     });
     evt('เริ่มระบบควบคุม T3');
@@ -906,9 +908,10 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
     C.lanes.filter((l) => l.kind === 'special').forEach((l) => {
       const s = C.sensors[l.sensor], h = l.hand;
       if (!s.online) { h.phase = 'idle'; return; }
-      if (s.raw) h.seen = t;
+      const seen = s.raw && s.fresh(t);          // stale frames are never a hand
+      if (seen) h.seen = t;
       const accept = !l.reasons.size && C.state !== 'STARTING' && C.queue.filter((q) => q.lane === l.id).length < l.p.max_pending_per_lane;
-      if (h.phase === 'idle') { if (s.raw && accept) { h.phase = 'track'; h.start = t; } }
+      if (h.phase === 'idle') { if (seen && accept) { h.phase = 'track'; h.start = t; } }
       else if (h.phase === 'track') {
         if (!(h.seen != null && t - h.seen <= l.p.grace_ms / 1000) || !accept) h.phase = 'idle';
         else if (t - h.start >= l.p.hold_s) { h.phase = 'confirmed'; h.until = t + l.p.confirm_show_s; addTicket(l, 'special', l.sensor); evt(`เลน ${l.id} ค้างมือครบ → ได้ตั๋ว`); }
@@ -935,7 +938,6 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
       evt('ระบบพร้อม');
     }
     if (C.dispHold && t >= C.dispHold) { C.dispHold = 0; evt('ครบเวลาเผื่อจอเสีย เลนอื่นทำงานต่อได้'); }
-    if (C.state === 'FAULT_HOLD' && t >= C.faultUntil) { C.state = 'IDLE'; evt('ครบเวลาเผื่อเคลียร์ เลนอื่นทำงานต่อ'); }
     if (C.state === 'GREEN') tickGreen(t);
     if (C.state === 'IDLE' && !C.exit) {
       const h = head(laneOk);
@@ -952,7 +954,7 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
         evt(`เลน ${lane.id} เขียว (ตั๋ว #${h.id})`);
       }
     }
-    if (C.exit && ['IDLE', 'FAULT_HOLD', 'STARTING'].includes(C.state)) { startController(); }
+    if (C.exit && ['IDLE', 'STARTING'].includes(C.state)) { startController(); }
   }
   function tickGreen(t) {
     const lane = C.lanes.find((l) => l.id === C.active), svc = C.svc;
@@ -960,15 +962,15 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
     if (lane.kind === 'special') done = t >= svc.end;
     else {
       const s = C.sensors[lane.kind === 'auto' ? lane.near : lane.sensor];
-      if (s.occupied) svc.clearSince = null;
-      else if (svc.clearSince == null) svc.clearSince = Math.max(svc.started, s.lastClear || svc.started);
+      if (s.occupied && lane.kind !== 'manual') svc.clearSince = null;      // Auto: the next car keeps the green
+      else if (!s.occupied && svc.clearSince == null) svc.clearSince = Math.max(svc.started, s.lastClear || svc.started);
       const hold = lane.kind === 'auto' ? lane.p.auto_clear_s : lane.p.manual_clear_s;
       done = svc.clearSince != null && t - svc.clearSince >= hold;
     }
     if (!done) return;
     if (lane.pendingMaint || lane.reasons.size) { endGreen('lane_closed'); return; }
     const h = head((l) => laneOk(l) || l.id === lane.id);
-    if (h && h.lane === lane.id) {
+    if (h && h.lane === lane.id && lane.kind !== 'manual') {      // manual lanes never chain: one vehicle per green
       if (h.kind === 'auto' && !h.matched) return;
       C.queue = C.queue.filter((q) => q !== h);
       if (lane.kind === 'special') svc.end = t + lane.p.special_green_s; else { svc.clearSince = null; svc.started = t; }
@@ -984,8 +986,8 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
     if (k === 'offline') {
       if (lane.kind === 'auto' && s.id === lane.far) { evt(`${s.id} เสีย เลน ${lane.id} ใช้ ${lane.near} แทรกคิวแทน`); C.queue = C.queue.filter((q) => !(q.lane === lane.id && !q.matched)); return; }
       if (C.state === 'GREEN' && C.active === lane.id && lane.kind !== 'special') {
-        endGreen('sensor_fault'); C.state = 'FAULT_HOLD'; C.faultUntil = t + C.cfg.timing.fault_clear_s;
-        evt(`เซนเซอร์ ${s.id} เสียขณะเลน ${lane.id} เขียว → ทุกเลน X ${C.cfg.timing.fault_clear_s} s`);
+        endGreen('sensor_fault');          // only this lane stops; the others carry on
+        evt(`เซนเซอร์ ${s.id} เสียขณะเลน ${lane.id} เขียว → เลนนี้หยุด เลนอื่นทำงานต่อ`);
       }
       disable(lane, r, true); return;
     }
@@ -1055,7 +1057,6 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
       return {...base, state: 'CONFIG_ERROR', errors: C.errors, lanes: [], queue: [], sensors: [], events: []};
     }
     return {...base, state: C.state, active_lane: C.active, exit_requested: C.exit,
-      fault_hold_s: C.state === 'FAULT_HOLD' ? Math.max(0, +(C.faultUntil - t).toFixed(1)) : 0,
       lanes: C.lanes.map((l) => { const [f, a] = frameFor(l, t); return {id: l.id, name: l.name, type: l.kind, display: l.display, sensors: l.sids,
         enabled: !l.reasons.size, reasons: [...l.reasons].sort(), frame: f, arg: a, green: C.active === l.id,
         tickets: C.queue.filter((q) => q.lane === l.id).length, hand: l.kind === 'special' ? l.hand.phase : null,
@@ -1887,7 +1888,6 @@ function diagnose() {
   if (!st) { if (S.me) add('E401', 'link', null, 'ยังไม่ได้รับสถานะ'); return out; }
   if (S.stale) { add('E401', 'link', null, 'ไม่ได้รับสถานะจากระบบควบคุม'); return out; }   // the rest would be old data
   if (st.errors && st.errors.length) add('E301', 'cfg', null, st.errors.join(' · '));
-  if (st.state === 'FAULT_HOLD') add('E102', 'hold', st.active_lane || null, `ทุกเลน X อีก ${st.fault_hold_s} s`);
   const inLane = new Set();
   (st.lanes || []).forEach((l) => {
     const rs = l.reasons || [];
@@ -2005,7 +2005,7 @@ function tlTrack() {
       T.cur = {lane: act, t0: now, partial: T.first};
     }
   }
-  const red = st.state === 'SWITCHING' || st.state === 'FAULT_HOLD';
+  const red = st.state === 'SWITCHING';
   if (red && !T.red) T.red = {t0: now};
   if (!red && T.red) { T.segs.push({kind: 'red', t0: T.red.t0, t1: now}); T.red = null; }
   const seen = {};
@@ -2556,7 +2556,7 @@ const KIND_TH = {auto: 'Auto', vehicle: 'Manual', hand: 'Manual'};
 const KIND_SUB = {auto: 'รถ Auto · เซนเซอร์ 2 ตัว', vehicle: 'ขอทางด้วยเซนเซอร์จับรถ', hand: 'ขอทางด้วยการยื่นมือ'};
 const ROLE_TH = {far: 'ไกล', near: 'ใกล้', vehicle: 'จับรถ', hand: 'จับมือ'};
 const STATE_TH = {STARTING: 'กำลังเริ่มระบบ', IDLE: 'พร้อม', SWITCHING: 'กำลังสลับเลน',
-  GREEN: 'เขียว', FAULT_HOLD: 'เซนเซอร์เสีย · หยุดทุกเลน', CONFIG_ERROR: 'รอตั้งค่า'};
+  GREEN: 'เขียว', CONFIG_ERROR: 'รอตั้งค่า'};
 const GREEN_TH = {GO: '↑ ตรง', LEFT: '← ซ้าย', RIGHT: '→ ขวา'};
 const DISPLAY_IDS = [1, 2, 3, 4, 5, 6, 7];
 
@@ -2585,6 +2585,7 @@ const INFO = {
   max_detect_cm: ['ระยะไกลสุด', 'วัตถุที่ไกลกว่านี้ไม่นับ · พื้นต้องอยู่ไกลกว่าค่านี้'],
   min_strength: ['ความแรงสัญญาณขั้นต่ำ', 'แสงสะท้อนอ่อนกว่านี้ไม่นับ กันค่าหลอก'],
   debounce_ms: ['Debounce', 'ต้องเจอต่อเนื่องนานเท่านี้จึงนับว่ามีรถหรือมือ'],
+  manual_gap_hold_s: ['Gap hold · Manual', 'เลน Manual: ช่องว่างสั้นกว่านี้ถือเป็นคันเดียวกัน ตั้งต่ำเพื่อแยกรถที่ขับชิดกัน'],
   gap_hold_s: ['Gap hold', 'ช่องว่างสั้นกว่านี้ถือเป็นคันเดียวกัน เช่นช่องระหว่าง dolly'],
   offline_timeout_s: ['ถือว่าเซนเซอร์เสีย', 'ไม่มีข้อมูลจากเซนเซอร์นานเท่านี้ = เสีย ปิดเลนนั้น'],
   recover_stable_s: ['กลับมาใช้ได้', 'ข้อมูลกลับมานิ่งนานเท่านี้ = เปิดเลนกลับ'],
@@ -2593,7 +2594,6 @@ const INFO = {
   display_link_timeout_s: ['อายุคำสั่งจอ', 'จอไม่ได้คำสั่งใหม่นานเท่านี้ จะขึ้น LINK LOST เอง · ต้องไม่เกินค่าในเฟิร์มแวร์'],
   display_fault_timeout_s: ['เวลาเผื่อจอเสีย', 'จอไม่ตอบ = ปิดเลนของจอนั้น และรอเท่านี้ (จอเลิกเขียวเองแน่นอน) ก่อนให้เลนอื่นได้เขียวต่อ'],
   command_refresh_s: ['ส่งคำสั่งซ้ำ', 'ส่งคำสั่งเดิมซ้ำไปที่จอทุกกี่วินาที'],
-  fault_clear_s: ['หยุดทุกเลนเมื่อเซนเซอร์เสีย', 'เซนเซอร์ของเลนที่กำลังเขียวเสีย ทุกเลนเป็น X นานเท่านี้ให้รถเคลียร์แยก'],
   startup_min_s: ['รอตอนเริ่มระบบ', 'หลังเปิดระบบ รออย่างน้อยเท่านี้ก่อนเริ่มควบคุม'],
   auto_first: ['Auto ได้คิวก่อน', 'รถ Auto ได้คิวก่อน Manual ที่รออยู่ แต่ไม่ตัดไฟเขียวที่กำลังวิ่ง'],
   green_frame: ['ภาพไฟเขียว', 'ภาพบนจอตอนเลนนี้ได้ไฟเขียว'],
@@ -2630,10 +2630,11 @@ const CATS = [
   ['sensor', 'เซนเซอร์', [
     ['การตรวจจับ', [['num', 'sensor_defaults.min_detect_cm', 'ระยะใกล้สุด', 'cm', 0, 1200, 5], ['num', 'sensor_defaults.max_detect_cm', 'ระยะไกลสุด', 'cm', 10, 1200, 5],
       ['num', 'sensor_defaults.min_strength', 'ความแรงสัญญาณขั้นต่ำ', '', 0, 65535, 10], ['num', 'sensor_defaults.debounce_ms', 'Debounce', 'ms', 0, 2000, 50],
-      ['num', 'sensor_defaults.gap_hold_s', 'Gap hold', 's', 0.1, 5, 0.1]]],
+      ['num', 'sensor_defaults.gap_hold_s', 'Gap hold · Auto', 's', 0.1, 5, 0.1],
+      ['num', 'sensor_defaults.manual_gap_hold_s', 'Gap hold · Manual', 's', 0.05, 5, 0.05]]],
     ['เซนเซอร์เสีย', [['num', 'sensor_defaults.offline_timeout_s', 'ถือว่าเซนเซอร์เสีย', 's', 0.5, 10, 0.5], ['num', 'sensor_defaults.recover_stable_s', 'กลับมาใช้ได้', 's', 0.2, 10, 0.1]]]]],
   ['safety', 'ความปลอดภัย', [
-    ['การสลับเลน', [['num', 'timing.switch_all_red_s', 'สลับเลน · ทุกจอ X', 's', 0.5, 10, 0.1], ['num', 'timing.fault_clear_s', 'หยุดทุกเลนเมื่อเซนเซอร์เสีย', 's', 1, 60, 0.5],
+    ['การสลับเลน', [['num', 'timing.switch_all_red_s', 'สลับเลน · ทุกจอ X', 's', 0.5, 10, 0.1],
       ['bool', 'priority.auto_first', 'Auto ได้คิวก่อน']]],
     ['การสื่อสารกับจอ', [['num', 'timing.display_ack_timeout_s', 'รอจอยืนยัน', 's', 0.5, 10, 0.5], ['num', 'timing.display_link_timeout_s', 'อายุคำสั่งจอ', 's', 1, 5, 0.5],
       ['num', 'timing.display_fault_timeout_s', 'เวลาเผื่อจอเสีย', 's', 2, 30, 0.5],
@@ -3311,7 +3312,6 @@ function updateLive() {
     if (st && !S.stale) {
       txt = STATE_TH[st.state] || st.state;
       if (st.state === 'GREEN') { txt = `เลน ${st.active_lane} เขียว`; cls = 'g'; }
-      else if (st.state === 'FAULT_HOLD') { txt += ` ${st.fault_hold_s} s`; cls = 'r'; }
       else if (st.state === 'CONFIG_ERROR' || st.state === 'SWITCHING' || st.state === 'STARTING') cls = 'a';
       else cls = 'c';
       if (st.exit_requested) txt += ' · รอใช้ค่าใหม่';

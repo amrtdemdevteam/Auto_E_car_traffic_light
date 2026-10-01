@@ -51,3 +51,54 @@ def test_field_distance_boundaries_are_inclusive():
 
     s.ingest(251, 300, 4.0)
     assert not s.s.raw_detected
+
+
+def _sensor(**kw):
+    from trafficlight.t3.config import DEFAULTS
+    from trafficlight.t3.sensors import FilteredSensor
+    p = dict(DEFAULTS["sensor_defaults"])
+    p.update(kw)
+    return FilteredSensor("S", p)
+
+
+def test_data_gap_does_not_count_towards_clear_or_debounce():
+    s = _sensor(gap_hold_s=0.2, offline_timeout_s=5.0)
+    t = 0.0
+    while t < 2.5:                                  # comes online, then a vehicle is present
+        t += 0.05
+        s.ingest(*((400, 800) if t < 1.2 else (120, 1500)), t)
+        s.tick(t)
+    assert s.online and s.occupied
+    s.pop_events()
+    t += 1.0                                        # no data for 1 s
+    s.ingest(400, 800, t)                           # first frame back says "nothing"
+    s.tick(t)
+    assert s.occupied                               # gap hold restarts from the returning data
+    for _ in range(8):
+        t += 0.05
+        s.ingest(400, 800, t)
+        s.tick(t)
+    assert not s.occupied
+
+
+def test_hand_detector_ignores_stale_frames():
+    from trafficlight.t3.config import DEFAULTS
+    from trafficlight.t3.sensors import HandDetector
+    s = _sensor(offline_timeout_s=10.0)
+    h = HandDetector(s, dict(DEFAULTS["hand"]))
+    t, made = 0.0, False
+    while t < 1.2:                                  # sensor comes online
+        t += 0.05
+        s.ingest(400, 800, t)
+        s.tick(t)
+    t0 = t
+    while t < t0 + 1.0:                             # hand held for 1 s ...
+        t += 0.05
+        s.ingest(60, 1500, t)
+        s.tick(t)
+        made |= h.update(t, True)
+    while t < 6.0:                                  # ... then the data stops (cable cut)
+        t += 0.05
+        s.tick(t)
+        made |= h.update(t, True)
+    assert not made

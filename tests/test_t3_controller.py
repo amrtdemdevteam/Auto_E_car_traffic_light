@@ -191,7 +191,7 @@ def test_inactive_lane_sensor_fault_isolated_and_recovers():
     assert "sensor:C4" not in sim.ctrl.lanes[4].reasons
 
 
-def test_active_lane_sensor_fault_ends_green_and_holds_12s():
+def test_active_lane_sensor_fault_closes_only_that_lane():
     sim = Sim()
     sim.ready()
     sim.on("C2")
@@ -200,10 +200,28 @@ def test_active_lane_sensor_fault_ends_green_and_holds_12s():
     sim.broken.add("C2")
     t_fault = sim.until(lambda: sim.shown(2) != F.GO, limit=3)
     assert t_fault <= 2.3                          # offline after 2.0 s, green ends at once
-    assert sim.ctrl.state == "FAULT_HOLD"
-    t = sim.until(lambda: sim.shown(4) == F.GO, limit=20)
-    assert t >= 12.0
-    assert sim.shown(2) == F.SENSOR
+    t = sim.until(lambda: sim.shown(4) == F.GO, limit=10)
+    assert t < 6.0                                 # no all-lane hold: only barrier + ACK
+    assert sim.shown(2) == F.SENSOR                # the faulty lane stays closed and says why
+    assert sim.ctrl.lanes[4].enabled and not sim.ctrl.lanes[2].enabled
+
+
+def test_manual_lane_never_chains_vehicles():
+    sim = Sim()
+    sim.ready()
+    sim.on("C2")
+    sim.until(lambda: sim.shown(2) == F.GO)
+    sim.step(1)
+    sim.off("C2")                                  # first vehicle passed
+    sim.step(1.0)
+    sim.on("C2")                                   # the next one follows within the clear time
+    sim.step(0.5)
+    sim.off("C2")
+    t = sim.until(lambda: sim.shown(2) == F.STOP, limit=5)
+    assert t <= 3.0                                # green still ends on the first vehicle's clear time
+    sim.on("C4")
+    sim.until(lambda: sim.shown(4) == F.GO, limit=10)
+    assert sim.shown(2) == F.STOP
 
 
 def test_special_lane_sensor_fault_during_green_finishes_its_green():

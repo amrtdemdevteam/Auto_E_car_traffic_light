@@ -322,11 +322,11 @@ canvas.led{display:block;width:100%;max-width:240px;height:auto;aspect-ratio:2/1
 <text x="690" y="100" class="t" font-size="12" font-weight="600">ท้ายพ้นจริง</text>
 <text x="782" y="244" class="t" font-weight="600">ยืนยันว่าพ้นแล้ว → เริ่มนับ</text>
 <line x1="680" y1="330" x2="1016" y2="330" class="lm" stroke-dasharray="4 3"/><line x1="680" y1="324" x2="680" y2="336" class="lm"/><line x1="1016" y1="324" x2="1016" y2="336" class="lm"/>
-<text x="848" y="350" text-anchor="middle" class="tn" font-size="13" font-weight="600">ท้ายพ้นจริง → X = 4.2 s (Auto 5.2 s)</text>
+<text x="848" y="350" text-anchor="middle" class="tn" font-size="13" font-weight="600">Auto: ท้ายพ้นจริง → X = 5.2 s · Manual (gap hold 0.2 s) → X = 3.2 s</text>
 </g>
 </svg>
 </div>
-<figcaption>ตัวอย่างรถ Manual พร้อม dolly ผ่านเซนเซอร์ ระบบนับเวลาเคลียร์หลังสัญญาณกรองยืนยันว่าพ้นแล้ว (ตกลงใช้แบบนี้เมื่อ 28 ก.ย.) จึงไม่ถูกหลอกด้วยช่องว่างระหว่าง dolly ค่ากรองทั้งหมดมาจาก V1 ที่ใช้งานอยู่ภาคสนาม และใช้ debounce 0.2 s ค่าเดียวกันทุกเซนเซอร์ตรวจรถ</figcaption>
+<figcaption>ตัวอย่างรถพร้อม dolly ผ่านเซนเซอร์ (วาดด้วย gap hold ของเลน Auto 1.2 s ส่วนเลน Manual ใช้ 0.2 s เพื่อแยกรถที่ขับชิดกัน) ระบบนับเวลาเคลียร์หลังสัญญาณกรองยืนยันว่าพ้นแล้ว (ตกลงใช้แบบนี้เมื่อ 28 ก.ย.) จึงไม่ถูกหลอกด้วยช่องว่างระหว่าง dolly ค่ากรองทั้งหมดมาจาก V1 ที่ใช้งานอยู่ภาคสนาม และใช้ debounce 0.2 s ค่าเดียวกันทุกเซนเซอร์ตรวจรถ ถ้าข้อมูลขาดช่วงหนึ่ง ระบบเริ่มนับ debounce และ gap hold ใหม่จากข้อมูลที่กลับมา ข้อมูลค้างไม่นับว่ารถพ้นหรือเห็นมือ</figcaption>
 </figure>
 </section>
 
@@ -469,17 +469,17 @@ canvas.led{display:block;width:100%;max-width:240px;height:auto;aspect-ratio:2/1
 <div class="sechead"><span class="num">6</span><h2>เลน 2 และ 4 · Manual ปกติ (C2 → B2, C4 → B4)</h2></div>
 <figure>
 <div class="scroll">
-<svg viewBox="0 0 1120 250" role="img" aria-label="เซนเซอร์เจอรถหลังกรอง 0.2 วินาที ต่อคิว ถึงคิวเขียว ท้ายรถและ dolly พ้นแล้วกรอง 1.2 วินาที นับ 3 วินาทีแล้วเป็น X หรือเขียวต่อถ้าคันถัดไปมาจากเลนเดิมและไม่มีคิวเลนอื่น">
+<svg viewBox="0 0 1120 250" role="img" aria-label="เซนเซอร์เจอรถหลังกรอง 0.2 วินาที ต่อคิว ถึงคิวเขียว ท้ายรถพ้นแล้วกรอง 0.2 วินาที นับ 3 วินาทีแล้วเป็น X หรือเขียวต่อถ้าคันถัดไปมาจากเลนเดิมและไม่มีคิวเลนอื่น">
 <defs><marker id="a6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="ah"/></marker></defs>
 <g font-size="14">
 <rect x="20" y="30" width="170" height="92" rx="6" class="box" stroke-width="1.5"/>
 <text x="36" y="60" class="t" font-weight="600">C2 / C4 เจอรถ</text><text x="36" y="82" class="tm" font-size="13">ที่จุดจ่อแยก</text><text x="36" y="104" class="tn" font-size="12">กรอง 0.2 s</text>
 <rect x="220" y="30" width="170" height="92" rx="6" class="box" stroke-width="1.5"/>
-<text x="236" y="60" class="t" font-weight="600">ตั๋ว Manual</text><text x="236" y="82" class="tm" font-size="13">ต่อคิว</text><text x="236" y="104" class="tm" font-size="13">รถ + dolly = 1 ตั๋ว</text>
+<text x="236" y="60" class="t" font-weight="600">ตั๋ว Manual</text><text x="236" y="82" class="tm" font-size="13">ต่อคิว</text><text x="236" y="104" class="tm" font-size="13">ช่องว่าง &lt; 0.2 s = 1 ตั๋ว</text>
 <rect x="420" y="30" width="170" height="92" rx="6" class="fgb"/><rect x="420" y="30" width="170" height="92" rx="6" class="sg" fill="none" stroke-width="2"/>
 <text x="436" y="60" class="tg" font-weight="600">ถึงคิว</text><text x="436" y="82" class="t" font-size="13">จอลูกศรเขียว</text><text x="436" y="104" class="tm" font-size="13">เลนอื่น X ทั้งหมด</text>
 <rect x="620" y="30" width="170" height="92" rx="6" class="box" stroke-width="1.5"/>
-<text x="636" y="60" class="t" font-weight="600">ท้ายรถ/dolly พ้น</text><text x="636" y="82" class="tm" font-size="13">ไม่เจอต่อเนื่อง</text><text x="636" y="104" class="tn" font-size="12">gap hold 1.2 s</text>
+<text x="636" y="60" class="t" font-weight="600">ท้ายรถ/dolly พ้น</text><text x="636" y="82" class="tm" font-size="13">ไม่เจอต่อเนื่อง</text><text x="636" y="104" class="tn" font-size="12">gap hold 0.2 s</text>
 <rect x="820" y="30" width="130" height="92" rx="6" class="fab"/><rect x="820" y="30" width="130" height="92" rx="6" class="sa" fill="none" stroke-width="1.5"/>
 <text x="836" y="60" class="ta" font-weight="600">นับ 3.0 s</text><text x="836" y="82" class="t" font-size="13">จอยังเขียว</text>
 </g>
@@ -494,12 +494,12 @@ canvas.led{display:block;width:100%;max-width:240px;height:auto;aspect-ratio:2/1
 <text x="996" y="60" class="tr" font-size="14" font-weight="600">X แดง</text><text x="996" y="82" class="t" font-size="13">ตั๋วถัดไป</text><text x="996" y="102" class="t" font-size="13">ได้คิว</text>
 <path d="M885 122 V160 H700" class="ln" stroke-width="1.5" marker-end="url(#a6)"/>
 <rect x="160" y="146" width="538" height="80" rx="6" class="fgb"/><rect x="160" y="146" width="538" height="80" rx="6" class="sg" fill="none" stroke-width="1.5"/>
-<text x="178" y="174" class="tg" font-size="14" font-weight="600">เขียวต่อ ไม่คั่น X</text>
-<text x="178" y="196" class="t" font-size="13">ถ้าคันถัดไปมาจากเลนเดิมและถูกตรวจเจอทันที โดยไม่มีคิวเลนอื่นรออยู่</text>
-<text x="178" y="216" class="tm" font-size="13">ถ้ามีคิวเลนอื่นรออยู่ คันนี้ต่อท้ายคิวตามปกติ</text>
+<text x="178" y="174" class="tg" font-size="14" font-weight="600">ไปทีละคัน ไม่ต่อตูดกัน</text>
+<text x="178" y="196" class="t" font-size="13">รถคันถัดไปที่มาระหว่างนับ 3.0 s ไม่ต่อเขียว จอเลิกเขียวตามเวลาเดิม</text>
+<text x="178" y="216" class="tm" font-size="13">คันนั้นได้ตั๋วใหม่ ผ่านสลับเลน X ก่อนแล้วเขียวตามคิว</text>
 </svg>
 </div>
-<figcaption>ใช้หลักเดียวกับเลน Auto ของ V1 คือรวมรถกับ dolly เป็นคันเดียวด้วย gap hold แล้วนับเวลาหลังท้ายพ้นเซนเซอร์ ตั๋ว Manual ไม่หายเองแม้รถถอยออกไป ต้องมีวิธีเคลียร์ตั๋วค้างสำหรับผู้ดูแล</figcaption>
+<figcaption>เลน Manual ไปทีละคัน: รวมช่องว่างสั้นกว่า gap hold 0.2 s เป็นคันเดียว นับ 3.0 s หลังท้ายพ้นแล้วเป็น X เสมอ คันถัดไปต้องขอคิวใหม่ ไม่ไหลต่อตูดกัน (ถ้ารถ + dolly มีช่องว่างยาวกว่า 0.2 s ต้องจูนค่านี้หน้างาน) ตั๋ว Manual ไม่หายเองแม้รถถอยออกไป ต้องมีวิธีเคลียร์ตั๋วค้างสำหรับผู้ดูแล</figcaption>
 </figure>
 </section>
 
@@ -604,33 +604,33 @@ canvas.led{display:block;width:100%;max-width:240px;height:auto;aspect-ratio:2/1
 <text x="20" y="84">B1 · เลน 1</text><text x="20" y="154">B2 · เลน 2</text><text x="20" y="224">B3 · เลน 3</text><text x="20" y="294">B4 · เลน 4</text><text x="20" y="364">B5 · เลน 5</text>
 </g>
 <g class="fr">
-<rect x="150" y="72" width="304" height="16"/><rect x="849" y="72" width="225" height="16"/>
-<rect x="150" y="142" width="7" height="16"/><rect x="454" y="142" width="620" height="16"/>
+<rect x="150" y="72" width="271" height="16"/><rect x="816" y="72" width="258" height="16"/>
+<rect x="150" y="142" width="7" height="16"/><rect x="421" y="142" width="653" height="16"/>
 <rect x="150" y="212" width="429" height="16"/><rect x="678" y="212" width="396" height="16"/>
-<rect x="150" y="282" width="700" height="16"/>
+<rect x="150" y="282" width="667" height="16"/>
 <rect x="150" y="352" width="924" height="16"/>
 </g>
-<rect x="381" y="68" width="73" height="24" class="fr"/>
-<text x="386" y="85" style="fill:#fff" font-size="11" font-weight="600">รถรอที่ C1.1</text>
-<rect x="157" y="136" width="297" height="28" rx="2" class="fg"/>
-<rect x="355" y="136" width="99" height="28" class="fab"/><text x="404" y="155" text-anchor="middle" class="ta" font-size="12" font-weight="600">3 s</text>
-<rect x="454" y="66" width="33" height="28" class="fh"/>
-<rect x="487" y="66" width="362" height="28" rx="2" class="fg"/>
-<rect x="718" y="66" width="131" height="28" class="fab"/><text x="783" y="85" text-anchor="middle" class="ta" font-size="12" font-weight="600">4 s</text>
-<rect x="850" y="276" width="33" height="28" class="fh"/>
-<rect x="883" y="276" width="191" height="28" rx="2" class="fg"/>
+<rect x="348" y="68" width="73" height="24" class="fr"/>
+<text x="353" y="85" style="fill:#fff" font-size="11" font-weight="600">รถรอที่ C1.1</text>
+<rect x="157" y="136" width="264" height="28" rx="2" class="fg"/>
+<rect x="322" y="136" width="99" height="28" class="fab"/><text x="371" y="155" text-anchor="middle" class="ta" font-size="12" font-weight="600">3 s</text>
+<rect x="421" y="66" width="33" height="28" class="fh"/>
+<rect x="454" y="66" width="362" height="28" rx="2" class="fg"/>
+<rect x="685" y="66" width="131" height="28" class="fab"/><text x="750" y="85" text-anchor="middle" class="ta" font-size="12" font-weight="600">4 s</text>
+<rect x="817" y="276" width="33" height="28" class="fh"/>
+<rect x="850" y="276" width="224" height="28" rx="2" class="fg"/>
 <rect x="579" y="206" width="99" height="28" rx="2" class="fc"/><text x="628" y="225" text-anchor="middle" style="fill:#fff" font-size="12" font-weight="600">มือ 3 s</text>
 <g font-size="12">
 <text x="160" y="128" class="t">0 s C2 เจอรถ → เขียว</text>
 <line x1="183" y1="170" x2="183" y2="282" class="lm" stroke-dasharray="3 3"/><text x="189" y="272" class="t">1 s C4 เจอรถ → ตั๋วรอ</text>
 <line x1="216" y1="96" x2="216" y2="58" class="lm" stroke-dasharray="3 3"/><text x="222" y="54" class="t">2 s C1.2 เจอ Auto #1 → แทรกหน้าคิว</text>
 <text x="222" y="112" class="t">4 s Auto #2 → ต่อหลัง #1</text>
-<line x1="315" y1="170" x2="315" y2="136" class="lm"/><text x="258" y="186" class="tm">5 s ท้ายพ้น C2</text><text x="258" y="202" class="tm">+1.2 s กรอง +3 s</text>
-<text x="490" y="128" class="t">10.2 s B1 เขียว (สลับเลน 1.0 s)</text>
-<text x="520" y="54" class="tm">Auto 2 คันผ่านต่อเนื่อง ไม่คั่น X</text>
-<text x="700" y="112" class="tm">17.2 s คันสุดท้ายพ้น C1.1 (กรองแล้ว) +4 s</text>
+<line x1="315" y1="170" x2="315" y2="136" class="lm"/><text x="240" y="186" class="tm">5 s ท้ายพ้น C2</text><text x="240" y="202" class="tm">+0.2 s กรอง +3 s</text>
+<text x="457" y="128" class="t">9.2 s B1 เขียว (สลับเลน 1.0 s)</text>
+<text x="487" y="54" class="tm">Auto 2 คันผ่านต่อเนื่อง ไม่คั่น X</text>
+<text x="667" y="112" class="tm">16.2 s คันสุดท้ายพ้น C1.1 (กรองแล้ว) +4 s</text>
 <text x="585" y="252" class="tc">16 s C3 ได้ตั๋ว ต่อท้าย C4</text>
-<text x="850" y="268" class="t">22.2 s C4 เขียว (ขอตั้งแต่ 1 s)</text>
+<text x="817" y="268" class="t">21.2 s C4 เขียว (ขอตั้งแต่ 1 s)</text>
 </g>
 <g font-size="12" transform="translate(150,456)">
 <rect x="0" y="-11" width="22" height="12" class="fg"/><text x="30" y="0" class="tm">เขียว</text>
@@ -665,11 +665,11 @@ canvas.led{display:block;width:100%;max-width:240px;height:auto;aspect-ratio:2/1
 <rect x="20" y="140" width="1080" height="118" rx="4" class="fgb" opacity=".6"/>
 <text x="32" y="170" class="t" font-size="15" font-weight="600">เซนเซอร์เสียตอนเลนนั้นเขียว</text>
 <text x="32" y="192" class="tn" font-size="13">C1.1 · C2 · C4</text>
-<text x="32" y="214" class="tg" font-size="12" font-weight="600">ยืนยันแล้ว 28 ก.ย.</text>
+<text x="32" y="214" class="tg" font-size="12" font-weight="600">ยืนยันแล้ว 1 ต.ค.</text>
 <text x="330" y="170" class="t" font-size="14"><tspan class="tn" font-weight="600">1</tspan>  จอเลนนั้นเลิกเขียวทันที กันรถคันใหม่เข้า</text>
-<text x="330" y="194" class="t" font-size="14"><tspan class="tn" font-weight="600">2</tspan>  ทุกเลนรอ X ต่อ “เวลาเผื่อเคลียร์” <tspan class="tn" font-weight="600">12 s</tspan> ให้รถที่อยู่ในแยกออกไปก่อน</text>
-<text x="330" y="218" class="t" font-size="14"><tspan class="tn" font-weight="600">3</tspan>  ครบแล้วเลนอื่นทำงานต่อปกติ ไม่ต้องรอคนกดรีเซ็ต</text>
-<text x="330" y="242" class="tm" font-size="13">เลนที่เสียปิดไว้ และกลับมาเองเมื่อข้อมูลนิ่ง 1.0 s</text>
+<text x="330" y="194" class="t" font-size="14"><tspan class="tn" font-weight="600">2</tspan>  จอเลนนั้นขึ้น SENSOR BROKEN ค้างไว้ ปิดเฉพาะเลนนี้</text>
+<text x="330" y="218" class="t" font-size="14"><tspan class="tn" font-weight="600">3</tspan>  เลนอื่นทำงานต่อปกติ หลังสลับเลน X ครบตามกฎ ไม่ต้องรอคนกดรีเซ็ต</text>
+<text x="330" y="242" class="tm" font-size="13">เลนที่เสียกลับมาเองเมื่อข้อมูลนิ่ง 1.0 s · ทุกเลนใช้กติกาเดียวกัน</text>
 <rect x="930" y="166" width="128" height="64" rx="3" style="fill:#0b0c0b"/><rect x="933" y="169" width="122" height="58" style="fill:none;stroke:#ff2a1c" stroke-width="4"/>
 <text x="994" y="194" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" style="fill:#f3f2ea">SENSOR C4</text>
 <text x="994" y="212" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" style="fill:#f3f2ea">BROKEN</text>
@@ -696,7 +696,7 @@ canvas.led{display:block;width:100%;max-width:240px;height:auto;aspect-ratio:2/1
 <text x="20" y="538" class="t" font-size="15" font-weight="600">จอไม่ได้คำสั่ง</text>
 <text x="20" y="560" class="tn" font-size="13">เกิน 5.0 s</text>
 <text x="330" y="538" class="t" font-size="14">จอตัดสินเอง เปลี่ยนเป็นภาพการเชื่อมต่อขาด</text>
-<text x="330" y="560" class="tm" font-size="13">ไม่แสดงเขียวจนได้คำสั่งใหม่ของรอบปัจจุบัน</text>
+<text x="330" y="560" class="tm" font-size="13">ไม่แสดงเขียวจนได้คำสั่งใหม่ · จอค้าง: watchdog 8 s รีสตาร์ตเอง</text>
 <rect x="930" y="516" width="128" height="64" rx="3" style="fill:#0b0c0b"/><rect x="933" y="519" width="122" height="58" style="fill:none;stroke:#ff2a1c" stroke-width="4"/>
 <text x="994" y="544" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" style="fill:#f3f2ea">LINK</text>
 <text x="994" y="562" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" style="fill:#f3f2ea">LOST</text>
@@ -711,7 +711,7 @@ canvas.led{display:block;width:100%;max-width:240px;height:auto;aspect-ratio:2/1
 <line x1="20" y1="684" x2="1100" y2="684" class="ll"/>
 </svg>
 </div>
-<figcaption>เซนเซอร์เสียตอนเลนนั้นเขียว ระบบจะไม่รู้เลยว่ารถพ้นแยกแล้วหรือยัง จึงรอเวลาคงที่แทนการรอคนกดรีเซ็ต วิธีเดียวกับเลนพิเศษ (ยืนยันแล้ว) ใช้ 12 s คิดจากกรณีแย่สุดของเลน Auto: เช็ค lidar 2 s + ขบวนยาวสุด 8 m (รถ 2 m + dolly 2 คัน + ช่องว่าง) ที่ 2 m/s = 4 s + กรอง 1.2 s + เคลียร์ 4 s ≈ 11.2 s ปรับตามความยาวชุดรถจริงใน config</figcaption>
+<figcaption>เซนเซอร์เสียตอนเลนนั้นเขียว ระบบจะเลิกเขียวของเลนนั้นทันทีผ่านการสลับเลน X และการยืนยันจากจอตามปกติ แล้วปิดเฉพาะเลนนั้นไว้จนเซนเซอร์กลับมานิ่ง เลนอื่นทำงานต่อได้ (ยืนยันแล้ว 1 ต.ค. แทนที่การรอ 12 s ทุกเลนเดิม) รถที่ยังอยู่ในแยกตอนเซนเซอร์เสียต้องดูแลหน้างาน</figcaption>
 </figure>
 </section>
 
@@ -779,7 +779,8 @@ canvas.led{display:block;width:100%;max-width:240px;height:auto;aspect-ratio:2/1
 <tr><td>สัญญาณที่นับว่าเจอ (รถ)</td><td class="v">30–250 cm · ≥100</td><td>ระยะและความแรงของเซนเซอร์ตรวจรถ</td><td class="tag">ค่า V1</td></tr>
 <tr><td>สัญญาณที่นับว่าเจอ (มือ C3, C5)</td><td class="v">30–250 cm · ≥100</td><td>ค่าเดียวกับรถ แต่ตั้งแยก · พื้นต้องไกลกว่าค่าสูงสุด</td><td class="tag">ยืนยันแล้ว · วัดพื้นหน้างาน</td></tr>
 <tr><td>Debounce</td><td class="v">0.2 s</td><td>ค่าเดียวทุกเซนเซอร์ตรวจรถ ต้องเจอต่อเนื่องจึงนับว่ามีรถ</td><td class="tag">ยืนยันแล้ว (ค่า V1)</td></tr>
-<tr><td>Gap hold</td><td class="v">1.2 s</td><td>ช่องว่างสั้นกว่านี้ถือเป็นคันเดิม ใช้ยืนยันว่าท้ายพ้นแล้ว</td><td class="tag">ค่า V1 · จูนจาก trace จริง</td></tr>
+<tr><td>Gap hold · Auto</td><td class="v">1.2 s</td><td>ช่องว่างสั้นกว่านี้ถือเป็นคันเดิม ใช้ยืนยันว่าท้ายพ้นแล้ว</td><td class="tag">ค่า V1 · จูนจาก trace จริง</td></tr>
+<tr><td>Gap hold · Manual</td><td class="v">0.2 s</td><td>ทุกเลน Manual · แยกรถที่ขับชิดกัน ไปทีละคัน</td><td class="tag">ยืนยันแล้ว 1 ต.ค. · จูนหน้างาน</td></tr>
 <tr><td>เคลียร์ Manual ปกติ (C2, C4)</td><td class="v">3.0 s</td><td>นับหลังยืนยันท้ายพ้น แล้วเป็น X</td><td class="tag">ข้อกำหนด T3</td></tr>
 <tr><td>เคลียร์ Auto (C1.1)</td><td class="v">4.0 s</td><td>นับหลังยืนยันท้าย dolly พ้น C1.1</td><td class="tag">ข้อกำหนด T3</td></tr>
 <tr><td>อายุตั๋ว Auto</td><td class="v">7.0 s</td><td>C1.1 ต้องเจอรถภายในเวลานี้นับจาก C1.2 (รถใช้จริง ~5 s)</td><td class="tag">ข้อกำหนด T3</td></tr>
@@ -790,7 +791,6 @@ canvas.led{display:block;width:100%;max-width:240px;height:auto;aspect-ratio:2/1
 <tr><td>รอจอยืนยัน</td><td class="v">2.0 s</td><td>ไม่ยืนยันภายในเวลานี้ ถือว่าจอเสีย</td><td class="tag">ยืนยันแล้ว</td></tr>
 <tr><td>เซนเซอร์เสีย</td><td class="v">2.0 s</td><td>ไม่มีข้อมูลนานเท่านี้ ถือว่าเสีย</td><td class="tag">ค่า V1</td></tr>
 <tr><td>กลับมาใช้ได้</td><td class="v">1.0 s</td><td>ข้อมูลนิ่งต่อเนื่องแล้วเปิดเลนกลับเอง พร้อม log</td><td class="tag">ยืนยันแล้ว</td></tr>
-<tr><td>เวลาเผื่อเคลียร์ เมื่อเซนเซอร์เสียตอนเขียว</td><td class="v">12 s</td><td>ทุกเลนรอ X ให้รถในแยกออกก่อน แล้วทำงานต่อ</td><td class="tag">ยืนยันแล้ว · ปรับตามความยาวชุดรถ</td></tr>
 <tr><td>จอขาดคำสั่ง</td><td class="v">5.0 s</td><td>เกินนี้จอขึ้นการเชื่อมต่อขาด ไม่เขียว</td><td class="tag">ค่า V1</td></tr>
 </tbody>
 </table>
@@ -919,11 +919,11 @@ canvas.led{display:block;width:100%;max-width:240px;height:auto;aspect-ratio:2/1
 <tr><td class="mono b">1</td><td><select><option>Auto</option><option>Manual</option><option>Manual พิเศษ</option></select></td><td><select><option>ใต้</option></select></td>
 <td><div class="stack"><span><span class="mono">C1.1</span> ใกล้แยก</span><span><span class="mono">C1.2</span> ไกล · แทรกคิว</span></div></td>
 <td><div class="stack"><select><option>USB-485 #1 · ช่อง 1</option></select><select><option>USB-485 #1 · ช่อง 2</option></select></div></td>
-<td><select><option>B1 · 10.77.0.11</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
-<tr><td class="mono b">2</td><td><select><option>Manual</option></select></td><td><select><option>ใต้</option></select></td><td><span class="mono">C2</span></td><td><select><option>USB-485 #1 · ช่อง 3</option></select></td><td><select><option>B2 · 10.77.0.12</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
-<tr><td class="mono b">3</td><td><select><option>Manual พิเศษ</option></select></td><td><select><option>ตะวันตก</option></select></td><td><span class="mono">C3</span> ToF ข้างเลน</td><td><select><option>USB-485 #1 · ช่อง 4</option></select></td><td><select><option>B3 · 10.77.0.13</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
-<tr><td class="mono b">4</td><td><select><option>Manual</option></select></td><td><select><option>เหนือ</option></select></td><td><span class="mono">C4</span></td><td><select><option>USB-485 #2 · ช่อง 1</option></select></td><td><select><option>B4 · 10.77.0.14</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
-<tr><td class="mono b">5</td><td><select><option>Manual พิเศษ</option></select></td><td><select><option>เหนือ</option></select></td><td><span class="mono">C5</span> ToF ข้างเลน</td><td><select><option>USB-485 #2 · ช่อง 2</option></select></td><td><select><option>B5 · 10.77.0.15</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
+<td><select><option>B1 · 10.77.0.31</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
+<tr><td class="mono b">2</td><td><select><option>Manual</option></select></td><td><select><option>ใต้</option></select></td><td><span class="mono">C2</span></td><td><select><option>USB-485 #1 · ช่อง 3</option></select></td><td><select><option>B2 · 10.77.0.32</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
+<tr><td class="mono b">3</td><td><select><option>Manual พิเศษ</option></select></td><td><select><option>ตะวันตก</option></select></td><td><span class="mono">C3</span> ToF ข้างเลน</td><td><select><option>USB-485 #1 · ช่อง 4</option></select></td><td><select><option>B3 · 10.77.0.33</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
+<tr><td class="mono b">4</td><td><select><option>Manual</option></select></td><td><select><option>เหนือ</option></select></td><td><span class="mono">C4</span></td><td><select><option>USB-485 #2 · ช่อง 1</option></select></td><td><select><option>B4 · 10.77.0.34</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
+<tr><td class="mono b">5</td><td><select><option>Manual พิเศษ</option></select></td><td><select><option>เหนือ</option></select></td><td><span class="mono">C5</span> ToF ข้างเลน</td><td><select><option>USB-485 #2 · ช่อง 2</option></select></td><td><select><option>B5 · 10.77.0.35</option></select></td><td><input type="checkbox" checked></td><td><button class="mini">ทดสอบจอ</button></td></tr>
 </table>
 <div class="row2"><button class="ghost">+ เพิ่มเลน</button><span class="mut">ประเภท Auto ต้องมีเซนเซอร์ 2 ตัว (ใกล้ + ไกล) · ประเภทอื่นใช้ตัวเดียว · ระบบเปลี่ยนช่องเซนเซอร์ให้เองตามประเภท</span></div>
 <div class="check"><b>ตรวจก่อนบันทึก</b><span class="g">✓ ทุกเลนมีจอหนึ่งจอ ไม่ซ้ำกัน</span><span class="g">✓ ทุกเซนเซอร์มีพอร์ต ไม่ซ้ำกัน</span><span class="g">✓ มีเลน Auto ไม่เกินหนึ่งเลน</span><span class="g">✓ พบ USB-485 2 ตัว (8 ช่อง) ใช้ 6 ช่อง</span></div>
@@ -953,8 +953,8 @@ canvas.led{display:block;width:100%;max-width:240px;height:auto;aspect-ratio:2/1
 <span class="cap">การตรวจจับและความปลอดภัย</span>
 <div class="fld"><label for="u7">ระยะที่นับว่าเจอ<small>เซนเซอร์ตรวจรถ</small></label><input id="u7" class="num" value="30"><span>–</span><input class="num" value="250"><span>cm</span></div>
 <div class="fld"><label for="u8">ระยะที่นับว่าเจอมือ<small>C3, C5</small></label><input id="u8" class="num" value="30"><span>–</span><input class="num" value="250"><span>cm</span></div>
-<div class="fld"><label for="u9">Gap hold<small>ช่องว่างสั้นกว่านี้ถือเป็นคันเดิม</small></label><input id="u9" class="num" value="1.2"><span>s</span></div>
-<div class="fld"><label for="u10">เวลาเผื่อเคลียร์<small>เซนเซอร์เสียตอนเขียว</small></label><input id="u10" class="num" value="12"><span>s</span></div>
+<div class="fld"><label for="u9">Gap hold · Auto<small>ช่องว่างสั้นกว่านี้ถือเป็นคันเดิม</small></label><input id="u9" class="num" value="1.2"><span>s</span></div>
+<div class="fld"><label for="u10">Gap hold · Manual<small>แยกรถที่ขับชิดกัน</small></label><input id="u10" class="num" value="0.2"><span>s</span></div>
 <div class="fld err"><label for="u11">อนุโลมมือหลุด<small>ต้องอยู่ระหว่าง 0.1–1.0 s</small></label><input id="u11" class="num" value="0"><span>s</span></div>
 <label class="tick"><input type="checkbox" checked> Auto ขอคิวได้ก่อน Manual (priority สูงสุด)</label>
 </div>
@@ -1047,7 +1047,7 @@ canvas.led{display:block;width:100%;max-width:240px;height:auto;aspect-ratio:2/1
 <div class="sechead"><span class="num">13</span><h2>ยังต้องตัดสินใจหรือวัดหน้างาน</h2></div>
 <div class="todo">
 <div><span class="mono">A</span><span>ทดสอบระยะมือ 30–250 cm ที่ C3, C5 หน้างาน ถ้าพื้นอยู่ในระยะให้ลดค่าสูงสุดลง</span></div>
-<div><span class="mono">B</span><span>บันทึกสัญญาณจริงของ Auto จ่อตูด ดูว่าแยกคันได้ไหม แล้วจูน gap hold</span></div>
+<div><span class="mono">B</span><span>บันทึกสัญญาณจริงของ Auto จ่อตูด และรถ Manual + dolly ดูว่าแยกคันได้ไหม แล้วจูน gap hold (Auto 1.2 s · Manual 0.2 s)</span></div>
 <div><span class="mono">C</span><span>วัดรอบการทำงานจริงเมื่อต่อเซนเซอร์ครบ 6 ตัว</span></div>
 </div>
 </section>

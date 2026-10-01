@@ -52,7 +52,7 @@ const KIND_TH = {auto: 'Auto', vehicle: 'Manual', hand: 'Manual'};
 const KIND_SUB = {auto: 'รถ Auto · เซนเซอร์ 2 ตัว', vehicle: 'ขอทางด้วยเซนเซอร์จับรถ', hand: 'ขอทางด้วยการยื่นมือ'};
 const ROLE_TH = {far: 'ไกล', near: 'ใกล้', vehicle: 'จับรถ', hand: 'จับมือ'};
 const STATE_TH = {STARTING: 'กำลังเริ่มระบบ', IDLE: 'พร้อม', SWITCHING: 'กำลังสลับเลน',
-  GREEN: 'เขียว', FAULT_HOLD: 'เซนเซอร์เสีย · หยุดทุกเลน', CONFIG_ERROR: 'รอตั้งค่า'};
+  GREEN: 'เขียว', CONFIG_ERROR: 'รอตั้งค่า'};
 const GREEN_TH = {GO: '↑ ตรง', LEFT: '← ซ้าย', RIGHT: '→ ขวา'};
 const DISPLAY_IDS = [1, 2, 3, 4, 5, 6, 7];
 
@@ -90,7 +90,6 @@ const INFO = {
   display_link_timeout_s: ['อายุคำสั่งจอ', 'จอไม่ได้คำสั่งใหม่นานเท่านี้ จะขึ้น LINK LOST เอง · ต้องไม่เกินค่าในเฟิร์มแวร์'],
   display_fault_timeout_s: ['เวลาเผื่อจอเสีย', 'จอไม่ตอบ = ปิดเลนของจอนั้น และรอเท่านี้ (จอเลิกเขียวเองแน่นอน) ก่อนให้เลนอื่นได้เขียวต่อ'],
   command_refresh_s: ['ส่งคำสั่งซ้ำ', 'ส่งคำสั่งเดิมซ้ำไปที่จอทุกกี่วินาที'],
-  fault_clear_s: ['หยุดทุกเลนเมื่อเซนเซอร์เสีย', 'เซนเซอร์ของเลนที่กำลังเขียวเสีย ทุกเลนเป็น X นานเท่านี้ให้รถเคลียร์แยก'],
   startup_min_s: ['รอตอนเริ่มระบบ', 'หลังเปิดระบบ รออย่างน้อยเท่านี้ก่อนเริ่มควบคุม'],
   auto_first: ['Auto ได้คิวก่อน', 'รถ Auto ได้คิวก่อน Manual ที่รออยู่ แต่ไม่ตัดไฟเขียวที่กำลังวิ่ง'],
   green_frame: ['ภาพไฟเขียว', 'ภาพบนจอตอนเลนนี้ได้ไฟเขียว'],
@@ -131,7 +130,7 @@ const CATS = [
       ['num', 'sensor_defaults.manual_gap_hold_s', 'Gap hold · Manual', 's', 0.05, 5, 0.05]]],
     ['เซนเซอร์เสีย', [['num', 'sensor_defaults.offline_timeout_s', 'ถือว่าเซนเซอร์เสีย', 's', 0.5, 10, 0.5], ['num', 'sensor_defaults.recover_stable_s', 'กลับมาใช้ได้', 's', 0.2, 10, 0.1]]]]],
   ['safety', 'ความปลอดภัย', [
-    ['การสลับเลน', [['num', 'timing.switch_all_red_s', 'สลับเลน · ทุกจอ X', 's', 0.5, 10, 0.1], ['num', 'timing.fault_clear_s', 'หยุดทุกเลนเมื่อเซนเซอร์เสีย', 's', 1, 60, 0.5],
+    ['การสลับเลน', [['num', 'timing.switch_all_red_s', 'สลับเลน · ทุกจอ X', 's', 0.5, 10, 0.1],
       ['bool', 'priority.auto_first', 'Auto ได้คิวก่อน']]],
     ['การสื่อสารกับจอ', [['num', 'timing.display_ack_timeout_s', 'รอจอยืนยัน', 's', 0.5, 10, 0.5], ['num', 'timing.display_link_timeout_s', 'อายุคำสั่งจอ', 's', 1, 5, 0.5],
       ['num', 'timing.display_fault_timeout_s', 'เวลาเผื่อจอเสีย', 's', 2, 30, 0.5],
@@ -809,7 +808,6 @@ function updateLive() {
     if (st && !S.stale) {
       txt = STATE_TH[st.state] || st.state;
       if (st.state === 'GREEN') { txt = `เลน ${st.active_lane} เขียว`; cls = 'g'; }
-      else if (st.state === 'FAULT_HOLD') { txt += ` ${st.fault_hold_s} s`; cls = 'r'; }
       else if (st.state === 'CONFIG_ERROR' || st.state === 'SWITCHING' || st.state === 'STARTING') cls = 'a';
       else cls = 'c';
       if (st.exit_requested) txt += ' · รอใช้ค่าใหม่';

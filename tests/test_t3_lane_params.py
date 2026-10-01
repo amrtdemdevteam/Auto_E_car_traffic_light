@@ -74,9 +74,6 @@ def test_lane_params_validation():
     _lane(cfg, 1)["params"] = {"auto_clear_s": -1}
     assert any("มากกว่า 0" in e for e in validate(cfg))
     cfg = t3_config()
-    _lane(cfg, 1)["params"] = {"auto_clear_s": 20}            # fault clear 12 < 20 + 1.2
-    assert any("เผื่อเคลียร์" in e for e in validate(cfg))
-    cfg = t3_config()
     _lane(cfg, 2)["type"], _lane(cfg, 2)["mode"] = "manual", "wave"
     assert any("ตรวจรถ หรือ ยื่นมือ" in e for e in validate(cfg))
     cfg = t3_config()

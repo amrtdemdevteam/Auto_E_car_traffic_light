@@ -72,7 +72,6 @@ DEFAULTS: dict = {
         "display_link_timeout_s": 5.0,
         "display_fault_timeout_s": 6.0,
         "command_refresh_s": 1.0,
-        "fault_clear_s": 12.0,
         "startup_min_s": 3.0,
     },
     "priority": {"auto_first": True},
@@ -176,7 +175,7 @@ def validate(cfg: dict) -> list[str]:
         "manual_clear_s", "auto_clear_s", "special_green_s", "auto_ticket_expiry_s",
         "switch_all_red_s", "display_ack_timeout_s", "display_link_timeout_s",
         "display_fault_timeout_s",
-        "command_refresh_s", "fault_clear_s", "startup_min_s",
+        "command_refresh_s", "startup_min_s",
     ):
         if not _num(t.get(key)) or t.get(key) <= 0:
             errors.append(f"timing.{key} ต้องเป็นตัวเลขมากกว่า 0")
@@ -196,10 +195,6 @@ def validate(cfg: dict) -> list[str]:
                 "fresh_timeout_s"):
         if not _num(sd.get(key)) or sd.get(key) < 0:
             errors.append(f"sensor_defaults.{key} ต้องเป็นตัวเลขไม่ติดลบ")
-
-    if _num(t.get("fault_clear_s")) and _num(t.get("auto_clear_s")) and _num(sd.get("gap_hold_s")):
-        if t["fault_clear_s"] < t["auto_clear_s"] + sd["gap_hold_s"]:
-            errors.append("เวลาเผื่อเคลียร์ต้องไม่น้อยกว่า เคลียร์ Auto (ค่าเริ่มต้น) + gap hold")
 
     h = cfg.get("hand", {})
     if not _num(h.get("grace_ms")) or not (100 <= h["grace_ms"] <= 1000):
@@ -245,10 +240,6 @@ def validate(cfg: dict) -> list[str]:
                 errors.append(f"{name}: อนุโลมมือหลุดต้องอยู่ระหว่าง 100–1000 ms")
             if "max_pending_per_lane" in params and not isinstance(params["max_pending_per_lane"], int):
                 errors.append(f"{name}: จำนวนตั๋วค้างต้องเป็นจำนวนเต็ม")
-        if kind == "auto" and _num(t.get("fault_clear_s")) and _num(sd.get("gap_hold_s")):
-            clear = params.get("auto_clear_s", t.get("auto_clear_s"))
-            if _num(clear) and t["fault_clear_s"] < clear + sd["gap_hold_s"]:
-                errors.append(f"{name}: เวลาเผื่อเคลียร์ (ค่ารวม) ต้องไม่น้อยกว่า เคลียร์ Auto ของเลนนี้ + gap hold")
         if ltype == "auto":
             auto_count += 1
             if not lane.get("near_sensor") or not lane.get("far_sensor"):

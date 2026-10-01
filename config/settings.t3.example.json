@@ -46,7 +46,6 @@
     "display_link_timeout_s": 5.0,
     "display_fault_timeout_s": 6.0,
     "command_refresh_s": 1.0,
-    "fault_clear_s": 12.0,
     "startup_min_s": 3.0
   },
   "priority": {"auto_first": true},

@@ -7,8 +7,7 @@ Safety invariants (tests/test_t3_controller.py):
   * at most one active lane; only its display is ever commanded green
   * every green grant passes the all-red barrier (docs/T3_DESIGN.md 6.2)
   * no green while STARTING
-  * a sensor fault on the active lane ends the green at once and blocks every
-    other lane for timing.fault_clear_s
+  * a sensor fault on the active lane ends that green at once; only that lane is closed
 """
 from __future__ import annotations
 
@@ -24,7 +23,7 @@ from .queue import Ticket, TicketQueue
 from .sensors import FilteredSensor, HandDetector, SensorEvent
 
 IDENTIFY_S = 5.0   # how long a display shows TEST after "ทดสอบจอ"
-STARTING, IDLE, SWITCHING, GREEN, FAULT_HOLD = "STARTING", "IDLE", "SWITCHING", "GREEN", "FAULT_HOLD"
+STARTING, IDLE, SWITCHING, GREEN = "STARTING", "IDLE", "SWITCHING", "GREEN"
 
 
 @dataclass
@@ -116,7 +115,6 @@ class T3Controller:
         self.active_lane: int | None = None
         self.service: _Service | None = None
         self.barrier_started: float | None = None
-        self.fault_hold_until = 0.0
         self.dirty: dict[int, _Dirty] = {}
         self.exit_requested = False
         self.identify_until: dict[int, float] = {}
@@ -210,7 +208,7 @@ class T3Controller:
         return "ไม่รู้จักคำสั่ง"
 
     def can_exit(self) -> bool:
-        return self.exit_requested and self.state in (STARTING, IDLE, FAULT_HOLD) and not self.dirty
+        return self.exit_requested and self.state in (STARTING, IDLE) and not self.dirty
 
     # ================================================================== tick
     def tick(self, now: float, events: list[SensorEvent]) -> None:
@@ -226,10 +224,6 @@ class T3Controller:
 
         if self.state == STARTING:
             self._tick_starting(now)
-        elif self.state == FAULT_HOLD:
-            if now >= self.fault_hold_until:
-                self.state = IDLE
-                self._log("ครบเวลาเผื่อเคลียร์ เลนอื่นทำงานต่อ", "fault_hold_end")
         if self.state == GREEN:
             self._tick_green(now)
         if self.state == IDLE:
@@ -282,10 +276,10 @@ class T3Controller:
                 self.queue.add(lane.id, "auto", now, ev.sensor, matched=True)
 
     def _active_lane_fault(self, lane: Lane, sensor: str, now: float) -> None:
+        # only this lane is affected: its green ends (all-red barrier + display ACK as usual),
+        # the lane stays closed with SENSOR on its own display; the other lanes carry on
         self._end_green(now, reason="sensor_fault")
-        self.state = FAULT_HOLD
-        self.fault_hold_until = now + float(self.t["fault_clear_s"])
-        self._log(f"เซนเซอร์ {sensor} เสียขณะเลน {lane.id} เขียว → ทุกเลน X {self.t['fault_clear_s']} s",
+        self._log(f"เซนเซอร์ {sensor} เสียขณะเลน {lane.id} เขียว → เลนนี้หยุด เลนอื่นทำงานต่อ",
                   "active_lane_fault", lane=lane.id, sensor=sensor)
 
     def _update_hands(self, now: float) -> None:
@@ -414,9 +408,9 @@ class T3Controller:
         else:
             sid = lane.near if lane.kind == "auto" else lane.sensor
             s = self.sensors[sid]
-            if s.occupied:
-                svc.clear_since = None
-            elif svc.clear_since is None:
+            if s.occupied and lane.kind != "manual":
+                svc.clear_since = None            # Auto: the next car of the stream keeps the green
+            elif not s.occupied and svc.clear_since is None:
                 svc.clear_since = max(svc.started, s.last_clear_at or svc.started)
             hold = float(lane.p["auto_clear_s"] if lane.kind == "auto" else lane.p["manual_clear_s"])
             done = svc.clear_since is not None and now - svc.clear_since >= hold
@@ -426,7 +420,8 @@ class T3Controller:
             self._end_green(now, reason="lane_closed")
             return
         head = self.queue.head(lambda lid: self.lane_ok(lid, now) or lid == lane.id)
-        if head is not None and head.lane == lane.id:
+        if head is not None and head.lane == lane.id and lane.kind != "manual":
+            # (manual lanes never chain: one vehicle per green, all-red barrier in between)
             if head.kind == "auto" and not head.matched:
                 return  # next Auto is on its way: keep green (ends if the ticket expires)
             self.queue.remove(head, "merged")
@@ -518,7 +513,6 @@ class T3Controller:
         return {
             "state": self.state,
             "active_lane": self.active_lane,
-            "fault_hold_s": max(0.0, round(self.fault_hold_until - now, 1)) if self.state == FAULT_HOLD else 0,
             "exit_requested": self.exit_requested,
             "epoch": self.link.epoch,
             "lanes": lanes,

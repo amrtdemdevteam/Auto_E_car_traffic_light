@@ -55,6 +55,10 @@ class FilteredSensor:
         # a gap in the frame stream restarts the recovery window
         if self.last_frame_at is not None and now - self.last_frame_at > self.fresh_timeout_s:
             self._recover_since = None
+            # no data for a while: debounce and gap hold start again from the data that comes back
+            self._raw_since = None
+            if self.occupied:
+                self._last_raw_at = now
         self.last_frame_at = now
         self.distance_cm = distance_cm
         self.strength = strength
@@ -88,6 +92,9 @@ class FilteredSensor:
                             f"dist={distance_cm} strength={strength}")
         else:
             self._raw_since = None
+
+    def fresh(self, now: float) -> bool:
+        return self.last_frame_at is not None and now - self.last_frame_at <= self.fresh_timeout_s
 
     def tick(self, now: float) -> None:
         if self.online and (self.last_frame_at is None or now - self.last_frame_at > self.offline_timeout_s):
@@ -156,11 +163,12 @@ class HandDetector:
         if not s.online:
             self.reset()
             return False
-        if s.raw:
+        seen = s.raw and s.fresh(now)          # stale frames are never a hand
+        if seen:
             self._last_seen = now
 
         if self.phase == "idle":
-            if s.raw and can_accept:
+            if seen and can_accept:
                 self.phase = "track"
                 self._start = now
                 self._last_logged_step = -1

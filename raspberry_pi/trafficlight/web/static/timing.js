@@ -49,7 +49,7 @@ function tlTrack() {
       T.cur = {lane: act, t0: now, partial: T.first};
     }
   }
-  const red = st.state === 'SWITCHING' || st.state === 'FAULT_HOLD';
+  const red = st.state === 'SWITCHING';
   if (red && !T.red) T.red = {t0: now};
   if (!red && T.red) { T.segs.push({kind: 'red', t0: T.red.t0, t1: now}); T.red = null; }
   const seen = {};

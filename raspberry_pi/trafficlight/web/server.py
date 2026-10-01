@@ -371,12 +371,10 @@ class App:
     def _ota_job(self, job, cfg, ip, lane, data):
         try:
             if lane is not None:
+                # the lane is closed after its current green, but the upload does NOT wait for it:
+                # a display being updated drops green at once (START frame, then reboot), the
+                # controller sees the lost ACK, ends that green and runs the all-red barrier
                 self.state.publish_control({"cmd": "maintenance", "lane": lane, "on": True, "user": job["user"]})
-                for _ in range(120):          # wait until that lane is not green
-                    st = self.state.snapshot()["state"] or {}
-                    if st.get("active_lane") != lane:
-                        break
-                    time.sleep(0.5)
             job["step"] = "กำลังส่งไฟล์ไปที่จอ"
             status, text = self.ota_post(ip, int(cfg["ota"]["port"]), cfg["ota"]["password"], data)
             if status != 200:

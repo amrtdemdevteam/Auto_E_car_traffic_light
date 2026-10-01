@@ -28,7 +28,6 @@ function diagnose() {
   if (!st) { if (S.me) add('E401', 'link', null, 'ยังไม่ได้รับสถานะ'); return out; }
   if (S.stale) { add('E401', 'link', null, 'ไม่ได้รับสถานะจากระบบควบคุม'); return out; }   // the rest would be old data
   if (st.errors && st.errors.length) add('E301', 'cfg', null, st.errors.join(' · '));
-  if (st.state === 'FAULT_HOLD') add('E102', 'hold', st.active_lane || null, `ทุกเลน X อีก ${st.fault_hold_s} s`);
   const inLane = new Set();
   (st.lanes || []).forEach((l) => {
     const rs = l.reasons || [];

@@ -23,12 +23,12 @@
 
 | เลน | ประเภท | เซนเซอร์ | หน้าที่เซนเซอร์ | จอ | IP จอ |
 |---|---|---|---|---|---|
-| 1 | Auto E-Car | C1.1 | ใกล้แยก · ยืนยันรถมาถึง · นับเวลาเคลียร์ · แทรกคิวแทน C1.2 ถ้า C1.2 เสีย | B1 | 10.77.0.11 |
+| 1 | Auto E-Car | C1.1 | ใกล้แยก · ยืนยันรถมาถึง · นับเวลาเคลียร์ · แทรกคิวแทน C1.2 ถ้า C1.2 เสีย | B1 | 10.77.0.31 |
 |   |   | C1.2 | ไกลแยก (สายห่าง C1.1 ~14 m) · สร้างตั๋ว Auto แทรกคิวล่วงหน้า | | |
-| 2 | Manual ปกติ | C2 | ตรวจรถ + dolly ที่ทางเข้าแยก (ห่างแยกเท่า C1.1) | B2 | 10.77.0.12 |
-| 3 | Manual พิเศษ | C3 | ToF ติดข้างเลน ยิงลงพื้น ข้างกล่อง A · ตรวจมือคนขับ | B3 | 10.77.0.13 |
-| 4 | Manual ปกติ | C4 | ตรวจรถ + dolly ที่ทางเข้าแยก (ห่างแยกเท่า C1.1) | B4 | 10.77.0.14 |
-| 5 | Manual พิเศษ | C5 | ToF ข้างเลนฝั่งมือขวาคนขับ กึ่งกลางระหว่าง B4–B5 · ตรวจมือ | B5 | 10.77.0.15 |
+| 2 | Manual ปกติ | C2 | ตรวจรถ + dolly ที่ทางเข้าแยก (ห่างแยกเท่า C1.1) | B2 | 10.77.0.32 |
+| 3 | Manual พิเศษ | C3 | ToF ติดข้างเลน ยิงลงพื้น ข้างกล่อง A · ตรวจมือคนขับ | B3 | 10.77.0.33 |
+| 4 | Manual ปกติ | C4 | ตรวจรถ + dolly ที่ทางเข้าแยก (ห่างแยกเท่า C1.1) | B4 | 10.77.0.34 |
+| 5 | Manual พิเศษ | C5 | ToF ข้างเลนฝั่งมือขวาคนขับ กึ่งกลางระหว่าง B4–B5 · ตรวจมือ | B5 | 10.77.0.35 |
 
 - จอ B1, B2, B4, B5 ติดในพื้นที่แยก (B1 กับ B4 หลังชนกัน) ส่วน B3 ติดขอบแยกฝั่งเลน 3
 - เลน 1 และเลน 4 อยู่ช่องเดียวกันแต่วิ่งสวนทาง
@@ -46,13 +46,14 @@
 |---|---|---|
 | raw detect | ระยะอยู่ในช่วง และความแรงถึงเกณฑ์ | 30–250 cm · strength ≥ 100 |
 | rising (มีรถ) | raw detect ต่อเนื่องครบ debounce | 0.2 s (ค่าเดียวทุกตัว) |
-| filtered clear (รถพ้น) | ไม่มี raw detect ต่อเนื่องครบ gap hold จากเฟรมที่สดและ valid | 1.2 s |
+| filtered clear (รถพ้น) | ไม่มี raw detect ต่อเนื่องครบ gap hold จากเฟรมที่สดและ valid (เลน Auto 1.2 s · เลน Manual ทุกแบบ 0.2 s `manual_gap_hold_s`) | 1.2 / 0.2 s |
 | offline (เสีย) | ไม่มี valid frame | 2.0 s |
 | online กลับมา | valid frame ต่อเนื่อง | 1.0 s |
 
-- ช่องว่างระหว่างรถกับ dolly ~1 m (0.5 s ที่ 2 m/s และราว 1 s ตอนเพิ่งออกตัว) จึงคง gap hold 1.2 s ไว้
+- ช่องว่างระหว่างรถกับ dolly ~1 m (0.5 s ที่ 2 m/s และราว 1 s ตอนเพิ่งออกตัว) จึงคง gap hold 1.2 s ไว้ที่เลน Auto ส่วนเลน Manual ใช้ `manual_gap_hold_s` = 0.2 s เพื่อแยกรถที่ขับชิดกัน (ต้องจูนจากสัญญาณจริงรถ + dolly)
 - **Auto จ่อตูดแยกคันไม่ได้**: ช่องว่างระหว่างคัน (0.5 m ≈ 0.25 s) สั้นกว่าช่องว่างรถ–dolly ในขบวนเดียวกัน จึงนับเป็นขบวนยาวขบวนเดียว ไฟเขียวยังต่อเนื่องถูกต้อง
 - **เซนเซอร์ offline หรือข้อมูลค้างไม่นับเป็น clear เด็ดขาด** filtered clear เกิดได้จากเฟรม valid ที่สดเท่านั้น ถ้าเซนเซอร์หายไประหว่าง occupied สถานะเป็น "ไม่ทราบ" และเข้ากติกาเซนเซอร์เสีย (หัวข้อ 7)
+- ช่วงที่ข้อมูลขาดนานกว่า `fresh_timeout_s` ไม่นับรวมใน debounce และ gap hold: นับใหม่จากข้อมูลที่กลับมา · ตรวจมือก็นับเฉพาะเฟรมที่สด
 - ทุกค่าตั้งแยกรายเซนเซอร์ได้ (`sensors.<id>.*`) ถ้าไม่ตั้งใช้ `sensor_defaults`
 - rising edge แต่ละครั้งมีหมายเลข (`edge_id`) ใช้ป้องกันการสร้างตั๋วซ้ำจาก edge เดิม
 
@@ -122,8 +123,8 @@
 1. เซนเซอร์ rising → ตั๋ว Manual
 2. ถึงคิวและผ่าน barrier → เขียว
 3. เซนเซอร์ filtered clear (หรือว่างอยู่แล้วตอนเริ่มเขียว นับจากตอนเริ่มเขียว) → นับ `manual_clear_s` = 3.0 s
-4. ครบแล้วถ้าหัวคิวเป็นตั๋วของเลนเดิม (ไม่มีเลนอื่นที่ชนะคิว) → เขียวต่อ ไม่คั่น X ไม่งั้นจบรอบ
-5. ความเร็วรถ Manual ~7 m/s: ท้ายพ้นจริง → X = 1.2 + 3.0 = 4.2 s ≈ 29 m
+4. ครบแล้วจบรอบเสมอ **ไปทีละคัน ไม่ไหลต่อตูดกัน** รถคันถัดไปที่มาบังเซนเซอร์ระหว่างนับ 3 s ไม่ต่อเขียว ได้ตั๋วใหม่ รอคิวและผ่าน barrier ใหม่ (ถ้าเป็นหัวคิวก็ได้เขียวอีกครั้งหลัง X)
+5. ท้ายรถพ้นจริง → X = 0.2 + 3.0 = 3.2 s (ที่ ~7 m/s ≈ 22 m)
 
 ### 5.3 Manual พิเศษ (เลน 3, 5)
 - ถึงคิวและผ่าน barrier → เขียวคงที่ `special_green_s` = 3.0 s (เท่าเลน Manual · ไม่มีตัวเลขนับถอยหลัง) → จบรอบ
@@ -141,7 +142,6 @@
 | `IDLE` | ไม่มีเลนเขียว | X / ภาพตรวจมือ / ภาพสถานะเลน |
 | `SWITCHING` | all-red barrier ก่อนเปิดเลนใหม่ | X ทุกจอ |
 | `GREEN` | มีเลนเขียว 1 เลน (`active_lane`) | ลูกศรเขียวเฉพาะจอเลนนั้น |
-| `FAULT_HOLD` | เซนเซอร์ของเลนที่เขียวอยู่เสีย รอเวลาเผื่อเคลียร์ | X ทุกจอ (จอเลนเสียแสดง SENSOR BROKEN) |
 
 ### 6.2 Break-before-make (all-red barrier)
 
@@ -159,7 +159,7 @@
 - `active_lane` มีได้ไม่เกินหนึ่งค่า และคำสั่งเขียวไปได้เฉพาะจอของ `active_lane`
 - ทุกการเปิดเขียวผ่าน barrier ข้อ 6.2 ครบ
 - `STARTING` และหลังรีสตาร์ตไม่มีคำสั่งเขียว
-- เซนเซอร์ของเลนที่เขียวอยู่เสีย → เลิกเขียวทันที และไม่เปิดเลนใหม่จนครบ `fault_clear_s`
+- เซนเซอร์ของเลนที่เขียวอยู่เสีย → เลิกเขียวทันที (ผ่าน all-red barrier + จอ ACK ตามปกติ) ปิดเฉพาะเลนนั้น เลนอื่นทำงานต่อ
 - จอไม่ยืนยันเฟรมไม่เขียว → ไม่เปิดเลนใหม่จนครบ `display_fault_timeout_s`
 - เลนที่ปิดใช้ (ปิดซ่อม, เซนเซอร์เสีย, จอเสีย, config ผิด) ไม่ได้เขียว
 
@@ -170,8 +170,8 @@
 | เหตุการณ์ | ระบบทำ | จอเลนนั้น |
 |---|---|---|
 | เซนเซอร์เสียตอนเลนนั้นไม่เขียว (ไม่มีข้อมูล 2.0 s) | ปิดเฉพาะเลนนั้น ทิ้งตั๋วของเลนนั้น เลนอื่นทำงานปกติ | F10 SENSOR xx BROKEN ค้าง |
-| เซนเซอร์เสียตอนเลนนั้นเขียว (C1.1, C2, C4) | เลิกเขียวทันที → ทุกเลน X ต่อ `fault_clear_s` = 12 s → เลนอื่นทำงานต่อเอง ไม่ต้องรอคนรีเซ็ต | F10 |
-| เลนพิเศษเสียตอนเขียว (C3, C5) | เขียวเดิมเดินต่อจนครบ (3 s) แล้วปิดเลน | F10 หลังจบ |
+| เซนเซอร์เสียตอนเลนนั้นเขียว | เลิกเขียวทันที → ปิดเฉพาะเลนนั้นค้างไว้จนเซนเซอร์กลับมานิ่ง เลนอื่นทำงานต่อตามปกติ (ไม่หยุดทุกเลน) | F10 ค้าง |
+| เลนยื่นมือเสียตอนเขียว (C3, C5) | เขียวเดิมเดินต่อจนครบเวลาเขียว แล้วปิดเลน | F10 หลังจบ |
 | C1.2 เสีย | เลน 1 ทำงานต่อ C1.1 ทำหน้าที่แทรกคิวและยืนยันรถออก (แทรกคิวได้ช้าลง) แจ้งใน log/หน้าเว็บ | ปกติ |
 | C1.1 เสีย | ปิดเลน 1 (C1.2 ยืนยันรถพ้นแยกแทนไม่ได้) | F10 |
 | เซนเซอร์กลับมา | ข้อมูลนิ่งต่อเนื่อง 1.0 s → เปิดเลนกลับเอง + log | ตามปกติ |
@@ -180,7 +180,6 @@
 | controller offline (MQTT last will) | จอเปลี่ยนเป็น F11 ทันที | F11 |
 | config ผิด / จอไม่ได้จับคู่ | ไม่เริ่มควบคุม / ปิดเลนนั้น | F12 |
 
-ที่มาของ 12 s: เช็ค lidar 2 s + ขบวนยาวสุด 8 m (รถ 2 m + dolly 2 คัน × 2 m + ช่องว่าง 2 × 1 m) ที่ 2 m/s = 4 s + gap hold 1.2 s + เคลียร์ Auto 4 s ≈ 11.2 s
 
 ---
 
@@ -192,7 +191,8 @@
 | `sensor_defaults.min_detect_cm` / `max_detect_cm` | 30 / 250 | V1 |
 | `sensor_defaults.min_strength` | 100 | V1 |
 | `sensor_defaults.debounce_ms` | 200 | ยืนยัน (ค่าเดียวทุกตัว) |
-| `sensor_defaults.gap_hold_s` | 1.2 | V1 · จูนจาก trace |
+| `sensor_defaults.gap_hold_s` | 1.2 | V1 · จูนจาก trace (เลน Auto) |
+| `sensor_defaults.manual_gap_hold_s` | 0.2 | เลน Manual · แยกรถขับชิด ต้องจูนหน้างาน |
 | `sensor_defaults.offline_timeout_s` | 2.0 | V1 |
 | `sensor_defaults.recover_stable_s` | 1.0 | ยืนยัน |
 | `hand.hold_s` | 3.0 | ข้อกำหนด T3 |
@@ -209,21 +209,20 @@
 | `timing.display_link_timeout_s` | 5.0 | ยืนยัน (ตั้งในเฟิร์มแวร์ด้วย) |
 | `timing.display_fault_timeout_s` | 6.0 | จอไม่ตอบ: รอเท่านี้แล้วปล่อยให้เลนอื่นทำงานต่อ (ต้อง ≥ `display_link_timeout_s` + 1) |
 | `timing.command_refresh_s` | 1.0 | ออกแบบ |
-| `timing.fault_clear_s` | 12.0 | ยืนยัน |
 | `timing.startup_min_s` | 3.0 | ออกแบบ |
 | `priority.auto_first` | true | ยืนยัน |
 | `lanes[].priority` | 0 ทุกเลน | ยืนยัน |
 
 ### 8.1 ค่ารวม (global) กับค่ารายเลน (local)
 
-- **ค่ารวมของแยก** ใช้ร่วมทุกเลน: `timing.switch_all_red_s`, `display_ack_timeout_s`, `display_link_timeout_s`, `display_fault_timeout_s`, `command_refresh_s`, `fault_clear_s`, `startup_min_s`, `priority.auto_first`, `sensor_defaults.offline_timeout_s` / `recover_stable_s`, OTA, MQTT
+- **ค่ารวมของแยก** ใช้ร่วมทุกเลน: `timing.switch_all_red_s`, `display_ack_timeout_s`, `display_link_timeout_s`, `display_fault_timeout_s`, `command_refresh_s`, `startup_min_s`, `priority.auto_first`, `sensor_defaults.offline_timeout_s` / `recover_stable_s`, OTA, MQTT
 - **ค่าเริ่มต้นตามประเภทเลน** (อยู่ใน `timing` / `hand`): Auto → `auto_clear_s`, `auto_ticket_expiry_s` · Manual ตรวจรถ → `manual_clear_s` · Manual ยื่นมือ → `special_green_s`, `hold_s`, `grace_ms`, `confirm_show_s`, `rearm_clear_s`, `max_pending_per_lane`
 - **ค่ารายเลน** `lanes[].params` ทับค่าเริ่มต้นของประเภทได้เฉพาะ key ของประเภทนั้น (เว้นว่าง = ใช้ค่าเริ่มต้น) เช่น `{"special_green_s": 6.0}`
 - **ค่ารายเซนเซอร์** `sensors.<id>` ทับ `sensor_defaults` ได้: `min_detect_cm`, `max_detect_cm`, `min_strength`, `debounce_ms`, `gap_hold_s`
 
 ประเภทเลนมี 2 แบบ: `"type": "auto"` หรือ `"type": "manual"` + `"mode": "vehicle"` (ตรวจรถ) / `"hand"` (ยื่นมือ) · ค่าเก่า `"type": "special"` ยังใช้ได้ (= manual + hand) · ชื่อเซนเซอร์ตั้งจากเลขเลนอัตโนมัติ: Auto `C<n>.1` ใกล้/ยืนยัน, `C<n>.2` ไกล/แทรกคิว · Manual `C<n>`
 
-ขอบเขตที่หน้าเว็บยอมให้บันทึก: เวลาทุกค่า > 0, `grace_ms` 100–1000, `switch_all_red_s` ≥ 0.5, `fault_clear_s` ≥ `auto_clear_s` + `gap_hold_s`, `display_fault_timeout_s` ≥ `display_link_timeout_s` + 1, ระยะ min < max
+ขอบเขตที่หน้าเว็บยอมให้บันทึก: เวลาทุกค่า > 0, `grace_ms` 100–1000, `switch_all_red_s` ≥ 0.5, `display_fault_timeout_s` ≥ `display_link_timeout_s` + 1, ระยะ min < max
 
 ---
 
@@ -289,7 +288,8 @@ broker: Mosquitto บน Pi `10.77.0.1:1883` (LAN จอแยกจาก Wi-Fi
 - ใช้ไลบรารี `jandrassy/ArduinoOTA` ที่รองรับ W5500 (Ethernet) + ESP32 (`InternalStorageESP` เขียนลงช่อง OTA ที่ว่าง)
 - partition `default.csv` บน flash 4 MB มีช่องแอป 2 ช่อง (~1.25 MB ต่อช่อง) เฟิร์มแวร์ปัจจุบัน ~320 KB
 - **ต้องแฟลชผ่านสาย USB ครั้งแรกหนึ่งครั้งต่อจอ** หลังจากนั้นอัปเดตทาง LAN ได้
-- ขั้นตอน: หน้าเว็บ → เลือกจอ + ไฟล์ `.bin` → Pi ปิดเลนของจอนั้น (MAINT) → ส่งไฟล์ HTTP POST ไปที่จอ (พอร์ต 65280, รหัสผ่าน OTA จาก config) → จอแสดง F14 ระหว่างรับ → รีบูต
+- ขั้นตอน: หน้าเว็บ → เลือกจอ + ไฟล์ `.bin` → Pi สั่งปิดเลนของจอนั้น (MAINT · ปิดหลังจบเขียวรอบนั้น) → ส่งไฟล์ทันที ไม่รอเลนจบเขียว (จอที่กำลังอัปเดตเลิกเขียวเอง → Pi เห็น ACK หาย → จบเขียว + barrier)  HTTP POST ไปที่จอ (พอร์ต 65280, รหัสผ่าน OTA จาก config) → จอแสดง F14 ระหว่างรับ → รีบูต
+- **Watchdog จอ:** เฟิร์มแวร์ตั้ง hardware watchdog `WDT_TIMEOUT_MS` = 8 s ถ้า loop ค้าง จอรีสตาร์ตเอง (ไม่ค้างเขียว) ปิดชั่วคราวระหว่างรับไฟล์ OTA
 - **ย้อนกลับอัตโนมัติ:** ก่อนรีบูตจอบันทึก `ota_pending=1` ลง NVS เฟิร์มแวร์ใหม่ต้องได้คำสั่งที่ถูกต้องจาก controller ภายใน 120 s ถึงจะยืนยันว่าใช้ได้ ถ้าไม่ได้ จะสลับกลับไปช่องเฟิร์มแวร์เดิมแล้วรีบูตเอง
 - อัปเดตได้ทีละจอ เลนของจอนั้นปิดระหว่างอัปเดต และเปิดกลับเมื่อจอ ACK ปกติ
 
@@ -390,7 +390,6 @@ broker: Mosquitto บน Pi `10.77.0.1:1883` (LAN จอแยกจาก Wi-Fi
 | รหัส | ความหมาย | มาจาก |
 |---|---|---|
 | E101 | เซนเซอร์ไม่มีข้อมูล เลนถูกปิด | `reasons` ของเลน = `sensor:<id>` |
-| E102 | เซนเซอร์ของเลนที่เขียวเสีย หยุดทุกเลน | state = FAULT_HOLD |
 | E201 | จอไม่ตอบ เลนถูกปิด | `display_online` = false หรือ reason `display` |
 | E301 | ค่าตั้งใช้ไม่ได้ ไม่ควบคุมไฟ | `errors` ของสถานะ |
 | E401 | ระบบควบคุมไม่ตอบ | ไม่ได้รับสถานะ (stale) |
@@ -443,7 +442,7 @@ esp32_display_t3/        เฟิร์มแวร์จอ T3 (แยกจ�
 tests/test_t3_*.py       unit test แบบจำลองเวลา ไม่ต้องใช้ฮาร์ดแวร์
 ```
 
-log แบบมีโครงสร้าง (ขึ้นต้นด้วย `T3 `): `sensor_rising`, `sensor_clear`, `sensor_offline`, `sensor_recovered`, `hand_progress`, `ticket_created`, `ticket_matched`, `ticket_expired`, `ticket_dropped`, `queue_selected`, `barrier_start`, `barrier_passed`, `green_granted`, `green_extended`, `green_ended`, `display_ack_timeout`, `display_fault_release`, `active_lane_fault`, `fault_hold_end`, `maintenance`, `config_apply`, `operator_command`
+log แบบมีโครงสร้าง (ขึ้นต้นด้วย `T3 `): `sensor_rising`, `sensor_clear`, `sensor_offline`, `sensor_recovered`, `hand_progress`, `ticket_created`, `ticket_matched`, `ticket_expired`, `ticket_dropped`, `queue_selected`, `barrier_start`, `barrier_passed`, `green_granted`, `green_extended`, `green_ended`, `display_ack_timeout`, `display_fault_release`, `active_lane_fault`, `maintenance`, `config_apply`, `operator_command`
 
 ---
 
@@ -461,7 +460,7 @@ log แบบมีโครงสร้าง (ขึ้นต้นด้ว�
 
 - [ ] เปิดเครื่อง/รีบูตกล่อง A และจอ: ทุกจอ F01 ไม่มีจอไหนเขียว
 - [ ] ไม่มีรถ: ทุกจอ X
-- [ ] C2 เจอรถ → B2 เขียว → ท้ายพ้น + 1.2 + 3 s → X
+- [ ] C2 เจอรถ → B2 เขียว → ท้ายพ้น + 0.2 + 3 s → X
 - [ ] C1.2 เจอ Auto ระหว่าง C2 เขียว → C2 จบรอบก่อน → สลับเลน 1 s → B1 เขียวเมื่อ C1.1 เจอรถ
 - [ ] Auto 2 คันจ่อตูด → B1 เขียวต่อเนื่อง
 - [ ] C1.2 เจอรถแต่รถไม่มา → ตั๋วหมดอายุใน 7 s → คิวเดินต่อ
