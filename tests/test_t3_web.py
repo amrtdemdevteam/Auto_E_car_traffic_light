@@ -132,7 +132,9 @@ def test_ota_rejects_non_firmware_and_closes_lane_first(web):
     base, app, state, *_ = web
     eng = login(base, "eng", "password1")
     assert call(base, "/api/ota/3", cookie=eng, raw=b"hello")[0] == 400
-    code, body, _ = call(base, "/api/ota/3", cookie=eng, raw=b"\xe9" + b"\x00" * 1000)
+    assert call(base, "/api/ota/3", cookie=eng, raw=b"\xe9" + b"\x00" * 1000)[0] == 400   # no display tag
+    assert call(base, "/api/ota/3", cookie=eng, raw=b"\xe9" + b"T3-DISPLAY-ID:2;" + b"\x00" * 1000)[0] == 400
+    code, body, _ = call(base, "/api/ota/3", cookie=eng, raw=b"\xe9" + b"T3-DISPLAY-ID:3;" + b"\x00" * 1000)
     assert code == 202
     time.sleep(0.3)
     assert state.sent[0] == {"cmd": "maintenance", "lane": 3, "on": True, "user": "eng"}

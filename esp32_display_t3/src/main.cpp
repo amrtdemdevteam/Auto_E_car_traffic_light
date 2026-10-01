@@ -17,6 +17,13 @@
 #include "EthOTA.h"
 #include "device_config.h"
 
+// Build tag: the web UI reads this from the .bin before an OTA upload and refuses a file whose
+// display number differs from the target display (a wrong file would take over another display's
+// identity, IP and topic). Referenced in setup() so the linker keeps it.
+#define T3_STR2(x) #x
+#define T3_STR(x) T3_STR2(x)
+static const char kBuildTag[] __attribute__((used)) = "T3-DISPLAY-ID:" T3_STR(DISPLAY_ID) ";";
+
 // ------------------------------------------------------------------ OTA server
 // The Arduino Ethernet server lacks begin(port) expected by ESP32's Server
 // interface; this adapter adds it.
@@ -487,6 +494,7 @@ void setup() {
   matrix->setRotation(0);
   render(true);                           // START: never green at boot
   wdtStart();
+  logEvent("BOOT", "%s", kBuildTag);
 
   prefs.begin("t3", false);
   otaPending = prefs.getBool("ota_pending", false);

@@ -11,6 +11,7 @@ import argparse
 import base64
 import json
 import mimetypes
+import re
 import secrets
 import subprocess
 import threading
@@ -359,6 +360,11 @@ class App:
             raise ValueError(f"ไม่รู้จักจอ B{display}")
         if not data.startswith(b"\xe9"):
             raise ValueError("ไฟล์ไม่ใช่เฟิร์มแวร์ ESP32 (.bin)")
+        tag = re.search(rb"T3-DISPLAY-ID:(\d+);", data)
+        if tag is None:
+            raise ValueError("ไฟล์ไม่มีเลขจอ (build ด้วยเวอร์ชันเก่า) ให้ build ใหม่ด้วย tools/build_t3_firmware")
+        if int(tag.group(1)) != int(display):
+            raise ValueError(f"ไฟล์นี้เป็นของจอ B{int(tag.group(1))} แต่เลือกอัปเดตจอ B{display}")
         if any(j.get("running") for j in self.ota_jobs.values()):
             raise ValueError("อัปเดตได้ทีละจอ")
         lane = next((l["id"] for l in cfg["lanes"] if l.get("display") == display), None)
