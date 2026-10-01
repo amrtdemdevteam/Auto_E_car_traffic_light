@@ -78,6 +78,14 @@ def test_command_comes_from_config_and_firmware_status(fl, tmp_path):
     assert st["1"]["ok"] and st["2"]["ok"] and not st["3"]["ok"] and "bootloader.bin" in st["3"]["missing"]
 
 
+def test_rs485_adapter_chips_are_hidden_from_flash_ports(tmp_path):
+    cfg = with_defaults({"lanes": [], "sensors": {}})
+    f = Flasher(cfg, tmp_path / "d", root=tmp_path, ports_fn=lambda: [
+        {"path": PORT, "label": "usb-Espressif_USB_JTAG_serial_debug_unit"},
+        {"path": "/dev/ttyACM1", "label": "usb-1a86_USB_Quad_Serial_ABC-if00"}])
+    assert [p["path"] for p in f.ports()] == [PORT]
+
+
 def test_sensor_ports_are_never_offered(fl):
     assert [p["path"] for p in fl.ports()] == [PORT]
 

@@ -100,7 +100,10 @@ class Flasher:
 
     def ports(self) -> list[dict]:
         busy = self.sensor_ports()
-        return [p for p in self.ports_fn() if os.path.realpath(p["path"]) not in busy]
+        skip = [str(k).lower() for k in self.s.get("skip_labels", [])]   # e.g. RS485 adapter chips
+        return [p for p in self.ports_fn()
+                if os.path.realpath(p["path"]) not in busy
+                and not any(k in str(p.get("label", "")).lower() for k in skip)]
 
     def status(self, has_lanes: bool) -> dict:
         return {

@@ -227,6 +227,10 @@ USERCLI
     DEBIAN_FRONTEND=noninteractive apt-get install -y chromium || DEBIAN_FRONTEND=noninteractive apt-get install -y chromium-browser \
       || warn "Chromium not installed: open http://localhost:8080 in any browser on the Pi"
   fi
+  # Thai font for the touch-screen UI (small package); only when the Pi has no Thai font yet.
+  if ! fc-list :lang=th 2>/dev/null | grep -q .; then
+    DEBIAN_FRONTEND=noninteractive apt-get install -y fonts-thai-tlwg || warn "Thai font not installed: Thai text may look wrong (apt install fonts-thai-tlwg)"
+  fi
   chmod 755 "$APP/scripts/t3_kiosk.sh"
   install -m 644 "$APP/install/trafficlight-kiosk.desktop" /etc/xdg/autostart/trafficlight-kiosk.desktop
   # Pi OS uses different autostart files per desktop version (labwc / old LXDE-X11): add the script to each one that exists.

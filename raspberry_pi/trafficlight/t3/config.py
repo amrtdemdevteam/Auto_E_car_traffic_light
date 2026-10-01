@@ -94,6 +94,7 @@ DEFAULTS: dict = {
         "files": [["0x0", "bootloader.bin"], ["0x8000", "partitions.bin"],
                   ["0xe000", "boot_app0.bin"], ["0x10000", "firmware.bin"]],
         "timeout_s": 240,
+        "skip_labels": ["1a86"],              # hide RS485 adapters (WCH CH344 / CH340) from the flash port list
         "log_lines": 30,
     },
     "web": {"bind": "0.0.0.0", "port": 8080, "session_hours": 8, "flow_gap_s": 5, "flow_save_s": 30},
