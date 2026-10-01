@@ -43,7 +43,7 @@ def test_manual_lane_green_until_clear_plus_3s():
     sim.step(4)
     sim.off("C2")                       # tail passes the sensor
     t = sim.until(lambda: sim.shown(2) == F.STOP, limit=10)
-    assert 4.1 <= t <= 4.5              # 1.2 s gap hold + 3.0 s + display latency
+    assert 3.1 <= t <= 3.5              # 0.2 s manual gap hold + 3.0 s + display latency
 
 
 def test_switch_keeps_all_red_at_least_1s():
@@ -243,7 +243,7 @@ def test_dead_display_closes_only_its_lane_and_releases_after_the_timeout():
     sim.until(lambda: sim.shown(2) == F.GO)
     sim.on("C4")
     sim.off("C2")
-    sim.step(4.0)                                  # green is about to end (1.2 + 3 s)
+    sim.step(3.0)                                  # green is about to end (0.2 + 3 s)
     assert sim.shown(2) == F.GO
     sim.link.dead[2] = sim.now                     # B2 cable cut: it never gets the red
     t_dead = sim.now

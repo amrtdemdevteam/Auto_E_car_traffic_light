@@ -81,6 +81,7 @@ const INFO = {
   max_detect_cm: ['ระยะไกลสุด', 'วัตถุที่ไกลกว่านี้ไม่นับ · พื้นต้องอยู่ไกลกว่าค่านี้'],
   min_strength: ['ความแรงสัญญาณขั้นต่ำ', 'แสงสะท้อนอ่อนกว่านี้ไม่นับ กันค่าหลอก'],
   debounce_ms: ['Debounce', 'ต้องเจอต่อเนื่องนานเท่านี้จึงนับว่ามีรถหรือมือ'],
+  manual_gap_hold_s: ['Gap hold · Manual', 'เลน Manual: ช่องว่างสั้นกว่านี้ถือเป็นคันเดียวกัน ตั้งต่ำเพื่อแยกรถที่ขับชิดกัน'],
   gap_hold_s: ['Gap hold', 'ช่องว่างสั้นกว่านี้ถือเป็นคันเดียวกัน เช่นช่องระหว่าง dolly'],
   offline_timeout_s: ['ถือว่าเซนเซอร์เสีย', 'ไม่มีข้อมูลจากเซนเซอร์นานเท่านี้ = เสีย ปิดเลนนั้น'],
   recover_stable_s: ['กลับมาใช้ได้', 'ข้อมูลกลับมานิ่งนานเท่านี้ = เปิดเลนกลับ'],
@@ -126,7 +127,8 @@ const CATS = [
   ['sensor', 'เซนเซอร์', [
     ['การตรวจจับ', [['num', 'sensor_defaults.min_detect_cm', 'ระยะใกล้สุด', 'cm', 0, 1200, 5], ['num', 'sensor_defaults.max_detect_cm', 'ระยะไกลสุด', 'cm', 10, 1200, 5],
       ['num', 'sensor_defaults.min_strength', 'ความแรงสัญญาณขั้นต่ำ', '', 0, 65535, 10], ['num', 'sensor_defaults.debounce_ms', 'Debounce', 'ms', 0, 2000, 50],
-      ['num', 'sensor_defaults.gap_hold_s', 'Gap hold', 's', 0.1, 5, 0.1]]],
+      ['num', 'sensor_defaults.gap_hold_s', 'Gap hold · Auto', 's', 0.1, 5, 0.1],
+      ['num', 'sensor_defaults.manual_gap_hold_s', 'Gap hold · Manual', 's', 0.05, 5, 0.05]]],
     ['เซนเซอร์เสีย', [['num', 'sensor_defaults.offline_timeout_s', 'ถือว่าเซนเซอร์เสีย', 's', 0.5, 10, 0.5], ['num', 'sensor_defaults.recover_stable_s', 'กลับมาใช้ได้', 's', 0.2, 10, 0.1]]]]],
   ['safety', 'ความปลอดภัย', [
     ['การสลับเลน', [['num', 'timing.switch_all_red_s', 'สลับเลน · ทุกจอ X', 's', 0.5, 10, 0.1], ['num', 'timing.fault_clear_s', 'หยุดทุกเลนเมื่อเซนเซอร์เสีย', 's', 1, 60, 0.5],

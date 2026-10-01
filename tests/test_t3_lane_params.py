@@ -50,7 +50,7 @@ def test_per_lane_manual_clear_time():
     sim.step(2)
     sim.off("C2")
     t = sim.until(lambda: sim.shown(2) == F.STOP, limit=10)
-    assert 2.1 <= t <= 2.5              # 1.2 s gap hold + 1.0 s + latency
+    assert 1.1 <= t <= 1.5              # 0.2 s manual gap hold + 1.0 s + latency
 
 
 def test_per_lane_hand_hold_time():
@@ -127,3 +127,19 @@ def test_port_probe_reads_free_ports_and_skips_busy_ones():
     rows = probe.snapshot(0.1, {"/dev/p2": {"id": "C2", "distance_cm": 40, "strength": 1000, "age_s": 0.0}})
     assert rows[0]["cm"] == 820 and rows[0]["sensor"] is None
     assert rows[1]["sensor"] == "C2" and rows[1]["cm"] == 40
+
+
+def test_manual_vehicle_sensor_uses_its_own_gap_hold():
+    from trafficlight.t3.config import sensor_params, with_defaults
+    cfg = with_defaults({
+        "lanes": [
+            {"id": 1, "type": "auto", "near_sensor": "A1", "far_sensor": "A2"},
+            {"id": 2, "type": "manual", "mode": "vehicle", "sensor": "M"},
+            {"id": 3, "type": "manual", "mode": "hand", "sensor": "H"},
+            {"id": 4, "type": "manual", "mode": "vehicle", "sensor": "M2"}],
+        "sensors": {"A1": {}, "A2": {}, "M": {}, "H": {}, "M2": {"gap_hold_s": 0.7}}})
+    sd = cfg["sensor_defaults"]
+    assert sensor_params(cfg, "A1")["gap_hold_s"] == sd["gap_hold_s"]
+    assert sensor_params(cfg, "M")["gap_hold_s"] == sd["manual_gap_hold_s"]
+    assert sensor_params(cfg, "H")["gap_hold_s"] == sd["manual_gap_hold_s"]
+    assert sensor_params(cfg, "M2")["gap_hold_s"] == 0.7      # the sensor's own value wins

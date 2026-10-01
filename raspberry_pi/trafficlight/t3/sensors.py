@@ -103,7 +103,8 @@ class FilteredSensor:
         fresh = self.last_frame_at is not None and now - self.last_frame_at <= self.fresh_timeout_s
         if not fresh:
             return  # stale data is never evidence of clear
-        if self._last_raw_at is not None and now - self._last_raw_at > self.gap_hold_s:
+        # clear needs a fresh frame that shows "nothing" (raw False), never just missing frames
+        if not self.raw and self._last_raw_at is not None and now - self._last_raw_at > self.gap_hold_s:
             self.occupied = False
             self.last_clear_at = now
             self._events.append(SensorEvent(self.id, "clear", now, self.edge_id))

@@ -46,7 +46,8 @@ DEFAULTS: dict = {
         "max_detect_cm": 250,
         "min_strength": 100,
         "debounce_ms": 200,
-        "gap_hold_s": 1.2,
+        "gap_hold_s": 1.2,                    # auto lanes (and any sensor without its own value)
+        "manual_gap_hold_s": 0.2,             # sensors of every manual lane (vehicle and hand)
         "offline_timeout_s": 2.0,
         "recover_stable_s": 1.0,
         "fresh_timeout_s": 0.5,
@@ -130,7 +131,12 @@ def load(path: str | Path) -> dict:
 def sensor_params(cfg: dict, sensor_id: str) -> dict:
     """Effective parameters of one sensor: defaults + its own overrides."""
     params = dict(cfg["sensor_defaults"])
-    params.update({k: v for k, v in cfg["sensors"].get(sensor_id, {}).items() if k != "port"})
+    own = {k: v for k, v in cfg["sensors"].get(sensor_id, {}).items() if k != "port"}
+    manual = any(l.get("type") in ("manual", "special") and l.get("sensor") == sensor_id
+                 for l in cfg.get("lanes") or [])
+    if manual and "gap_hold_s" not in own:
+        params["gap_hold_s"] = params["manual_gap_hold_s"]
+    params.update(own)
     return params
 
 
@@ -186,7 +192,8 @@ def validate(cfg: dict) -> list[str]:
 
     sd = cfg.get("sensor_defaults", {})
     for key in ("min_detect_cm", "max_detect_cm", "min_strength", "debounce_ms",
-                "gap_hold_s", "offline_timeout_s", "recover_stable_s", "fresh_timeout_s"):
+                "gap_hold_s", "manual_gap_hold_s", "offline_timeout_s", "recover_stable_s",
+                "fresh_timeout_s"):
         if not _num(sd.get(key)) or sd.get(key) < 0:
             errors.append(f"sensor_defaults.{key} ต้องเป็นตัวเลขไม่ติดลบ")
 
