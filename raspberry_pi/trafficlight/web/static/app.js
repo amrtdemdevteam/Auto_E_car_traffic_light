@@ -137,6 +137,7 @@ const CATS = [
   ['display', 'จอ', [
     ['เฟรมสำรอง', [['reserve', 'STOPHINT'], ['reserve', 'GO_N'], ['reserve', 'STOP_N']]],
     ['เฟิร์มแวร์', [['text', 'ota.password', 'รหัส OTA', 'ota_password']]]]],
+  ['flash', 'ลงโปรแกรมจอ', []],
   ['service', 'ดูแลระบบ', []],
 ];
 
@@ -344,6 +345,7 @@ function render() {
   const app = $('#app');
   hideInfo();
   if (!S.me) { app.innerHTML = loginView(); return; }
+  if (S.wiz) { app.innerHTML = headerView() + wizView(); updateLive(); return; }
   const needSetup = S.cfg && !(S.cfg.lanes || []).length;
   if (needSetup && !S.draft) initDraft();
   if (needSetup && isEditor() && S.page !== 'system') S.page = 'setup';
@@ -368,7 +370,7 @@ function render() {
 
 function headerView() {
   const cfg = S.page === 'setup' ? S.draft : S.cfg;
-  const nav = S.page === 'setup' ? '' : `<nav>${[['map', 'แผนที่'], ['system', 'ระบบ']].map(([id, t]) =>
+  const nav = (S.page === 'setup' || S.wiz) ? '' : `<nav>${[['map', 'แผนที่'], ['system', 'ระบบ']].map(([id, t]) =>
     `<a href="#${id}" class="${S.page === id ? 'on' : ''}">${t}</a>`).join('')}</nav>`;
   return `<a class="skip" href="#main">ข้ามไปเนื้อหาหลัก</a><header>
     <span class="jn"><img class="logo" src="/static/logo.png" alt="${esc((cfg && cfg.junction_id) || 'T3')}"></span>
@@ -386,10 +388,11 @@ function headerView() {
 function loginView() {
   return `<form class="login" id="loginform">
     <h2>Traffic Platform</h2>
-    ${S.setupNeeded ? '<p class="mut small">ยังไม่มีบัญชีผู้ใช้ สร้างบัญชีแรกบน Pi:<br><span class="mono">sudo trafficlight-user add &lt;ชื่อ&gt; --role editor</span></p>' : ''}
+    ${S.setupNeeded ? '<p class="mut small">ยังไม่มีบัญชีผู้ใช้ ตั้งชื่อและรหัสผ่านของผู้ดูแลคนแรก (ทำได้จากหน้าจอของ Pi เท่านั้น รหัสผ่านอย่างน้อย 8 ตัว)</p>' : ''}
     <input id="lu" type="text" autocomplete="username" placeholder="ชื่อผู้ใช้" aria-label="ชื่อผู้ใช้" required>
     <input id="lp" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" aria-label="รหัสผ่าน" required>
-    <button type="submit">เข้าสู่ระบบ</button>
+    ${S.setupNeeded ? '<input id="lp2" type="password" autocomplete="new-password" placeholder="ยืนยันรหัสผ่านอีกครั้ง" aria-label="ยืนยันรหัสผ่าน" required>' : ''}
+    <button type="submit">${S.setupNeeded ? 'สร้างบัญชีและเริ่มเซ็ตอัป' : 'เข้าสู่ระบบ'}</button>
     <span class="r small">${esc(S.loginErr || '')}</span>
   </form>`;
 }
@@ -421,6 +424,7 @@ function setupView() {
   <div class="bar">
     <div class="req">${reqs.map(([ok, t]) => `<span class="${ok ? 'ok' : ''}">${ok ? '✓' : '○'} ${t}</span>`).join('')}</div>
     <span class="sp"></span>
+    ${S.wizSeen ? '<button class="sec" data-act="wizopen">‹ ย้อนกลับ</button>' : ''}
     ${lanes.length && !S.edit ? '<button class="plain" data-act="resetdraft">เริ่มใหม่</button>' : ''}
     <button data-act="finish" ${ready ? '' : 'disabled'}>ถัดไป</button>
   </div>`;
@@ -556,7 +560,7 @@ function mainView() {
   const widgets = (cfg.lanes || []).filter((l) => S.layout.lanes[String(l.id)]).map((l) => widgetHtml(l)).join('');
   const drawing = drawEditing();
   const v3 = S.v3d && !drawing;
-  const bg = v3 ? `<div class="stage" id="stage">${mapBgHtml()}${scene3dHtml((S.drawing && S.drawing.items) || [])}<div class="vehs" id="vehs"></div>${widgets}</div>` : mapBgHtml();
+  const bg = v3 ? `<div class="stage" id="stage">${mapBgHtml(true)}${scene3dHtml((S.drawing && S.drawing.items) || [])}<div class="vehs" id="vehs"></div>${widgets}</div>` : mapBgHtml();
   const list = (cfg.lanes || []).map((l) => listItem(l)).join('');
   const newItem = S.edit && S.edit.isNew ? `<div class="lane open" id="lane-${S.edit.id}"><div class="lrow"><span class="num">${S.edit.id}</span><span class="mut small">เลนใหม่</span></div>${editorHtml('main')}</div>` : '';
   return `<main id="main" tabindex="-1">${banners.join('')}
@@ -569,7 +573,7 @@ function mainView() {
               ${edit ? `<button class="sec sm" data-dact="start">✎ วาดแผนที่</button>
               <label>รูปพื้นหลัง<input type="file" accept="image/png,image/jpeg,image/svg+xml,.svg" data-mapfile hidden></label>
               ${S.mapUrl ? '<button class="sec sm" data-act="mapreset">ลบรูปพื้นหลัง</button>' : ''}` : ''}
-              <button class="sec sm" data-act="mapfull" aria-label="แผนที่เต็มจอ">${S.mapFull ? '✕ ปิดเต็มจอ' : '⛶ เต็มจอ'}</button></div>`}<div class="mapbox${drawing ? ' drawing' : ''}${v3 ? ' v3d' : ''}" id="map"><div class="bg">${bg}</div>${v3 ? '' : (drawing ? '' : '<div class="vehs" id="vehs"></div>') + widgets}
+              <button class="sec sm" data-act="mapfull" aria-label="แผนที่เต็มจอ">${S.mapFull ? '✕ ปิดเต็มจอ' : '⛶ เต็มจอ'}</button></div>`}<div class="mapbox${drawing ? ' drawing' : ''}${v3 ? ' v3d' : ''}" id="map"><div class="bg">${bg}</div>${v3 ? mapHintHtml() : (drawing ? '' : '<div class="vehs" id="vehs"></div>') + widgets}
             
           </div>
           <div class="legend">${drawing ? '<span>วาดแผนที่ · ลากเลนที่วางไว้จะทำได้หลังบันทึก</span>' : `<span><span class="sd ok"></span>ว่าง</span><span><span class="sd raw"></span>เห็นวัตถุ</span><span><span class="sd on"></span>เจอรถ/มือ</span><span><span class="sd bad"></span>เสีย</span>
@@ -673,7 +677,9 @@ function sysParams() {
   const cat = CATS.find((x) => x[0] === S.sysCat) || CATS[0];
   const side = `<nav class="side" aria-label="หมวดค่ารวม">${CATS.map(([id, t]) => `<button class="${cat[0] === id ? 'on' : ''}" data-act="syscat" data-cat="${id}">${t}</button>`).join('')}</nav>`;
   let content;
-  if (cat[0] === 'service') {
+  if (cat[0] === 'flash') {
+    content = `<div class="group"><div class="list"><div class="li-row"><span class="lab">ลงโปรแกรมให้จอ <span class="mut small">ตอนเปลี่ยนจอใหม่</span></span><span class="val"><button data-act="wizopen" data-nav="1" ${ro}>เริ่ม</button></span></div></div></div>`;
+  } else if (cat[0] === 'service') {
     content = `<div class="group"><div class="list">
       <div class="li-row"><span class="lab">รีสตาร์ตระบบควบคุม</span><span class="val"><button class="sec sm" data-act="restart" ${ro}>รีสตาร์ต</button></span></div>
       <div class="li-row"><span class="lab">รีบูต Pi</span><span class="val"><button class="sec sm" data-act="reboot" ${ro} style="color:var(--red)">รีบูต</button></span></div>
@@ -682,7 +688,7 @@ function sysParams() {
   } else {
     content = cat[2].map(([title, rows]) => `<div class="group"><div class="eyebrow">${esc(title)}</div><div class="list">${rows.map((r) => sysRow(r, ro)).join('')}</div></div>`).join('');
   }
-  const resetAll = cat[0] !== 'service' && isEditor() && cat[2].some(([, rows]) => rows.some((r) => r[0] === 'num'))
+  const resetAll = cat[0] !== 'service' && cat[0] !== 'flash' && isEditor() && cat[2].some(([, rows]) => rows.some((r) => r[0] === 'num'))
     ? `<button class="plain" data-act="catdef" data-cat="${cat[0]}">คืนค่าเริ่มต้นทั้งหมวด</button>` : '';
   return `<div class="syswrap">${side}<div class="maxw"><div class="sys-h"><h2>${cat[1]}</h2>${resetAll}</div>${content}</div></div>`;
 }
@@ -1239,6 +1245,7 @@ document.addEventListener('click', async (ev) => {
   const act = b.dataset.act;
   const lane = b.dataset.lane !== undefined ? Number(b.dataset.lane) : undefined;
   try {
+    if (act.startsWith('wiz') && await wizAct(act, b)) return;
     if (act === 'avpick') { openAvPick(b.dataset.name); return; }
     if (act === 'avview') {                                  // header avatar: just show it large
       const m = document.createElement('div'); m.id = 'avpk'; m.className = 'avbig';
@@ -1427,7 +1434,11 @@ document.addEventListener('submit', async (ev) => {
   try {
     if (f.id === 'loginform') {
       S.loginErr = '';
-      await api('/api/login', {method: 'POST', body: {user: f.querySelector('#lu').value, password: f.querySelector('#lp').value}});
+      const lu = f.querySelector('#lu').value, lp = f.querySelector('#lp').value;
+      if (S.setupNeeded) {                                   // first account, created on the Pi's own screen
+        if (lp !== f.querySelector('#lp2').value) throw new Error('รหัสผ่านสองช่องไม่ตรงกัน');
+        await api('/api/setup/first-user', {method: 'POST', body: {user: lu, password: lp}});
+      } else await api('/api/login', {method: 'POST', body: {user: lu, password: lp}});
       await start();
     } else if (f.id === 'adduser') {
       await api('/api/users', {method: 'POST', body: {name: f.querySelector('#nu').value, password: f.querySelector('#np').value, icon: f.querySelector('#ni').value, role: f.querySelector('#nr').value}});
@@ -1461,6 +1472,7 @@ async function start() {
   S.page = ['map', 'system'].includes(p) ? p : 'map';
   S.sys = clone(S.cfg);
   await pollState();
+  if (isEditor()) await wizInit();
   render();
 }
 

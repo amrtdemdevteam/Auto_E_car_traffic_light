@@ -217,6 +217,36 @@ USERCLI
   sleep 1
   systemctl is-active --quiet trafficlight-web || fail "trafficlight-web did not start (journalctl -u trafficlight-web)"
   pass "trafficlight-web.service active on port 8080"
+
+  step "Install T3 first-run tools (esptool + full-screen kiosk)"
+  # esptool burns the pre-built display firmware from the Pi (firmware/t3/displayN/*.bin).
+  # Installed for T3 only, so V1 installs are unchanged. Not fatal: the wizard shows a clear message if missing.
+  "$APP/.venv/bin/pip" install esptool || warn "esptool not installed (no internet?). Install later: $APP/.venv/bin/pip install esptool"
+  # Chromium (Bookworm: chromium, older: chromium-browser) for the touch-screen kiosk.
+  if ! command -v chromium >/dev/null 2>&1 && ! command -v chromium-browser >/dev/null 2>&1; then
+    DEBIAN_FRONTEND=noninteractive apt-get install -y chromium || DEBIAN_FRONTEND=noninteractive apt-get install -y chromium-browser \
+      || warn "Chromium not installed: open http://localhost:8080 in any browser on the Pi"
+  fi
+  chmod 755 "$APP/scripts/t3_kiosk.sh"
+  install -m 644 "$APP/install/trafficlight-kiosk.desktop" /etc/xdg/autostart/trafficlight-kiosk.desktop
+  pass "Kiosk autostart installed (opens full screen after the desktop starts)"
+  # Desktop icon: double-click re-opens the UI if someone closed it (menu entry + every existing user's Desktop + new users).
+  install -m 644 "$APP/install/trafficlight-open.desktop" /usr/share/applications/trafficlight-open.desktop
+  for d in /home/*/ /etc/skel/; do
+    [[ -d "$d" ]] || continue
+    mkdir -p "${d}Desktop"
+    install -m 755 "$APP/install/trafficlight-open.desktop" "${d}Desktop/trafficlight-open.desktop"
+    [[ "$d" == /etc/skel/ ]] || chown -R --reference="$d" "${d}Desktop" 2>/dev/null || true
+  done
+  # file manager: launch .desktop files on double-click without the "Execute?" question
+  if [[ -f /etc/xdg/libfm/libfm.conf ]]; then
+    if grep -q '^quick_exec=' /etc/xdg/libfm/libfm.conf; then
+      sed -i 's/^quick_exec=.*/quick_exec=1/' /etc/xdg/libfm/libfm.conf
+    else
+      sed -i '0,/^\[config\]/s//[config]\nquick_exec=1/' /etc/xdg/libfm/libfm.conf
+    fi
+  fi
+  pass "Desktop icon 'Traffic Light' installed (double-click re-opens the full-screen UI)"
 fi
 
 step "Final installer self-check"
@@ -235,19 +265,23 @@ cat <<T3DONE
 ============================================================
  T3 JUNCTION MODE
 ============================================================
- 1) Create the first web account (editor):
-      sudo trafficlight-user add engineer01 --role editor
- 2) Plug in the USB-485 adapters, sensors and displays, then open
-      http://<pi-ip>:8080  and log in. The setup page opens:
+ 1) Reboot the Pi with the touch screen attached. The web UI opens full
+    screen by itself (if it is closed, double-click the 'Traffic Light'
+    icon on the desktop). First run: create the first account on the screen
+    (or from a PC: sudo trafficlight-user add engineer01 --role editor),
+    then follow the wizard: burn each display by USB one at a time
+    (firmware files must be in firmware/t3/ - see firmware/t3/README.md).
+ 2) Plug in the USB-485 adapters, sensors and displays, then continue
+    (or open http://<pi-ip>:8080 and log in). The setup page opens:
       press + to add each lane, choose Auto / Manual, the display
       (press "test" - the blinking display is the one) and the sensor
       ports ("find by hand" - cover the sensor and the port is picked).
       Press Next, then drag the lanes onto the map.
  3) The controller is already running; until step 2 is saved every
     display shows CONFIG and no lane gets green.
- 4) First flash each ESP32 display by USB (once):
+ 4) Displays are burned from the wizard (step 2). Manual alternative on a PC:
       cd esp32_display_t3 && pio run -e t3_display1 -t upload
-    After that, firmware can be updated from the web (OTA).
+    After the first flash, firmware can be updated from the web (OTA).
     Change OTA_PASSWORD in include/device_config.h AND
     "ota.password" in settings.json to the same new value.
  NOTE: T3 logic is tested by simulation only - NOT field-tested yet.

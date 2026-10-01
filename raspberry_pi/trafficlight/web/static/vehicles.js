@@ -23,10 +23,34 @@ function laneHeading(l) {
 function vPath(l) {
   const pos = (S.layout.lanes || {})[String(l.id)];
   if (!pos) return null;
-  const a = laneHeading(l) * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a);
   const stopC = 34 + VL / 2;                            // centre of a waiting vehicle, behind the lane widget
+  const drawn = ((S.drawing && S.drawing.items) || []).find((it) => it.type === 'lanepath' && it.lane === l.id);
+  if (drawn) return drawnPath(drawn, pos, stopC);        // the engineer drew this lane's route on the map
+  const a = laneHeading(l) * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a);
   const sx = pos.x * 1000 - ux * stopC, sy = pos.y * 700 - uy * stopC;
-  return {ux, uy, ang: laneHeading(l), x0: sx - ux * V_ENTRY, y0: sy - uy * V_ENTRY, stop: V_ENTRY, end: V_ENTRY + stopC + V_AFTER};
+  const x0 = sx - ux * V_ENTRY, y0 = sy - uy * V_ENTRY, ang = laneHeading(l);
+  return {ang, at: (s) => ({x: x0 + ux * s, y: y0 + uy * s, a: ang}), stop: V_ENTRY, end: V_ENTRY + stopC + V_AFTER};
+}
+// a drawn route (rounded polyline): position and heading at distance s; the stop point is the spot nearest the lane widget
+const VPATH_CACHE = new Map();
+function drawnPath(it, pos, stopC) {
+  const c = VPATH_CACHE.get(it.lane);
+  if (c && c.it === it && c.px === pos.x && c.py === pos.y) return c.P;
+  const pts = dSmooth(it.pts), cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const total = cum[cum.length - 1], wx = pos.x * 1000, wy = pos.y * 700;
+  let best = 0, bd = 1 / 0;
+  pts.forEach((p, i) => { const d = Math.hypot(p[0] - wx, p[1] - wy); if (d < bd) { bd = d; best = i; } });
+  const at = (s) => {
+    s = Math.max(0, Math.min(total, s));
+    let i = 1;
+    while (i < cum.length - 1 && cum[i] < s) i++;
+    const a = pts[i - 1], b = pts[i], seg = (cum[i] - cum[i - 1]) || 1, t = (s - cum[i - 1]) / seg;
+    return {x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, a: Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI};
+  };
+  const P = {ang: at(0).a, at, stop: Math.max(0, Math.min(total - 1, cum[best] - stopC)), end: total};
+  VPATH_CACHE.set(it.lane, {it, px: pos.x, py: pos.y, P});
+  return P;
 }
 const isWaiting = (v) => v.phase !== 'go';
 
@@ -56,14 +80,14 @@ function vehSync() {
     if (green) {
       const flip = mine.filter(isWaiting);
       flip.forEach((v) => { v.phase = 'go'; VEH.cool[l.id] = now + 3500; VEH.clr[l.id] = anyOcc ? false : true; });
-      if (anyOcc && !leaving && cooled && !flip.length) { vehSpawn(l, P.stop - 70, 'go'); VEH.cool[l.id] = now + 3500; VEH.clr[l.id] = false; }
+      if (anyOcc && !leaving && cooled && !flip.length) { vehSpawn(l, Math.max(0, P.stop - 70), 'go'); VEH.cool[l.id] = now + 3500; VEH.clr[l.id] = false; }
       VEH.idle[l.id] = now;
       return;
     }
     const want = kindOf(l) === 'auto' ? (farOcc || anyOcc || tickets) : (anyOcc || tickets);
     if (want) VEH.idle[l.id] = now;
     const waiting = mine.filter(isWaiting);
-    if (want && !waiting.length && !leaving && cooled) vehSpawn(l, kindOf(l) === 'auto' && farOcc && !anyOcc ? 0 : P.stop - 170, 'approach');
+    if (want && !waiting.length && !leaving && cooled) vehSpawn(l, kindOf(l) === 'auto' && farOcc && !anyOcc ? 0 : Math.max(0, P.stop - 170), 'approach');
     if (!want && waiting.length && now - (VEH.idle[l.id] || now) > 5000) waiting.forEach((v) => { v.fade = 1; });   // the request went away: the vehicle drives off
   });
 }
@@ -139,9 +163,9 @@ function vehRender(dt) {
     alive.add(v.id);
     let el = VEH.els.get(v.id);
     if (!el) { el = document.createElement('div'); el.className = 'veh'; el.innerHTML = vehModelHtml(v.kind); host.appendChild(el); VEH.els.set(v.id, el); }
-    const x = P.x0 + P.ux * v.s, y = P.y0 + P.uy * v.s;
+    const q = P.at(v.s), x = q.x, y = q.y;
     const fadeIn = Math.min(1, v.s / 40 + 0.15), fadeOut = Math.min(1, (P.end - v.s) / 90), gone = v.fade ? Math.max(0, 1 - v.fade / 1.2) : 1;
-    el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) rotateZ(${P.ang}deg)`;
+    el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) rotateZ(${q.a.toFixed(1)}deg)`;
     el.style.opacity = String(Math.max(0, Math.min(fadeIn, fadeOut, gone)));
     el.dataset.lamp = v.phase === 'go' ? 'g' : v.phase === 'wait' ? 'r' : 'a';
   });

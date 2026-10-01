@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Traffic Light
+Comment=Open the T3 web UI full screen (double-click if it was closed)
+Exec=/opt/trafficlight/scripts/t3_kiosk.sh
+Icon=/opt/trafficlight/raspberry_pi/trafficlight/web/static/logo.png
+Terminal=false
+Categories=Utility;
+StartupNotify=false

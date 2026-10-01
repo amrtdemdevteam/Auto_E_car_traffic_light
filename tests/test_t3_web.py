@@ -296,3 +296,14 @@ def test_user_icon_accepts_small_jpeg_data_url_only(web):
     for bad in ("data:image/svg+xml;base64,AAAA", "data:image/jpeg;base64," + "A" * 100000, "data:image/jpeg;base64,<x>"):
         assert call(base, "/api/me/icon", {"icon": bad}, cookie=viewer)[0] in (400, 500)
     assert call(base, "/api/me", cookie=viewer)[1]["icon"] == ok
+
+
+def test_drawing_safety_zone_polygon_validated(web):
+    base, app, state, calls, tmp = web
+    eng = login(base, "eng", "password1")
+    z = {"id": "z1", "type": "zone", "pts": [[10, 10], [200, 20], [210, 120], [5, 100]], "stroke": "amb", "sw": 3}
+    code, body, _ = call(base, "/api/drawing", {"items": [z]}, cookie=eng)
+    assert code == 200 and body["items"][0]["type"] == "zone" and len(body["items"][0]["pts"]) == 4
+    assert "rot" not in body["items"][0]
+    for bad in ([[0, 0], [1, 1]], [[0, 0]] * 13, [[0, 0], [1, "a"], [2, 2]], "x", [[0, 0, 0]] * 4):
+        assert call(base, "/api/drawing", {"items": [dict(z, pts=bad)]}, cookie=eng)[0] == 400

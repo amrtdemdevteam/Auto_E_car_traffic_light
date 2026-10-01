@@ -262,18 +262,18 @@ html:has(.mapcard.full){overflow:hidden}
 :root{
   --bg:#F3F4F6;--panel:#FFFFFF;--ink:#171A20;--mut:#5C5E62;--faint:#8E9096;--line:rgba(23,26,32,.08);--soft:#F1F2F4;--fill:#E8EAEE;
   --accent:#3E6AE1;--accentbg:#E8EEFC;--cyn:var(--accent);--cynbg:var(--accentbg);
-  --grn:#1F9D55;--grnbg:#E4F5EB;--red:#D93025;--redbg:#FCEAE8;--amb:#B86200;--ambbg:#FDF0DD;
+  --grn:#1F9D55;--grnbg:#E4F5EB;--red:#D93025;--redbg:#FCEAE8;--amb:#B86200;--ambbg:#FDF0DD;--zone:#F2B705;
   --shadow:0 1px 1px rgba(16,24,40,.03),0 2px 6px rgba(16,24,40,.04),0 12px 32px rgba(16,24,40,.06);
   --shadow-up:0 2px 4px rgba(16,24,40,.05),0 10px 24px rgba(16,24,40,.09),0 28px 56px rgba(16,24,40,.10);
   --r:20px;--rs:12px;--ease:cubic-bezier(.22,.9,.28,1);--dur:.28s;--glass:rgba(255,255,255,.72);
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0A0B0D;--panel:#15171B;--ink:#F4F5F7;--mut:#9A9DA4;--faint:#5F636B;--line:rgba(255,255,255,.09);--soft:#1D2025;--fill:#272A30;
-  --accent:#6E93F2;--accentbg:#16223D;--grn:#3DDC84;--grnbg:#0F2A1B;--red:#FF5C57;--redbg:#3A1512;--amb:#FFB340;--ambbg:#3A2708;
+  --accent:#6E93F2;--accentbg:#16223D;--grn:#3DDC84;--grnbg:#0F2A1B;--red:#FF5C57;--redbg:#3A1512;--amb:#FFB340;--zone:#FFD60A;--ambbg:#3A2708;
   --shadow:0 1px 0 rgba(255,255,255,.04) inset,0 8px 28px rgba(0,0,0,.45);--shadow-up:0 1px 0 rgba(255,255,255,.06) inset,0 18px 48px rgba(0,0,0,.6);--glass:rgba(16,18,21,.72);--hatch:#48484A;color-scheme:dark;}}
 :root[data-theme="dark"]{
   --bg:#0A0B0D;--panel:#15171B;--ink:#F4F5F7;--mut:#9A9DA4;--faint:#5F636B;--line:rgba(255,255,255,.09);--soft:#1D2025;--fill:#272A30;
-  --accent:#6E93F2;--accentbg:#16223D;--grn:#3DDC84;--grnbg:#0F2A1B;--red:#FF5C57;--redbg:#3A1512;--amb:#FFB340;--ambbg:#3A2708;
+  --accent:#6E93F2;--accentbg:#16223D;--grn:#3DDC84;--grnbg:#0F2A1B;--red:#FF5C57;--redbg:#3A1512;--amb:#FFB340;--zone:#FFD60A;--ambbg:#3A2708;
   --shadow:0 1px 0 rgba(255,255,255,.04) inset,0 8px 28px rgba(0,0,0,.45);--shadow-up:0 1px 0 rgba(255,255,255,.06) inset,0 18px 48px rgba(0,0,0,.6);--glass:rgba(16,18,21,.72);--hatch:#48484A;color-scheme:dark;}
 
 html,body{background:var(--bg);letter-spacing:-.011em}
@@ -570,7 +570,47 @@ main:focus{outline:none}
 .lane.go .num{color:var(--grn);font-weight:800}
 header .pill{font-size:14px;font-weight:600;padding:6px 14px}
 header .pill.g{background:color-mix(in srgb,var(--grn) 16%,transparent);color:var(--grn)}
-header .pill.r{background:color-mix(in srgb,var(--red,#d33) 14%,transparent);color:var(--red,#d33)}
+header .pill.r{background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red)}
+
+/* first-run wizard (touch screen) */
+.wzmain{padding-bottom:104px}
+.wzmain .wiz{max-width:640px}
+.wz-dots{display:flex;gap:6px;justify-content:center;margin:4px 0 6px;flex-wrap:wrap}
+.wz-dots span{display:inline-flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border-radius:980px;color:var(--faint);font-size:14px}
+.wz-dots i{font-style:normal;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--fill);font-weight:700;font-size:13px}
+.wz-dots span.on{color:var(--ink);background:var(--panel);box-shadow:var(--shadow)}
+.wz-dots span.on i{background:var(--accent);color:#fff}
+.wz-dots span.done{color:var(--mut)}.wz-dots span.done i{background:var(--grn);color:#fff}
+.wz-hero,.wz-card{background:var(--panel);border-radius:22px;box-shadow:var(--shadow);padding:32px;display:flex;flex-direction:column;gap:18px}
+.wz-hero{align-items:center;text-align:center;padding:44px 32px}
+.wz-hero h1{margin:0;font-size:30px}
+.wz-big{font-size:72px;line-height:1}
+.wz-need{list-style:none;counter-reset:n;display:flex;flex-direction:column;gap:12px;font-size:18px;padding:0;margin:6px 0 0;text-align:left}
+.wz-need li{counter-increment:n;display:flex;align-items:center;gap:14px}
+.wz-need li::before{content:counter(n);display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--accentbg);color:var(--accent);font-weight:700;font-size:15px}
+.wz-card h2{margin:0;font-size:24px}
+.wz-card p{margin:0}
+.wz-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.wz-d{color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 4px;border-radius:16px;border:2px solid transparent;background:var(--soft);min-height:84px;cursor:pointer}
+.wz-d b{font-size:30px;line-height:1;font-weight:700}
+.wz-d span{font-size:13px;color:var(--mut)}
+.wz-d.sel{border-color:var(--accent);background:var(--accentbg)}
+.wz-d.ok{background:var(--grnbg)}.wz-d.ok span{color:var(--grn);font-weight:600}
+.wz-d:disabled{opacity:.6}
+.wz-form{display:flex;gap:10px}
+.wz-form select{flex:1;min-width:0;min-height:52px;font-size:16px}
+.wz-form button{min-height:52px;min-width:52px;padding:0;font-size:22px}
+.wz-go{min-height:58px;font-size:19px;font-weight:600;border-radius:16px}
+.wz-warn{color:var(--amb);font-size:15px}
+.wz-prog{display:flex;flex-direction:column;gap:10px}
+.wz-pb{height:12px;border-radius:6px;background:var(--fill);overflow:hidden}
+.wz-pb i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.wz-prog.ok .wz-pb i{background:var(--grn)}.wz-prog.bad .wz-pb i{background:var(--red)}
+.wz-msg{font-size:16px}.wz-prog.ok .wz-msg{color:var(--grn);font-weight:600}.wz-prog.bad .wz-msg{color:var(--red);font-weight:600}
+.wz-prog summary{cursor:pointer;font-size:14px;color:var(--mut);min-height:32px}
+.wz-prog pre{max-height:140px;overflow:auto;font-size:12px;white-space:pre-wrap;margin:6px 0 0}
+.bar button{min-height:48px;padding:0 26px;font-size:16px}
+@media(max-width:560px){.wz-grid{grid-template-columns:repeat(5,1fr);gap:6px}.wz-d b{font-size:24px}.wz-hero,.wz-card{padding:22px}}
 #simpanel{position:fixed;left:16px;bottom:calc(66px + env(safe-area-inset-bottom,0px));z-index:45;width:380px;max-width:calc(100% - 32px);max-height:calc(100% - 140px);display:flex;flex-direction:column;
   background:var(--panel);color:var(--ink);border:1.5px dashed var(--amb);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.22);font-size:13px;overflow:hidden}
 #simpanel.closed{width:auto;border-style:solid;box-shadow:0 4px 14px rgba(0,0,0,.2)}
@@ -1070,9 +1110,17 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
     return {feed, summary, reset};
   })();
   const J = (data, status = 200) => Promise.resolve(new Response(JSON.stringify(data), {status, headers: {'Content-Type': 'application/json'}}));
+  // ---- first-run wizard mock (the real one runs esptool on the Pi)
+    const WZ_PORT = {path: '/dev/ttyACM0', label: 'usb-Espressif_USB_JTAG_serial_debug_unit_AA:BB:CC'};
+    let wzJob = null, wzDone = false, wzPortAt = 0;
+    const wzFlashed = {};
+    const wzPorts = () => { if (!wzPortAt) wzPortAt = Date.now() + 2500; return Date.now() >= wzPortAt ? [WZ_PORT] : []; };
+    const wzStatus = () => ({show_wizard: !wzDone && !((cfg.lanes || []).length), done: wzDone, flashed: wzFlashed,
+      displays: [1, 2, 3, 4, 5], firmware: Object.fromEntries([1, 2, 3, 4, 5].map((n) => [String(n), {ok: true, missing: []}])),
+      ports: wzPorts(), job: wzJob ? {...wzJob} : null});
   const origFetch = window.fetch.bind(window);
   window.fetch = async function (url, opts = {}) {
-    // Absolute paths like /api/me are used as-is: on Windows file:// new URL() would turn them into /C:/api/me
+// Absolute paths like /api/me are used as-is: on Windows file:// new URL() would turn them into /C:/api/me
     const raw = typeof url === 'string' ? url : String((url && url.url) || url);
     const path = raw.charAt(0) === '/' ? raw.split('#')[0].split('?')[0] : new URL(raw, location.href).pathname;
     const method = (opts.method || 'GET').toUpperCase();
@@ -1097,6 +1145,7 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
         displays: Object.fromEntries(Object.entries(DISPLAYS).map(([k, v]) => [k, v ? 'online' : 'offline']))});
       if (path === '/api/config') return J({config: cfg, errors: validate(cfg), defaults: withDefaults({})});
       if (path === '/api/versions') return J({versions: versions.map(({cfg: _c, ...v}) => v)});
+      if (path === '/api/setup/status') return J(wzStatus());
       if (path === '/api/ports') return J({ports: PORTS.filter((p) => p.connected).map((p) => ({path: p.path, label: p.label}))});
       if (path === '/api/layout') return J(layout);
       if (path === '/api/drawing') { if (drawing === null) drawing = {items: drawingSeed && window.T3_STARTER ? window.T3_STARTER() : []}; return J(drawing); }
@@ -1124,6 +1173,23 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
     if (path === '/api/layout') { layout = clone(body); logAudit(me.user, 'layout_saved'); return J(layout); }
     if (path === '/api/drawing') { drawing = {items: clone(body.items || [])}; logAudit(me.user, 'drawing_saved'); return J(drawing); }
     if (path === '/api/map' || path === '/api/map/reset') return J({error: 'ตัวจำลองนี้เปลี่ยนรูปแผนที่ไม่ได้ (บน Pi จริงทำได้)'}, 400);
+    if (path === '/api/setup/flash') {
+      if (wzJob && wzJob.state === 'running') return J({error: 'กำลังลงโปรแกรมจออื่นอยู่ รอให้เสร็จก่อน'}, 409);
+      const n = Number(body.display);
+      if (!(n >= 1 && n <= 5)) return J({error: 'ไม่มีจอนี้'}, 400);
+      if (body.port !== WZ_PORT.path || !wzPorts().length) return J({error: 'ไม่พบพอร์ตนี้ กดรีเฟรชแล้วเลือกใหม่'}, 400);
+      wzJob = {display: n, port: body.port, state: 'running', percent: 0, log: [], message: 'กำลังเชื่อมต่อ'};
+      logAudit(me.user, 'flash_display_' + n);
+      const j = wzJob;
+      const t = setInterval(() => {
+        j.percent = Math.min(100, j.percent + 3 + Math.random() * 6);
+        j.message = 'กำลังลงโปรแกรม';
+        j.log = j.log.concat([`Writing at 0x${(0x10000 + Math.round(j.percent * 9000)).toString(16)}... (${Math.round(j.percent)} %)`]).slice(-30);
+        if (j.percent >= 100) { clearInterval(t); j.state = 'ok'; j.percent = 100; j.message = 'สำเร็จ ถอดสาย USB ได้'; wzFlashed[String(n)] = {t: Math.floor(Date.now() / 1000), port: j.port}; wzPortAt = 0; }
+      }, 250);
+      return J({job: {...j}}, 202);
+    }
+    if (path === '/api/setup/done') { wzDone = true; return J({ok: true}); }
     if (path === '/api/reboot') { if (C.active != null) return J({error: 'มีเลนเขียวอยู่ รอให้แยกว่างแล้วกดอีกครั้ง'}, 409); logAudit(me.user, 'reboot_pi'); startController(); return J({ok: true}); }
     if (path.startsWith('/api/ota/')) {
       const d = Number(path.split('/').pop());
@@ -1287,12 +1353,13 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
 
 const DRAW_W = 1000, DRAW_H = 700;
 const DCOL = {ink: 'var(--ink)', mut: 'var(--mut)', faint: 'var(--faint)', line: 'var(--line)', soft: 'var(--soft)', fill: 'var(--fill)',
-  panel: 'var(--panel)', accent: 'var(--accent)', grn: 'var(--grn)', red: 'var(--red)', amb: 'var(--amb)', none: 'none'};
-const DSWATCH = ['ink', 'mut', 'faint', 'line', 'accent', 'grn', 'red', 'amb', 'none'];
+  panel: 'var(--panel)', accent: 'var(--accent)', grn: 'var(--grn)', red: 'var(--red)', amb: 'var(--amb)', zone: 'var(--zone)', none: 'none'};
+const DSWATCH = ['ink', 'mut', 'faint', 'line', 'accent', 'grn', 'red', 'amb', 'zone', 'none'];
 const DFILLS = [['none', 'ไม่เติมสี'], ['soft', 'เทาอ่อน'], ['fill', 'เทา'], ['panel', 'ขาว/ดำ'], ['accent', 'น้ำเงิน'], ['grn', 'เขียว'], ['red', 'แดง'], ['amb', 'เหลือง'], ['ink', 'ดำ']];
-const DTOOLS = [['select', 'เลือก / ย้าย', '↖'], ['rect', 'สี่เหลี่ยม', '▭'], ['ellipse', 'วงกลม', '◯'], ['line', 'เส้นตรง', '╱'], ['arrow', 'ลูกศร', '➜'], ['text', 'ข้อความ', 'T']];
+const DTOOLS = [['select', 'เลือก / ย้าย', '↖'], ['rect', 'สี่เหลี่ยม', '▭'], ['ellipse', 'วงกลม', '◯'], ['line', 'เส้นตรง', '╱'], ['arrow', 'ลูกศร', '➜'], ['text', 'ข้อความ', 'T'], ['zone', 'โซน safety', '◇'], ['path', 'เส้นทางรถ', '⤳']];
 const DPRESETS = [['road-v', 'ถนน ตั้ง'], ['road-h', 'ถนน นอน'], ['arr-up', '↑'], ['arr-down', '↓'], ['arr-left', '←'], ['arr-right', '→'],
   ['junction', 'พื้นที่แยก'], ['building', 'อาคาร 3D'], ['pillar', 'pillar'], ['boxA', 'กล่อง A'], ['sensor', 'เซนเซอร์'], ['tof', 'ToF'], ['label', 'ป้ายเลน'], ['exit', 'ทางออก']];
+const DZONE_N = 4, VPATH_R = 70;   // clicks of a safety zone · corner rounding radius of a vehicle path     // clicks that make one safety zone
 let drawSeq = 0;
 let drawDrag = null;
 
@@ -1303,8 +1370,39 @@ const newDid = () => 'd' + Date.now().toString(36) + (drawSeq++).toString(36);
 const drawEditing = () => !!(S.dr && S.dr.on);
 
 // ------------------------------------------------------------------ rendering
-function drawItemSvg(it) {
+// polyline with rounded corners (vehicles drive this exact curve): returns many [x,y]
+function dSmooth(pts, r = VPATH_R) {
+  if (!pts || pts.length < 3) return (pts || []).map((p) => [p[0], p[1]]);
+  const out = [[pts[0][0], pts[0][1]]];
+  for (let i = 1; i < pts.length - 1; i++) {
+    const a = pts[i - 1], b = pts[i], c = pts[i + 1];
+    const la = Math.hypot(a[0] - b[0], a[1] - b[1]), lc = Math.hypot(c[0] - b[0], c[1] - b[1]);
+    const d = Math.min(r, la / 2, lc / 2);
+    if (d < 1) { out.push([b[0], b[1]]); continue; }
+    const p1 = [b[0] + (a[0] - b[0]) * d / la, b[1] + (a[1] - b[1]) * d / la], p2 = [b[0] + (c[0] - b[0]) * d / lc, b[1] + (c[1] - b[1]) * d / lc];
+    for (let k = 0; k <= 8; k++) {
+      const t = k / 8, u = 1 - t;
+      out.push([u * u * p1[0] + 2 * u * t * b[0] + t * t * p2[0], u * u * p1[1] + 2 * u * t * b[1] + t * t * p2[1]]);
+    }
+  }
+  out.push([pts[pts.length - 1][0], pts[pts.length - 1][1]]);
+  return out;
+}
+function drawItemSvg(it, edit) {
   const st = dcol(it.stroke), fl = dcol(it.fill), id = `data-did="${dEsc(it.id)}"`;
+  if (it.type === 'lanepath') {
+    if (!edit) return '';
+    const sm = dSmooth(it.pts), e = sm[sm.length - 1], p = sm[Math.max(0, sm.length - 4)], L = Math.hypot(e[0] - p[0], e[1] - p[1]) || 1;
+    const ux = (e[0] - p[0]) / L, uy = (e[1] - p[1]) / L, hs = 20, bx = e[0] - ux * hs, by = e[1] - uy * hs;
+    const pl = sm.map((q) => q.map((n) => Math.round(n * 10) / 10).join(',')).join(' ');
+    return `<g class="di" ${id}><polyline points="${pl}" fill="none" stroke="transparent" stroke-width="22"/><polyline points="${pl}" fill="none" stroke="${st}" stroke-width="${it.sw || 3}" stroke-dasharray="12 7" stroke-linecap="round" stroke-linejoin="round"/>`
+      + `<polygon points="${e[0]},${e[1]} ${bx - uy * hs * 0.5},${by + ux * hs * 0.5} ${bx + uy * hs * 0.5},${by - ux * hs * 0.5}" fill="${st}"/>`
+      + `<g style="pointer-events:none"><rect x="${it.pts[0][0] - 20}" y="${it.pts[0][1] - 32}" width="58" height="22" rx="11" fill="${st}"/><text x="${it.pts[0][0] - 11}" y="${it.pts[0][1] - 16}" font-size="14" font-weight="700" fill="var(--panel)">เลน ${it.lane}</text></g></g>`;
+  }
+  if (it.type === 'zone') {
+    const sw0 = it.stroke === 'none' ? 0 : (it.sw || 0);
+    return `<g class="di" ${id}><polygon points="${(it.pts || []).map((p) => p.join(',')).join(' ')}" fill="url(#dzone)" stroke="${sw0 ? st : 'none'}" stroke-width="${sw0}" stroke-linejoin="round"/></g>`;
+  }
   if (it.type === 'line') {
     const dx = it.x2 - it.x1, dy = it.y2 - it.y1, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
     const hs = Math.max(12, it.sw * 4.5);
@@ -1331,20 +1429,32 @@ function drawItemSvg(it) {
   const fill = it.type === 'hatch' ? dcol('faint') : (fl === 'none' ? 'transparent' : fl);
   return `<g class="di" ${id}${rot}><rect x="${it.x}" y="${it.y}" width="${it.w}" height="${it.h}" rx="${it.r || 0}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${op}/></g>`;
 }
+// yellow diamond (argyle) lattice = safety zone; colours follow the theme token --zone
+const ZONE_DEFS = '<defs><pattern id="dzone" width="28" height="28" patternUnits="userSpaceOnUse"><rect width="28" height="28" fill="var(--zone)" fill-opacity=".22"/><path d="M14 0L28 14L14 28L0 14Z" fill="none" stroke="var(--zone)" stroke-width="2.5"/></pattern></defs>';
 function drawingInner(items, opts = {}) {
-  let out = '';
+  let out = ZONE_DEFS;
   if (opts.edit) {
     out += '<defs><pattern id="dgrid" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M50 0H0V50" fill="none" stroke="var(--line)" stroke-width="1"/></pattern></defs>'
       + `<rect width="${DRAW_W}" height="${DRAW_H}" fill="url(#dgrid)"/>`;
   }
   if (S.mapUrl) out += `<image href="${dEsc(S.mapUrl)}" x="0" y="0" width="${DRAW_W}" height="${DRAW_H}" preserveAspectRatio="xMidYMid meet" opacity="${opts.edit ? .55 : 1}"/>`;
-  return out + (items || []).map(drawItemSvg).join('');
+  return out + (items || []).map((it) => drawItemSvg(it, opts.edit)).join('');
 }
 function drawOverlay(svg) {
   const it = S.dr.items.find((x) => x.id === S.dr.sel);
-  if (!it) return '';
   const k = DRAW_W / (svg.getBoundingClientRect().width || DRAW_W), r = 6.5 * k;
   const hd = (x, y, h) => `<circle class="dh" data-h="${h}" data-hx="${x}" data-hy="${y}" cx="${x}" cy="${y}" r="${r}"/>`;
+  const zp = S.dr.pend;
+  if ((S.dr.tool === 'zone' || S.dr.tool === 'path') && zp) {          // points clicked so far + a rubber band to the pointer
+    const all = S.dr.hover ? zp.concat([[S.dr.hover.x, S.dr.hover.y]]) : zp;
+    const pl = all.length > 1 ? `<polyline class="dsel" points="${all.map((p) => p.join(',')).join(' ')}" fill="none" stroke-width="${2 * k}"/>` : '';
+    const last = zp[zp.length - 1] || [60, 40];
+    return pl + zp.map((p) => `<circle class="dh" cx="${p[0]}" cy="${p[1]}" r="${r}" style="pointer-events:none"/>`).join('')
+      + `<text x="${last[0] + 12 * k}" y="${last[1] - 12 * k}" font-size="${15 * k}" font-weight="700" fill="var(--accent)" style="pointer-events:none">${S.dr.tool === 'zone' ? `จุด ${zp.length + 1}/${DZONE_N}` : `จุด ${zp.length + 1} · ดับเบิลคลิก/Enter = จบ`}</text>`;
+  }
+  if (!it) return '';
+  if (it.type === 'lanepath') return `<polyline class="dsel" points="${it.pts.map((p) => p.join(',')).join(' ')}" fill="none" stroke-width="${1.5 * k}" stroke-dasharray="${4 * k} ${4 * k}"/>${it.pts.map((p, i) => hd(p[0], p[1], 'v' + i)).join('')}`;
+  if (it.type === 'zone') return `<polygon class="dsel" points="${it.pts.map((p) => p.join(',')).join(' ')}" fill="none" stroke-width="${1.5 * k}"/>${it.pts.map((p, i) => hd(p[0], p[1], 'v' + i)).join('')}`;
   if (it.type === 'line') return `<line class="dsel" x1="${it.x1}" y1="${it.y1}" x2="${it.x2}" y2="${it.y2}" stroke-width="${2 * k}"/>${hd(it.x1, it.y1, 'p1')}${hd(it.x2, it.y2, 'p2')}`;
   if (it.type === 'text') {
     const el = svg.querySelector(`[data-did="${it.id}"] text`);
@@ -1362,14 +1472,19 @@ function redrawDrawing() {
   svg.insertAdjacentHTML('beforeend', `<g class="dovl">${drawOverlay(svg)}</g>`);
 }
 // The map background: the drawing (or the empty-state hint) inside a 1000 x 700 svg.
-function mapBgHtml() {
+function mapBgHtml(noHint) {
   const editing = drawEditing();
   const items = editing ? S.dr.items : (S.drawing && S.drawing.items) || [];
   const empty = !editing && !items.length && !S.mapUrl;
   const hint = empty ? `<div class="mapempty"><b>${isEditor() ? 'ยังไม่มีแผนที่' : 'ยังไม่ได้วาดแผนที่'}</b>${isEditor()
     ? '<span>วาดผังแยกด้วยเครื่องมือในตัว หรือเริ่มจากผังตามแบบ</span><span class="row" style="justify-content:center"><button data-dact="start">✎ วาดแผนที่</button><button class="sec" data-dact="starter0">ใช้ผังถนนตามแบบ T3</button></span>'
     : ''}</div>` : '';
-  return `<svg class="dmap${editing ? ' editing' : ''}" viewBox="0 0 ${DRAW_W} ${DRAW_H}" role="img" aria-label="แผนที่แยก">${drawingInner(items, {edit: editing})}</svg>${hint}`;
+  return `<svg class="dmap${editing ? ' editing' : ''}" viewBox="0 0 ${DRAW_W} ${DRAW_H}" role="img" aria-label="แผนที่แยก">${drawingInner(items, {edit: editing})}</svg>${noHint ? '' : hint}`;
+}
+// the empty-map hint must stay flat (not tilted with the 3D stage)
+function mapHintHtml() {
+  const h = mapBgHtml(false), i = h.indexOf('<div class="mapempty">');
+  return i < 0 ? '' : h.slice(i);
 }
 
 // ------------------------------------------------------------------ toolbar
@@ -1380,7 +1495,7 @@ function drawToolsHtml() {
   const presets = DPRESETS.map(([p, label]) => b('preset', label, `data-p="${p}"`)).join('');
   const cur = sel ? sel.stroke : D.color;
   const swatches = '';
-  const fillNow = sel && sel.type !== 'line' && sel.type !== 'text' ? sel.fill : D.fill;
+  const fillNow = sel && sel.type !== 'line' && sel.type !== 'text' && sel.type !== 'zone' && sel.type !== 'lanepath' ? sel.fill : D.fill;
   const swNow = sel ? sel.sw : D.sw;
   let ctx = '';
   if (sel && sel.type === 'text') {
@@ -1396,14 +1511,21 @@ function drawToolsHtml() {
     ctx += `<label class="dfield" title="ความสูงในมุมมอง 3D (0 = แบน)">สูง 3D<input type="number" data-dfield="ht" min="0" max="300" step="5" value="${sel.ht || 0}" style="width:64px"></label>
       <label class="dfield" title="ยกจากพื้นในมุมมอง 3D">ยก<input type="number" data-dfield="z" min="0" max="300" step="5" value="${sel.z || 0}" style="width:64px"></label>`;
   }
+  const laneOpts = ((S.cfg && S.cfg.lanes) || []).map((l) => l.id);
+  const laneNow = sel && sel.type === 'lanepath' ? sel.lane : D.pathLane;
+  if ((sel && sel.type === 'lanepath') || D.tool === 'path') {
+    ctx += `<label class="dfield" title="เลนที่รถวิ่งตามเส้นทางนี้">เลน<select data-dfield="plane">${laneOpts.map((n) => `<option value="${n}" ${Number(laneNow) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label>`;
+    if (D.tool === 'path') ctx += b('pathend', '✓ จบเส้นทาง', '', 'sm') + '<span class="mut small">คลิกจุดต่อๆ ไป · ดับเบิลคลิกหรือ Enter = จบ · ลากจุดเพื่อโค้ง</span>';
+  }
+  if (sel || D.tool === 'path') ctx = (sel ? '' : '') + ctx;
   if (sel) ctx += b('rot', 'หมุน 90°') + b('bwd', '↓ ถอยหลัง', 'title="ลงหลังชิ้นถัดไป (Bring backward · [)"') + b('fwd', '↑ ขึ้นหน้า', 'title="ขึ้นหน้าชิ้นถัดไป (Bring forward · ])"')
     + b('back', 'ไปหลังสุด') + b('front', 'ขึ้นหน้าสุด') + b('dup', 'ทำซ้ำ') + b('del', 'ลบ', '', 'danger sm');
   const PL = Object.fromEntries(DPRESETS);
   const pg = (t, ids) => `<div class="dt-pg"><span class="dt-l">${t}</span><div class="dt-btns">${ids.map((p) => b('preset', PL[p], `data-p="${p}"`)).join('')}</div></div>`;
   const picker = (label, act, cur, list, dis) => `<details class="cpick ${dis ? 'dis' : ''}"><summary title="${label}"><span class="cpl">${label}</span><i class="cpc ${cur === 'none' ? 'none' : ''}" style="--c:${dcol(cur)}"></i><b>▾</b></summary>
     <div class="cpp">${list.map(([v, l]) => `<button class="swatch ${cur === v ? 'on' : ''} ${v === 'none' ? 'none' : ''}" data-dact="${act}" data-c="${v}" style="--c:${dcol(v)}" title="${l}" aria-label="${label} ${l}"></button>`).join('')}</div></details>`;
-  const fillDis = sel && (sel.type === 'line' || sel.type === 'text') ? 'disabled' : '';
-  const selBar = sel ? `<div class="dt-sel"><span class="dt-l">ชิ้นที่เลือก</span>${ctx}</div>` : '';
+  const fillDis = sel && (sel.type === 'line' || sel.type === 'text' || sel.type === 'zone' || sel.type === 'lanepath') ? 'disabled' : '';
+  const selBar = (sel || D.tool === 'path') ? `<div class="dt-sel"><span class="dt-l">${sel ? 'ชิ้นที่เลือก' : 'เส้นทางรถ'}</span>${ctx}</div>` : '';
   return `<div class="dt-top"><div class="dt-tools" role="toolbar" aria-label="เครื่องมือวาด">${tools}</div>
       <div class="dt-style">${picker('สีเส้น', 'color', cur, DSWATCH.map((c) => [c, c === 'none' ? 'ไม่มีเส้น' : c]), '')}${picker('สีเติม', 'fillc', fillNow, DFILLS, fillDis)}
         <label class="dfield">หนา<select data-dfield="sw">${[1, 2, 3, 4, 6, 10].map((v) => `<option value="${v}" ${Number(swNow) === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
@@ -1476,7 +1598,7 @@ function drawStarter() {
 window.T3_STARTER = drawStarter;
 
 function startDrawing() {
-  S.dr = {on: true, items: dclone((S.drawing && S.drawing.items) || []), tool: 'select', sel: null, color: 'ink', fill: 'none', sw: 2, snap: true, undo: [], dirty: false};
+  S.dr = {on: true, items: dclone((S.drawing && S.drawing.items) || []), tool: 'select', sel: null, color: 'ink', fill: 'none', sw: 2, snap: true, undo: [], dirty: false, pathLane: ((S.cfg && S.cfg.lanes && S.cfg.lanes[0]) || {id: 1}).id};
   S.sel = null; S.v3d = false;
   if (S.mapFull && typeof setMapFull === 'function') setMapFull(false);
   render();
@@ -1495,8 +1617,22 @@ async function saveDrawing() {
 }
 async function loadDrawing() { try { S.drawing = await api('/api/drawing'); } catch (e) { S.drawing = {items: []}; } }
 
+function finishPath() {
+  const D = S.dr;
+  if (!D || D.tool !== 'path') return;
+  const pts = [];
+  (D.pend || []).forEach((p) => { const q = pts[pts.length - 1]; if (!q || Math.hypot(p[0] - q[0], p[1] - q[1]) > 4) pts.push(p); });
+  D.pend = null; D.hover = null;
+  if (pts.length < 2) { D.tool = 'select'; renderDrawTools(); redrawDrawing(); return; }
+  dpush();
+  const it = {id: newDid(), type: 'lanepath', lane: Number(D.pathLane) || 1, pts, stroke: 'accent', fill: 'none', sw: 3, rot: 0};
+  D.items.push(it); D.sel = it.id; D.tool = 'select';
+  renderDrawTools(); redrawDrawing();
+}
+document.addEventListener('dblclick', (e) => { if (drawEditing() && S.dr.tool === 'path' && e.target.closest('svg.dmap')) finishPath(); });
 function moveItem(it, o, dx, dy) {
   if (it.type === 'line') { it.x1 = o.x1 + dx; it.y1 = o.y1 + dy; it.x2 = o.x2 + dx; it.y2 = o.y2 + dy; }
+  else if (it.pts) it.pts = o.pts.map((p) => [p[0] + dx, p[1] + dy]);
   else { it.x = o.x + dx; it.y = o.y + dy; }
 }
 document.addEventListener('pointerdown', (e) => {
@@ -1515,6 +1651,24 @@ document.addEventListener('pointerdown', (e) => {
     const it = D.items.find((x) => x.id === g.dataset.did);
     if (D.sel !== it.id) dselect(it.id);
     drawDrag = {mode: 'move', id: it.id, orig: dclone(it), start: pt, pushed: false};
+  } else if (D.tool === 'path') {
+    if (!D.pend) D.pend = [];
+    const np = [dsnap(pt.x), dsnap(pt.y)], lp = D.pend[D.pend.length - 1], now = Date.now();
+    if (lp && now - (D.pendT || 0) < 450 && Math.hypot(np[0] - lp[0], np[1] - lp[1]) < 16) { finishPath(); return; }   // double click / double tap = finish
+    D.pend.push(np); D.pendT = now;
+    redrawDrawing();
+    return;
+  } else if (D.tool === 'zone') {
+    if (!D.pend) D.pend = [];
+    D.pend.push([dsnap(pt.x), dsnap(pt.y)]);
+    if (D.pend.length >= DZONE_N) {
+      dpush();
+      const it = {id: newDid(), type: 'zone', pts: D.pend, stroke: 'zone', fill: 'none', sw: 3, rot: 0};
+      D.items.push(it); D.sel = it.id; D.tool = 'select'; D.pend = null; D.hover = null;
+      renderDrawTools();
+    }
+    redrawDrawing();
+    return;
   } else if (D.tool === 'text') {
     dpush();
     const it = dstyle({id: newDid(), type: 'text', x: dsnap(pt.x), y: dsnap(pt.y), text: 'ข้อความ', size: 22, sw: 0, bold: false, fill: 'none'});
@@ -1538,6 +1692,11 @@ document.addEventListener('pointerdown', (e) => {
   try { svg.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
 });
 document.addEventListener('pointermove', (e) => {
+  if (drawEditing() && (S.dr.tool === 'zone' || S.dr.tool === 'path') && S.dr.pend && S.dr.pend.length) {
+    const svg = document.querySelector('svg.dmap');
+    if (svg) { const p = dpt(svg, e); S.dr.hover = {x: dsnap(p.x), y: dsnap(p.y)}; redrawDrawing(); }
+    return;
+  }
   if (!drawDrag || !drawEditing()) return;
   const svg = document.querySelector('svg.dmap');
   if (!svg) return;
@@ -1553,6 +1712,8 @@ document.addEventListener('pointermove', (e) => {
     const x2 = dsnap(pt.x), y2 = dsnap(pt.y);
     it.x = Math.min(drawDrag.start.x, x2); it.y = Math.min(drawDrag.start.y, y2);
     it.w = Math.max(1, Math.abs(x2 - drawDrag.start.x)); it.h = Math.max(1, Math.abs(y2 - drawDrag.start.y));
+  } else if (m[0] === 'v' && it.pts) {
+    it.pts = o.pts.map((p, i) => (i === Number(m.slice(1)) ? [dsnap(pt.x), dsnap(pt.y)] : p));
   } else if (m === 'p1' || m === 'p2') {
     let x = dsnap(pt.x), y = dsnap(pt.y);
     const ax = m === 'p1' ? it.x2 : it.x1, ay = m === 'p1' ? it.y2 : it.y1;
@@ -1596,7 +1757,8 @@ document.addEventListener('click', async (e) => {
   if (act === 'starter0') { startDrawing(); insertItems(drawStarter()); return; }
   if (!drawEditing()) return;
   const D = S.dr, it = dsel();
-  if (act === 'tool') { D.tool = b.dataset.t; renderDrawTools(); }
+  if (act === 'pathend') { finishPath(); return; }
+  if (act === 'tool') { D.tool = b.dataset.t; D.pend = null; D.hover = null; if (D.tool === 'zone' || D.tool === 'path') D.sel = null; renderDrawTools(); redrawDrawing(); }
   else if (act === 'preset') { insertItems(presetItems(b.dataset.p, 500 + (Math.random() * 60 - 30), 350 + (Math.random() * 60 - 30))); }
   else if (act === 'fillc') { D.fill = b.dataset.c; if (it && it.type !== 'line' && it.type !== 'text') { dpush(); it.fill = b.dataset.c; redrawDrawing(); } renderDrawTools(); }
   else if (act === 'color') { D.color = b.dataset.c; if (it) { dpush(); it.stroke = b.dataset.c; redrawDrawing(); } renderDrawTools(); }
@@ -1610,6 +1772,7 @@ document.addEventListener('click', async (e) => {
   else if (act === 'rot' && it) {
     dpush();
     if (it.type === 'line') { const cx = (it.x1 + it.x2) / 2, cy = (it.y1 + it.y2) / 2, r = (x, y) => [cx - (y - cy), cy + (x - cx)]; [it.x1, it.y1] = r(it.x1, it.y1); [it.x2, it.y2] = r(it.x2, it.y2); }
+    else if (it.pts) { const cx = it.pts.reduce((a, p) => a + p[0], 0) / it.pts.length, cy = it.pts.reduce((a, p) => a + p[1], 0) / it.pts.length; it.pts = it.pts.map((p) => [Math.round(cx - (p[1] - cy)), Math.round(cy + (p[0] - cx))]); }
     else it.rot = ((it.rot || 0) + 90) % 360;
     redrawDrawing();
   } else if (act === 'starter') {
@@ -1629,6 +1792,7 @@ function drawField(e) {
   const v = f.type === 'checkbox' ? f.checked : f.value;
   if (k === 'snap') { D.snap = v; return; }
   if (k === 'fill') { D.fill = v; if (it && it.type !== 'line' && it.type !== 'text') { dpush(); it.fill = v; redrawDrawing(); } return; }
+  if (k === 'plane') { D.pathLane = Number(v); if (it && it.type === 'lanepath') { dpush(); it.lane = Number(v); redrawDrawing(); } return; }
   if (k === 'sw') { D.sw = Number(v); if (it) { dpush(); it.sw = Number(v); redrawDrawing(); } return; }
   if (!it) return;
   if (k === 'ht' || k === 'z') {
@@ -1653,7 +1817,8 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'Delete' || e.key === 'Backspace') { if (it) { e.preventDefault(); document.querySelector('[data-dact="del"]').click(); } }
   else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') { if (it) { e.preventDefault(); document.querySelector('[data-dact="dup"]').click(); } }
   else if (e.key === ']' || e.key === '[') { if (it) document.querySelector(`[data-dact="${e.key === ']' ? 'fwd' : 'bwd'}"]`).click(); }
-  else if (e.key === 'Escape') { D.tool = 'select'; dselect(null); }
+  else if (e.key === 'Enter' && D.tool === 'path') { e.preventDefault(); finishPath(); }
+  else if (e.key === 'Escape') { D.tool = 'select'; D.pend = null; D.hover = null; dselect(null); }
   else if (it && e.key.startsWith('Arrow')) {
     e.preventDefault(); dpush();
     const st = e.shiftKey ? 10 : 1, dx = e.key === 'ArrowLeft' ? -st : e.key === 'ArrowRight' ? st : 0, dy = e.key === 'ArrowUp' ? -st : e.key === 'ArrowDown' ? st : 0;
@@ -2014,10 +2179,34 @@ function laneHeading(l) {
 function vPath(l) {
   const pos = (S.layout.lanes || {})[String(l.id)];
   if (!pos) return null;
-  const a = laneHeading(l) * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a);
   const stopC = 34 + VL / 2;                            // centre of a waiting vehicle, behind the lane widget
+  const drawn = ((S.drawing && S.drawing.items) || []).find((it) => it.type === 'lanepath' && it.lane === l.id);
+  if (drawn) return drawnPath(drawn, pos, stopC);        // the engineer drew this lane's route on the map
+  const a = laneHeading(l) * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a);
   const sx = pos.x * 1000 - ux * stopC, sy = pos.y * 700 - uy * stopC;
-  return {ux, uy, ang: laneHeading(l), x0: sx - ux * V_ENTRY, y0: sy - uy * V_ENTRY, stop: V_ENTRY, end: V_ENTRY + stopC + V_AFTER};
+  const x0 = sx - ux * V_ENTRY, y0 = sy - uy * V_ENTRY, ang = laneHeading(l);
+  return {ang, at: (s) => ({x: x0 + ux * s, y: y0 + uy * s, a: ang}), stop: V_ENTRY, end: V_ENTRY + stopC + V_AFTER};
+}
+// a drawn route (rounded polyline): position and heading at distance s; the stop point is the spot nearest the lane widget
+const VPATH_CACHE = new Map();
+function drawnPath(it, pos, stopC) {
+  const c = VPATH_CACHE.get(it.lane);
+  if (c && c.it === it && c.px === pos.x && c.py === pos.y) return c.P;
+  const pts = dSmooth(it.pts), cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const total = cum[cum.length - 1], wx = pos.x * 1000, wy = pos.y * 700;
+  let best = 0, bd = 1 / 0;
+  pts.forEach((p, i) => { const d = Math.hypot(p[0] - wx, p[1] - wy); if (d < bd) { bd = d; best = i; } });
+  const at = (s) => {
+    s = Math.max(0, Math.min(total, s));
+    let i = 1;
+    while (i < cum.length - 1 && cum[i] < s) i++;
+    const a = pts[i - 1], b = pts[i], seg = (cum[i] - cum[i - 1]) || 1, t = (s - cum[i - 1]) / seg;
+    return {x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, a: Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI};
+  };
+  const P = {ang: at(0).a, at, stop: Math.max(0, Math.min(total - 1, cum[best] - stopC)), end: total};
+  VPATH_CACHE.set(it.lane, {it, px: pos.x, py: pos.y, P});
+  return P;
 }
 const isWaiting = (v) => v.phase !== 'go';
 
@@ -2047,14 +2236,14 @@ function vehSync() {
     if (green) {
       const flip = mine.filter(isWaiting);
       flip.forEach((v) => { v.phase = 'go'; VEH.cool[l.id] = now + 3500; VEH.clr[l.id] = anyOcc ? false : true; });
-      if (anyOcc && !leaving && cooled && !flip.length) { vehSpawn(l, P.stop - 70, 'go'); VEH.cool[l.id] = now + 3500; VEH.clr[l.id] = false; }
+      if (anyOcc && !leaving && cooled && !flip.length) { vehSpawn(l, Math.max(0, P.stop - 70), 'go'); VEH.cool[l.id] = now + 3500; VEH.clr[l.id] = false; }
       VEH.idle[l.id] = now;
       return;
     }
     const want = kindOf(l) === 'auto' ? (farOcc || anyOcc || tickets) : (anyOcc || tickets);
     if (want) VEH.idle[l.id] = now;
     const waiting = mine.filter(isWaiting);
-    if (want && !waiting.length && !leaving && cooled) vehSpawn(l, kindOf(l) === 'auto' && farOcc && !anyOcc ? 0 : P.stop - 170, 'approach');
+    if (want && !waiting.length && !leaving && cooled) vehSpawn(l, kindOf(l) === 'auto' && farOcc && !anyOcc ? 0 : Math.max(0, P.stop - 170), 'approach');
     if (!want && waiting.length && now - (VEH.idle[l.id] || now) > 5000) waiting.forEach((v) => { v.fade = 1; });   // the request went away: the vehicle drives off
   });
 }
@@ -2130,9 +2319,9 @@ function vehRender(dt) {
     alive.add(v.id);
     let el = VEH.els.get(v.id);
     if (!el) { el = document.createElement('div'); el.className = 'veh'; el.innerHTML = vehModelHtml(v.kind); host.appendChild(el); VEH.els.set(v.id, el); }
-    const x = P.x0 + P.ux * v.s, y = P.y0 + P.uy * v.s;
+    const q = P.at(v.s), x = q.x, y = q.y;
     const fadeIn = Math.min(1, v.s / 40 + 0.15), fadeOut = Math.min(1, (P.end - v.s) / 90), gone = v.fade ? Math.max(0, 1 - v.fade / 1.2) : 1;
-    el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) rotateZ(${P.ang}deg)`;
+    el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) rotateZ(${q.a.toFixed(1)}deg)`;
     el.style.opacity = String(Math.max(0, Math.min(fadeIn, fadeOut, gone)));
     el.dataset.lamp = v.phase === 'go' ? 'g' : v.phase === 'wait' ? 'r' : 'a';
   });
@@ -2145,6 +2334,173 @@ function vehLoop(ts) {
   requestAnimationFrame(vehLoop);
 }
 requestAnimationFrame(vehLoop);
+</script>
+<script>// First-run wizard (Pi touch screen): welcome -> load the program into each display over USB -> check displays online.
+// Afterwards the existing lane setup and map drawing take over, then the main map.
+// All numbers (display count, baud, files ...) come from the server (cfg.setup).
+const WIZ_STEPS = ['เริ่ม', 'ลงโปรแกรมจอ', 'ตรวจจอ'];
+
+async function wizInit() {
+  try {
+    const st = await api('/api/setup/status');
+    S.wizSt = st;
+    if (st.show_wizard) { S.wiz = wizNew(0); S.wizSeen = true; }
+  } catch (e) { /* viewers may not read it: just skip the wizard */ }
+}
+const wizNew = (step) => ({step, display: 1, port: '', base: null, jobs: {}, open: false, html: ''});
+
+async function wizRefresh() {
+  if (!S.wiz) return;
+  try {
+    const st = await api('/api/setup/status');
+    S.wizSt = st;
+    const cur = new Set((st.ports || []).map((p) => p.path));
+    if (S.wiz.base === null) S.wiz.base = [...cur];
+    else S.wiz.base = S.wiz.base.filter((p) => cur.has(p));      // a re-plugged port counts as new again
+    if (S.wiz.port && !cur.has(S.wiz.port)) S.wiz.port = '';
+    const fresh = (st.ports || []).filter((p) => !S.wiz.base.includes(p.path));
+    if (!S.wiz.port && fresh.length === 1) S.wiz.port = fresh[0].path;
+    const j = st.job;
+    if (j) {
+      const was = S.wiz.jobs[j.display];
+      S.wiz.jobs[j.display] = j;                                 // keep every display's own result
+      if (j.state === 'ok' && !(was && was.state === 'ok')) {
+        const nxt = (st.displays || []).find((n) => !st.flashed[String(n)]);
+        if (nxt) S.wiz.display = nxt;
+      }
+    }
+  } catch (e) { /* ignore: next tick retries */ }
+}
+
+function wizDots() {
+  return `<div class="wz-dots" role="list">${WIZ_STEPS.map((t, i) => `<span role="listitem" class="${i === S.wiz.step ? 'on' : (i < S.wiz.step ? 'done' : '')}"><i>${i < S.wiz.step ? '✓' : i + 1}</i><b>${t}</b></span>`).join('')}</div>`;
+}
+
+function wizJobHtml(job, w) {
+  if (!job) return '';
+  const cls = job.state === 'ok' ? 'ok' : (job.state === 'error' ? 'bad' : '');
+  const icon = job.state === 'ok' ? '✓ ' : (job.state === 'error' ? '✕ ' : '');
+  return `<div class="wz-prog ${cls}">
+    <div class="wz-pb" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(job.percent)}"><i style="width:${job.percent}%"></i></div>
+    <div class="wz-msg">${icon}${job.display !== w.display ? `จอ ${job.display} · ` : ''}${esc(job.message)}${job.state === 'running' ? ` · ${Math.round(job.percent)}%` : ''}</div>
+    ${job.log && job.log.length ? `<details data-wizlog ${w.open ? 'open' : ''}><summary>รายละเอียด</summary><pre>${esc(job.log.join('\n'))}</pre></details>` : ''}</div>`;
+}
+
+function wizBody() {
+  const w = S.wiz, st = S.wizSt || {};
+  if (w.step === 0) {
+    return `<div class="wz-hero"><div class="wz-big" aria-hidden="true">🚦</div><h1>เริ่มตั้งค่าระบบ</h1>
+      <ol class="wz-need"><li>ลงโปรแกรมให้จอ ทีละจอ</li><li>ตรวจว่าจอออนไลน์</li><li>ตั้งค่าเลนและแผนที่</li></ol></div>`;
+  }
+  if (w.step === 1) {
+    const disp = st.displays || [];
+    const fw = st.firmware || {}, fl = st.flashed || {};
+    const last = st.job || null;                                   // newest result stays visible after auto-advancing to the next display
+    const job = w.jobs[w.display] || (last && last.state !== 'running' ? last : null);
+    const running = Object.values(w.jobs).some((j) => j.state === 'running') || (st.job && st.job.state === 'running');
+    const cur = fw[String(w.display)] || {ok: false, missing: []};
+    const base = w.base || [];
+    const ports = (st.ports || []).map((p) => `<option value="${esc(p.path)}" ${w.port === p.path ? 'selected' : ''}>${base.includes(p.path) ? '' : '★ '}${esc(p.path)}</option>`).join('');
+    const cards = disp.map((n) => {
+      const ok = !!fl[String(n)], miss = !(fw[String(n)] || {}).ok;
+      return `<button class="wz-d ${w.display === n ? 'sel' : ''} ${ok ? 'ok' : ''}" data-act="wizpick" data-n="${n}" aria-pressed="${w.display === n}" ${running ? 'disabled' : ''}>
+        <b>${n}</b><span>${ok ? '✓ แล้ว' : (miss ? 'ไม่มีไฟล์' : 'ยังไม่ได้ลง')}</span></button>`;
+    }).join('');
+    return `<div class="wz-card"><h2>ลงโปรแกรมให้จอ</h2>
+      <div class="wz-grid">${cards}</div>
+      <div class="wz-form">
+        <select data-wizport aria-label="พอร์ต USB" ${running ? 'disabled' : ''}><option value="">${ports ? 'เลือกพอร์ต USB' : 'เสียบสาย USB'}</option>${ports}</select>
+        <button class="sec" data-act="wizrefresh" aria-label="รีเฟรชพอร์ต" ${running ? 'disabled' : ''}>↻</button>
+      </div>
+      <button class="wz-go" data-act="wizflash" ${running || !w.port || !cur.ok ? 'disabled' : ''}>ลงโปรแกรมจอ ${w.display}</button>
+      ${!cur.ok ? `<p class="wz-warn">ไม่มีไฟล์เฟิร์มแวร์จอ ${w.display}</p>` : ''}
+      ${wizJobHtml(job, w)}
+    </div>`;
+  }
+  const disp = st.displays || [1, 2, 3, 4, 5];
+  const cards = disp.map((n) => {
+    const on = displayOnline(n);
+    return `<div class="wz-d ${on ? 'ok' : ''}"><b>${n}</b><span>${on ? '● ออนไลน์' : '○ ยังไม่พบ'}</span></div>`;
+  }).join('');
+  return `<div class="wz-card"><h2>ตรวจจอ</h2><p class="mut">ต่อสาย LAN และไฟ แล้วรอสักครู่</p><div class="wz-grid">${cards}</div></div>`;
+}
+
+function wizBar() {
+  const w = S.wiz, st = S.wizSt || {};
+  const running = (st.job && st.job.state === 'running');
+  const last = w.step === WIZ_STEPS.length - 1;
+  const flashed = Object.keys(st.flashed || {}).length;
+  return `${w.step > 0 ? '<button class="sec" data-act="wizback">‹ กลับ</button>' : ''}
+    <span class="sp"></span>
+    ${w.step === 0 && S.wizSeen ? '<button class="plain" data-act="wizskip">ข้าม</button>' : ''}
+    <button data-act="wiznext" ${running ? 'disabled' : ''}>${w.step === 0 ? 'เริ่ม' : (last ? (w.nav ? 'เสร็จ' : 'ตั้งค่าแยก ›') : (w.step === 1 && !flashed ? 'ข้าม ›' : 'ถัดไป ›'))}</button>`;
+}
+
+function wizView() {
+  return `<main id="main" tabindex="-1" class="wzmain"><div class="wiz">${wizDots()}<div id="wizbody">${wizBody()}</div></div></main>
+    <div class="bar" id="wizbar">${wizBar()}</div>`;
+}
+
+// repaint only when something changed, and never while a dropdown is open
+function wizPaint() {
+  const w = S.wiz;
+  if (!w) return;
+  const b = document.getElementById('wizbody');
+  if (!b) return;
+  const f = document.activeElement;
+  if (f && f.tagName === 'SELECT') return;
+  const html = wizBody() + wizBar();
+  if (html === w.html) return;
+  w.html = html;
+  b.innerHTML = wizBody();
+  const bar = document.getElementById('wizbar');
+  if (bar) bar.innerHTML = wizBar();
+}
+
+async function wizDone() {
+  try { await api('/api/setup/done', {method: 'POST', body: {}}); } catch (e) { /* the wizard is optional */ }
+  S.wiz = null;
+  render();
+}
+
+async function wizAct(act, b) {
+  const w = S.wiz;
+  if (act === 'wizopen') { S.wiz = wizNew(1); S.wiz.nav = !!(b && b.dataset.nav); await wizRefresh(); render(); return true; }
+  if (!w) return false;
+  if (act === 'wiznext') {
+    if (w.step === 0) { w.step = 1; w.base = null; await wizRefresh(); render(); return true; }
+    if (w.step < WIZ_STEPS.length - 1) { w.step += 1; render(); return true; }
+    await wizDone(); return true;
+  }
+  if (act === 'wizback' && w.nav && w.step === 1) { S.wiz = null; render(); return true; }
+  if (act === 'wizback') { w.step = Math.max(0, w.step - 1); if (w.step === 1) { w.base = null; wizRefresh(); } render(); return true; }
+  if (act === 'wizskip') { await wizDone(); return true; }
+  if (act === 'wizpick') { w.display = Number(b.dataset.n); wizPaint(); return true; }
+  if (act === 'wizrefresh') { await wizRefresh(); wizPaint(); return true; }
+  if (act === 'wizflash') {
+    try {
+      const r = await api('/api/setup/flash', {method: 'POST', body: {display: w.display, port: w.port}});
+      w.jobs[r.job.display] = r.job;
+      S.wizSt = {...(S.wizSt || {}), job: r.job};
+    } catch (e) { toast(e.message, true); }
+    wizPaint(); return true;
+  }
+  return false;
+}
+
+document.addEventListener('change', (e) => {
+  if (S.wiz && e.target.matches('[data-wizport]')) { S.wiz.port = e.target.value; wizPaint(); }
+});
+// remember whether "รายละเอียด" is open: the panel is redrawn while a job runs
+document.addEventListener('toggle', (e) => {
+  if (S.wiz && e.target.matches && e.target.matches('[data-wizlog]')) S.wiz.open = e.target.open;
+}, true);
+
+setInterval(async () => {
+  if (!S.wiz || !S.me || S.wiz.step === 0) return;
+  if (S.wiz.step === 1) await wizRefresh();
+  wizPaint();
+}, 1000);
 </script>
 <script>// T3 Traffic Platform web UI (plain JS, served from the Pi, no internet needed).
 //
@@ -2285,6 +2641,7 @@ const CATS = [
   ['display', 'จอ', [
     ['เฟรมสำรอง', [['reserve', 'STOPHINT'], ['reserve', 'GO_N'], ['reserve', 'STOP_N']]],
     ['เฟิร์มแวร์', [['text', 'ota.password', 'รหัส OTA', 'ota_password']]]]],
+  ['flash', 'ลงโปรแกรมจอ', []],
   ['service', 'ดูแลระบบ', []],
 ];
 
@@ -2492,6 +2849,7 @@ function render() {
   const app = $('#app');
   hideInfo();
   if (!S.me) { app.innerHTML = loginView(); return; }
+  if (S.wiz) { app.innerHTML = headerView() + wizView(); updateLive(); return; }
   const needSetup = S.cfg && !(S.cfg.lanes || []).length;
   if (needSetup && !S.draft) initDraft();
   if (needSetup && isEditor() && S.page !== 'system') S.page = 'setup';
@@ -2516,7 +2874,7 @@ function render() {
 
 function headerView() {
   const cfg = S.page === 'setup' ? S.draft : S.cfg;
-  const nav = S.page === 'setup' ? '' : `<nav>${[['map', 'แผนที่'], ['system', 'ระบบ']].map(([id, t]) =>
+  const nav = (S.page === 'setup' || S.wiz) ? '' : `<nav>${[['map', 'แผนที่'], ['system', 'ระบบ']].map(([id, t]) =>
     `<a href="#${id}" class="${S.page === id ? 'on' : ''}">${t}</a>`).join('')}</nav>`;
   return `<a class="skip" href="#main">ข้ามไปเนื้อหาหลัก</a><header>
     <span class="jn"><img class="logo" src="data:image/png;base64,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" alt="${esc((cfg && cfg.junction_id) || 'T3')}"></span>
@@ -2534,10 +2892,11 @@ function headerView() {
 function loginView() {
   return `<form class="login" id="loginform">
     <h2>Traffic Platform</h2>
-    ${S.setupNeeded ? '<p class="mut small">ยังไม่มีบัญชีผู้ใช้ สร้างบัญชีแรกบน Pi:<br><span class="mono">sudo trafficlight-user add &lt;ชื่อ&gt; --role editor</span></p>' : ''}
+    ${S.setupNeeded ? '<p class="mut small">ยังไม่มีบัญชีผู้ใช้ ตั้งชื่อและรหัสผ่านของผู้ดูแลคนแรก (ทำได้จากหน้าจอของ Pi เท่านั้น รหัสผ่านอย่างน้อย 8 ตัว)</p>' : ''}
     <input id="lu" type="text" autocomplete="username" placeholder="ชื่อผู้ใช้" aria-label="ชื่อผู้ใช้" required>
     <input id="lp" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" aria-label="รหัสผ่าน" required>
-    <button type="submit">เข้าสู่ระบบ</button>
+    ${S.setupNeeded ? '<input id="lp2" type="password" autocomplete="new-password" placeholder="ยืนยันรหัสผ่านอีกครั้ง" aria-label="ยืนยันรหัสผ่าน" required>' : ''}
+    <button type="submit">${S.setupNeeded ? 'สร้างบัญชีและเริ่มเซ็ตอัป' : 'เข้าสู่ระบบ'}</button>
     <span class="r small">${esc(S.loginErr || '')}</span>
   </form>`;
 }
@@ -2569,6 +2928,7 @@ function setupView() {
   <div class="bar">
     <div class="req">${reqs.map(([ok, t]) => `<span class="${ok ? 'ok' : ''}">${ok ? '✓' : '○'} ${t}</span>`).join('')}</div>
     <span class="sp"></span>
+    ${S.wizSeen ? '<button class="sec" data-act="wizopen">‹ ย้อนกลับ</button>' : ''}
     ${lanes.length && !S.edit ? '<button class="plain" data-act="resetdraft">เริ่มใหม่</button>' : ''}
     <button data-act="finish" ${ready ? '' : 'disabled'}>ถัดไป</button>
   </div>`;
@@ -2704,7 +3064,7 @@ function mainView() {
   const widgets = (cfg.lanes || []).filter((l) => S.layout.lanes[String(l.id)]).map((l) => widgetHtml(l)).join('');
   const drawing = drawEditing();
   const v3 = S.v3d && !drawing;
-  const bg = v3 ? `<div class="stage" id="stage">${mapBgHtml()}${scene3dHtml((S.drawing && S.drawing.items) || [])}<div class="vehs" id="vehs"></div>${widgets}</div>` : mapBgHtml();
+  const bg = v3 ? `<div class="stage" id="stage">${mapBgHtml(true)}${scene3dHtml((S.drawing && S.drawing.items) || [])}<div class="vehs" id="vehs"></div>${widgets}</div>` : mapBgHtml();
   const list = (cfg.lanes || []).map((l) => listItem(l)).join('');
   const newItem = S.edit && S.edit.isNew ? `<div class="lane open" id="lane-${S.edit.id}"><div class="lrow"><span class="num">${S.edit.id}</span><span class="mut small">เลนใหม่</span></div>${editorHtml('main')}</div>` : '';
   return `<main id="main" tabindex="-1">${banners.join('')}
@@ -2717,7 +3077,7 @@ function mainView() {
               ${edit ? `<button class="sec sm" data-dact="start">✎ วาดแผนที่</button>
               <label>รูปพื้นหลัง<input type="file" accept="image/png,image/jpeg,image/svg+xml,.svg" data-mapfile hidden></label>
               ${S.mapUrl ? '<button class="sec sm" data-act="mapreset">ลบรูปพื้นหลัง</button>' : ''}` : ''}
-              <button class="sec sm" data-act="mapfull" aria-label="แผนที่เต็มจอ">${S.mapFull ? '✕ ปิดเต็มจอ' : '⛶ เต็มจอ'}</button></div>`}<div class="mapbox${drawing ? ' drawing' : ''}${v3 ? ' v3d' : ''}" id="map"><div class="bg">${bg}</div>${v3 ? '' : (drawing ? '' : '<div class="vehs" id="vehs"></div>') + widgets}
+              <button class="sec sm" data-act="mapfull" aria-label="แผนที่เต็มจอ">${S.mapFull ? '✕ ปิดเต็มจอ' : '⛶ เต็มจอ'}</button></div>`}<div class="mapbox${drawing ? ' drawing' : ''}${v3 ? ' v3d' : ''}" id="map"><div class="bg">${bg}</div>${v3 ? mapHintHtml() : (drawing ? '' : '<div class="vehs" id="vehs"></div>') + widgets}
             
           </div>
           <div class="legend">${drawing ? '<span>วาดแผนที่ · ลากเลนที่วางไว้จะทำได้หลังบันทึก</span>' : `<span><span class="sd ok"></span>ว่าง</span><span><span class="sd raw"></span>เห็นวัตถุ</span><span><span class="sd on"></span>เจอรถ/มือ</span><span><span class="sd bad"></span>เสีย</span>
@@ -2821,7 +3181,9 @@ function sysParams() {
   const cat = CATS.find((x) => x[0] === S.sysCat) || CATS[0];
   const side = `<nav class="side" aria-label="หมวดค่ารวม">${CATS.map(([id, t]) => `<button class="${cat[0] === id ? 'on' : ''}" data-act="syscat" data-cat="${id}">${t}</button>`).join('')}</nav>`;
   let content;
-  if (cat[0] === 'service') {
+  if (cat[0] === 'flash') {
+    content = `<div class="group"><div class="list"><div class="li-row"><span class="lab">ลงโปรแกรมให้จอ <span class="mut small">ตอนเปลี่ยนจอใหม่</span></span><span class="val"><button data-act="wizopen" data-nav="1" ${ro}>เริ่ม</button></span></div></div></div>`;
+  } else if (cat[0] === 'service') {
     content = `<div class="group"><div class="list">
       <div class="li-row"><span class="lab">รีสตาร์ตระบบควบคุม</span><span class="val"><button class="sec sm" data-act="restart" ${ro}>รีสตาร์ต</button></span></div>
       <div class="li-row"><span class="lab">รีบูต Pi</span><span class="val"><button class="sec sm" data-act="reboot" ${ro} style="color:var(--red)">รีบูต</button></span></div>
@@ -2830,7 +3192,7 @@ function sysParams() {
   } else {
     content = cat[2].map(([title, rows]) => `<div class="group"><div class="eyebrow">${esc(title)}</div><div class="list">${rows.map((r) => sysRow(r, ro)).join('')}</div></div>`).join('');
   }
-  const resetAll = cat[0] !== 'service' && isEditor() && cat[2].some(([, rows]) => rows.some((r) => r[0] === 'num'))
+  const resetAll = cat[0] !== 'service' && cat[0] !== 'flash' && isEditor() && cat[2].some(([, rows]) => rows.some((r) => r[0] === 'num'))
     ? `<button class="plain" data-act="catdef" data-cat="${cat[0]}">คืนค่าเริ่มต้นทั้งหมวด</button>` : '';
   return `<div class="syswrap">${side}<div class="maxw"><div class="sys-h"><h2>${cat[1]}</h2>${resetAll}</div>${content}</div></div>`;
 }
@@ -3387,6 +3749,7 @@ document.addEventListener('click', async (ev) => {
   const act = b.dataset.act;
   const lane = b.dataset.lane !== undefined ? Number(b.dataset.lane) : undefined;
   try {
+    if (act.startsWith('wiz') && await wizAct(act, b)) return;
     if (act === 'avpick') { openAvPick(b.dataset.name); return; }
     if (act === 'avview') {                                  // header avatar: just show it large
       const m = document.createElement('div'); m.id = 'avpk'; m.className = 'avbig';
@@ -3575,7 +3938,11 @@ document.addEventListener('submit', async (ev) => {
   try {
     if (f.id === 'loginform') {
       S.loginErr = '';
-      await api('/api/login', {method: 'POST', body: {user: f.querySelector('#lu').value, password: f.querySelector('#lp').value}});
+      const lu = f.querySelector('#lu').value, lp = f.querySelector('#lp').value;
+      if (S.setupNeeded) {                                   // first account, created on the Pi's own screen
+        if (lp !== f.querySelector('#lp2').value) throw new Error('รหัสผ่านสองช่องไม่ตรงกัน');
+        await api('/api/setup/first-user', {method: 'POST', body: {user: lu, password: lp}});
+      } else await api('/api/login', {method: 'POST', body: {user: lu, password: lp}});
       await start();
     } else if (f.id === 'adduser') {
       await api('/api/users', {method: 'POST', body: {name: f.querySelector('#nu').value, password: f.querySelector('#np').value, icon: f.querySelector('#ni').value, role: f.querySelector('#nr').value}});
@@ -3609,6 +3976,7 @@ async function start() {
   S.page = ['map', 'system'].includes(p) ? p : 'map';
   S.sys = clone(S.cfg);
   await pollState();
+  if (isEditor()) await wizInit();
   render();
 }
 

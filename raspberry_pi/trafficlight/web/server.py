@@ -26,6 +26,7 @@ from loguru import logger
 from ..t3.config import validate, with_defaults
 from ..t3.flowstats import FlowStats
 from ..t3.ports import discover as list_ports
+from .flasher import Flasher
 from .store import ConfigStore, Users, _atomic_write
 
 SCALE_MIN, SCALE_MAX = 0.4, 4.0
@@ -137,8 +138,10 @@ def _clean_layout(data) -> dict:
 DRAW_W, DRAW_H = 1000, 700
 DRAW_MAX_ITEMS = 400
 DRAW_MAX_HEIGHT = 300
-DRAW_TYPES = ("rect", "ellipse", "line", "text", "road", "hatch")
-DRAW_COLORS = ("ink", "mut", "faint", "line", "soft", "fill", "panel", "accent", "grn", "red", "amb", "none")
+DRAW_TYPES = ("rect", "ellipse", "line", "text", "road", "hatch", "zone", "lanepath")
+DRAW_PTS = {"zone": (3, 12), "lanepath": (2, 16)}      # points allowed: safety zone polygon / vehicle path of one lane
+DRAW_MAX_LANE = 64
+DRAW_COLORS = ("ink", "mut", "faint", "line", "soft", "fill", "panel", "accent", "grn", "red", "amb", "zone", "none")
 
 
 def _num(v, lo, hi, what):
@@ -165,6 +168,21 @@ def _clean_drawing(data) -> dict:
             c[k] = v
         c["sw"] = _num(it.get("sw", 2), 0, 40, "ความหนาเส้น")
         c["rot"] = _num(it.get("rot", 0), -360, 360, "มุมหมุน")
+        if t in DRAW_PTS:                    # zone: yellow diamond lattice polygon · lanepath: where the vehicles of a lane drive
+            pts = it.get("pts")
+            lo, hi = DRAW_PTS[t]
+            if not isinstance(pts, list) or not (lo <= len(pts) <= hi):
+                raise ValueError("ข้อมูลแผนที่ไม่ถูกต้อง: จำนวนจุด")
+            if t == "lanepath":
+                c["lane"] = int(_num(it.get("lane"), 1, DRAW_MAX_LANE, "เลน"))
+            c["pts"] = []
+            for p in pts:
+                if not isinstance(p, (list, tuple)) or len(p) != 2:
+                    raise ValueError("ข้อมูลแผนที่ไม่ถูกต้อง: จุด")
+                c["pts"].append([_num(p[0], -DRAW_W, DRAW_W * 2, "x"), _num(p[1], -DRAW_H, DRAW_H * 2, "y")])
+            c.pop("rot")
+            out.append(c)
+            continue
         if t == "line":
             for k, hi in (("x1", DRAW_W), ("y1", DRAW_H), ("x2", DRAW_W), ("y2", DRAW_H)):
                 c[k] = _num(it.get(k), -DRAW_W, DRAW_W * 2, k)
@@ -207,11 +225,12 @@ def _map_kind(data: bytes) -> str | None:
 
 class App:
     def __init__(self, data_dir: Path, settings: Path | None = None, state: StateCache | None = None,
-                 run_cmd=subprocess.run, ota_post=None):
+                 run_cmd=subprocess.run, ota_post=None, flash_kw=None):
         self.store = ConfigStore(data_dir, settings)
         self.users = Users(data_dir / "users.json")
         cfg = with_defaults(self.store.current())
         self.cfg = cfg
+        self.flasher = Flasher(cfg, data_dir, **(flash_kw or {}))   # tests inject popen / ports_fn / root
         self.state = state or StateCache(cfg)
         self.sessions: dict[str, tuple[str, str, float]] = {}
         self.session_s = float(cfg["web"].get("session_hours", 8)) * 3600
@@ -457,6 +476,10 @@ def make_handler(app: App):
                 return self._json(200, {"versions": app.store.list_versions()})
             if path.startswith("/api/versions/"):
                 return self._json(200, app.store.get_version(int(path.rsplit("/", 1)[1])))
+            if path == "/api/setup/status":
+                if not self._user():
+                    return
+                return self._json(200, app.flasher.status(bool(app.cfg.get("lanes"))))
             if path == "/api/ports":
                 return self._json(200, {"ports": list_ports()})
             if path == "/api/flow":
@@ -501,6 +524,21 @@ def make_handler(app: App):
                         return self._err(401, "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง")
                     cookie = f"{COOKIE}={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age={int(app.session_s)}"
                     return self._json(200, {"ok": True}, {"Set-Cookie": cookie})
+                if path == "/api/setup/first-user":    # first account, from the Pi's own touch screen only
+                    if app.users.count() != 0:
+                        return self._err(403, "มีบัญชีผู้ใช้แล้ว")
+                    if self.client_address[0] not in ("127.0.0.1", "::1"):
+                        return self._err(403, "สร้างบัญชีแรกได้จากหน้าจอของ Pi เท่านั้น")
+                    b = self._jbody()
+                    name, pw = str(b.get("user", "")).strip(), str(b.get("password", ""))
+                    try:
+                        app.users.set(name, pw, "editor")
+                    except ValueError as e:
+                        return self._err(400, str(e))
+                    app.store.audit(name, "first_user_created", {"ip": self.client_address[0]})
+                    token = app.login(name, pw, self.client_address[0])
+                    cookie = f"{COOKIE}={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age={int(app.session_s)}"
+                    return self._json(200, {"ok": True}, {"Set-Cookie": cookie})
                 if path == "/api/logout":
                     app.sessions.pop(self._token() or "", None)
                     return self._json(200, {"ok": True}, {"Set-Cookie": f"{COOKIE}=; Max-Age=0; Path=/"})
@@ -543,6 +581,19 @@ def make_handler(app: App):
                     app.store.audit(user, "control", b)
                     ok = app.state.publish_control(b)
                     return self._json(200 if ok else 503, {"ok": ok})
+                if path == "/api/setup/flash":
+                    b = self._jbody()
+                    try:
+                        job = app.flasher.start(int(b.get("display", 0)), str(b.get("port", "")))
+                    except ValueError as e:
+                        return self._err(400, str(e))
+                    except RuntimeError as e:
+                        return self._err(409, str(e))
+                    app.store.audit(user, f"flash_display_{job['display']}")
+                    return self._json(202, {"job": job})
+                if path == "/api/setup/done":
+                    app.flasher.mark_done()
+                    return self._json(200, {"ok": True})
                 if path == "/api/reboot":
                     st = app.state.snapshot()["state"] or {}
                     if st.get("active_lane") is not None:

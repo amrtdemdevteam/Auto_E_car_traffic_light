@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Traffic Light Kiosk
+Comment=Open the T3 web UI full screen on the Pi touch screen
+Exec=/opt/trafficlight/scripts/t3_kiosk.sh
+X-GNOME-Autostart-enabled=true
