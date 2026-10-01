@@ -221,7 +221,7 @@ USERCLI
   step "Install T3 first-run tools (esptool + full-screen kiosk)"
   # esptool burns the pre-built display firmware from the Pi (firmware/t3/displayN/*.bin).
   # Installed for T3 only, so V1 installs are unchanged. Not fatal: the wizard shows a clear message if missing.
-  "$APP/.venv/bin/pip" install esptool || warn "esptool not installed (no internet?). Install later: $APP/.venv/bin/pip install esptool"
+  "$APP/.venv/bin/pip" install "esptool>=4.8,<6" || warn "esptool not installed (no internet?). Install later: $APP/.venv/bin/pip install esptool"
   # Chromium (Bookworm: chromium, older: chromium-browser) for the touch-screen kiosk.
   if ! command -v chromium >/dev/null 2>&1 && ! command -v chromium-browser >/dev/null 2>&1; then
     DEBIAN_FRONTEND=noninteractive apt-get install -y chromium || DEBIAN_FRONTEND=noninteractive apt-get install -y chromium-browser \
@@ -229,6 +229,31 @@ USERCLI
   fi
   chmod 755 "$APP/scripts/t3_kiosk.sh"
   install -m 644 "$APP/install/trafficlight-kiosk.desktop" /etc/xdg/autostart/trafficlight-kiosk.desktop
+  # Pi OS uses different autostart files per desktop version (labwc / old LXDE-X11): add the script to each one that exists.
+  # t3_kiosk.sh exits at once if the UI is already open, so starting it from two places is harmless.
+  for f in /etc/xdg/labwc/autostart /etc/xdg/lxsession/LXDE-pi/autostart; do
+    [[ -f "$f" ]] || continue
+    grep -q 't3_kiosk.sh' "$f" && continue
+    if [[ "$f" == */LXDE-pi/autostart ]]; then echo "@$APP/scripts/t3_kiosk.sh" >> "$f"; else echo "$APP/scripts/t3_kiosk.sh &" >> "$f"; fi
+  done
+  # Per-user desktop files: wayfire (older Bookworm) keeps autostart in ~/.config/wayfire.ini; a user's own labwc autostart replaces the system one.
+  for d in /home/*/; do
+    u="$(basename "$d")"
+    wf="${d}.config/wayfire.ini"
+    if [[ -f "$wf" ]] && ! grep -q 't3_kiosk.sh' "$wf"; then
+      if grep -q '^\[autostart\]' "$wf"; then
+        sed -i "/^\[autostart\]/a t3_kiosk = $APP/scripts/t3_kiosk.sh" "$wf"
+      else
+        printf '\n[autostart]\nt3_kiosk = %s/scripts/t3_kiosk.sh\n' "$APP" >> "$wf"
+      fi
+      chown "$u:" "$wf" 2>/dev/null || true
+    fi
+    lw="${d}.config/labwc/autostart"
+    if [[ -f "$lw" ]] && ! grep -q 't3_kiosk.sh' "$lw"; then
+      echo "$APP/scripts/t3_kiosk.sh &" >> "$lw"
+      chown "$u:" "$lw" 2>/dev/null || true
+    fi
+  done
   pass "Kiosk autostart installed (opens full screen after the desktop starts)"
   # Desktop icon: double-click re-opens the UI if someone closed it (menu entry + every existing user's Desktop + new users).
   install -m 644 "$APP/install/trafficlight-open.desktop" /usr/share/applications/trafficlight-open.desktop

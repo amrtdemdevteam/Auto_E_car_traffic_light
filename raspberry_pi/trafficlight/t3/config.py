@@ -89,7 +89,8 @@ DEFAULTS: dict = {
         "esptool": ["python3", "-m", "esptool"],
         "chip": "esp32s3",
         "baud": 460800,
-        "flash_args": ["--flash_mode", "keep", "--flash_freq", "keep", "--flash_size", "keep"],
+        "write_cmd": "write-flash",           # esptool >= 4.8 (older underscore names are deprecated in 5.x)
+        "flash_args": ["--flash-mode", "keep", "--flash-freq", "keep", "--flash-size", "keep"],
         "files": [["0x0", "bootloader.bin"], ["0x8000", "partitions.bin"],
                   ["0xe000", "boot_app0.bin"], ["0x10000", "firmware.bin"]],
         "timeout_s": 240,

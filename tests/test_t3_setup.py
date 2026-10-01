@@ -72,7 +72,7 @@ def test_command_comes_from_config_and_firmware_status(fl, tmp_path):
     cmd = fl.command(1, PORT)
     assert cmd[:3] == ["python3", "-m", "esptool"]
     assert cmd[cmd.index("--port") + 1] == PORT and cmd[cmd.index("--chip") + 1] == "esp32s3"
-    assert "write_flash" in cmd and "0x10000" in cmd
+    assert "write-flash" in cmd and "0x10000" in cmd
     assert cmd[-1].endswith("display1/firmware.bin")
     st = fl.firmware_status()
     assert st["1"]["ok"] and st["2"]["ok"] and not st["3"]["ok"] and "bootloader.bin" in st["3"]["missing"]

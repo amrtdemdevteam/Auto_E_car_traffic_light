@@ -121,7 +121,7 @@ class Flasher:
         if exe[0] == "python3" and venv.is_file():          # installed on the Pi: esptool lives in the app's virtualenv
             exe[0] = str(venv)
         cmd = exe + ["--chip", str(self.s["chip"]), "--port", port,
-                     "--baud", str(int(self.s["baud"])), "write_flash"]
+                     "--baud", str(int(self.s["baud"])), str(self.s["write_cmd"])]
         cmd += [str(a) for a in self.s["flash_args"]]
         for off, fname in self.s["files"]:
             cmd += [str(off), str(d / fname)]
@@ -168,7 +168,7 @@ class Flasher:
         finally:
             timer.cancel()
         if rc == 0:
-            job.update(state="ok", percent=100.0, message="สำเร็จ ถอดสาย USB ได้")
+            job.update(state="ok", percent=100.0, message="สำเร็จ ถอดสาย USB แล้วปิด-เปิดไฟจอ")
             self.state["flashed"][str(job["display"])] = {"t": int(time.time()), "port": job["port"]}
             self._save()
         elif time.time() >= deadline:
