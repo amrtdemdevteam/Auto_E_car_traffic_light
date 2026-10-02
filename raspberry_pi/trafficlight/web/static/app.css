@@ -608,3 +608,21 @@ header .pill.r{background:color-mix(in srgb,var(--red) 14%,transparent);color:va
 .wz-prog pre{max-height:140px;overflow:auto;font-size:12px;white-space:pre-wrap;margin:6px 0 0}
 .bar button{min-height:48px;padding:0 26px;font-size:16px}
 @media(max-width:560px){.wz-grid{grid-template-columns:repeat(5,1fr);gap:6px}.wz-d b{font-size:24px}.wz-hero,.wz-card{padding:22px}}
+
+/* admin test mode (sim.js) */
+#simbar{display:none;position:fixed;bottom:12px;right:16px;z-index:90;padding:6px 16px;border-radius:980px;background:#D92D20;color:#fff;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+#simdock{display:none;position:fixed;left:0;top:70px;bottom:0;z-index:85;width:0}
+#simdock .sm-tab{position:absolute;left:0;top:40vh;width:34px;height:96px;padding:0;border-radius:0 12px 12px 0;writing-mode:vertical-rl;font-size:15px}
+#simdock.open .sm-tab{left:300px;height:44px;writing-mode:horizontal-tb;top:12px}
+#simdock .sm-body{display:none;position:absolute;left:0;top:0;bottom:0;width:300px;overflow:auto;background:var(--panel);box-shadow:var(--shadow-up,0 8px 30px rgba(0,0,0,.2));padding:14px}
+#simdock.open .sm-body{display:block}
+.sm-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.sm-l{border-top:1px solid var(--line);padding:10px 0}
+.sm-h{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sm-lamp{padding:1px 10px;border-radius:980px;background:var(--fill);font-size:12px;font-weight:600}
+.sm-lamp.g{background:#22A559;color:#fff}
+.sm-s{display:flex;align-items:center;gap:4px;margin:4px 0;flex-wrap:wrap}
+.sm-s .mono{width:34px;font-size:12px;color:var(--mut)}
+.sm-s button{min-height:40px;padding:0 10px;font-size:14px}
+.sm-s button.on{background:var(--ink);color:var(--panel)}
+.sm-go{background:var(--accent,#0A84FF);color:#fff}

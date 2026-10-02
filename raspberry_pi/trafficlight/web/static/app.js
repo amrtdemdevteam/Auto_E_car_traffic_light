@@ -43,7 +43,7 @@ try { S.dirs = JSON.parse(localStorage.getItem('t3dirs') || '{}') || {}; } catch
 function keepDirs() { try { localStorage.setItem('t3dirs', JSON.stringify(S.dirs)); } catch (e) { /* ignore */ } }
 function vehBtn() {
   const off = !!S.vehOff;
-  return `<button class="sec sm vsw ${off ? '' : 'on'}" data-act="vehs" aria-pressed="${!off}" title="${off ? 'กดเพื่อแสดงรถจำลองบนแผนที่' : 'กดเพื่อซ่อนรถจำลองบนแผนที่'}">🚜 รถจำลอง <i>${off ? 'ซ่อน' : 'แสดง'}</i></button>`;
+  return `<button class="sec sm vsw ${off ? '' : 'on'}" data-act="vehs" aria-pressed="${!off}" title="${off ? 'กดเพื่อแสดงรถจำลองบนแผนที่' : 'กดเพื่อซ่อนรถจำลองบนแผนที่'}">รถจำลอง <i>${off ? 'ซ่อน' : 'แสดง'}</i></button>`;
 }
 function keepView() { try { localStorage.setItem('t3view', JSON.stringify({v3d: S.v3d, vehOff: !!S.vehOff, cam: S.cam})); } catch (e) { /* ignore */ } }
 

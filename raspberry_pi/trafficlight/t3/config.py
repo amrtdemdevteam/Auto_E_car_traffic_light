@@ -82,6 +82,8 @@ DEFAULTS: dict = {
     "displays": {},
     "frames": {"enabled_reserve": []},
     "ota": {"port": 65280, "password": "change-me"},
+    # admin-only test mode: fake sensor frames fed to the real controller (never saved, ends by itself)
+    "sim": {"user": "admin", "max_s": 1800, "pulse_s": 1.5},
     # first-run wizard: burn pre-built display firmware from the Pi (esptool), one display at a time
     "setup": {
         "display_count": 5,
@@ -195,6 +197,13 @@ def validate(cfg: dict) -> list[str]:
                 "fresh_timeout_s"):
         if not _num(sd.get(key)) or sd.get(key) < 0:
             errors.append(f"sensor_defaults.{key} ต้องเป็นตัวเลขไม่ติดลบ")
+
+    sm = cfg.get("sim", {})
+    if not isinstance(sm.get("user"), str) or not sm.get("user"):
+        errors.append("sim.user ต้องเป็นชื่อผู้ใช้")
+    for key in ("max_s", "pulse_s"):
+        if not _num(sm.get(key)) or sm.get(key) <= 0:
+            errors.append(f"sim.{key} ต้องเป็นตัวเลขมากกว่า 0")
 
     h = cfg.get("hand", {})
     if not _num(h.get("grace_ms")) or not (100 <= h["grace_ms"] <= 1000):

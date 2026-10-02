@@ -248,7 +248,7 @@ def test_static_serves_all_ui_scripts(web):
     base = web[0]
     with urllib.request.urlopen(base + "/") as r:
         page = r.read().decode()
-    for name in ("led.js", "draw.js", "diag.js", "timing.js", "vehicles.js", "app.js"):
+    for name in ("led.js", "draw.js", "diag.js", "timing.js", "vehicles.js", "app.js", "osk.js"):
         assert f"/static/{name}" in page
         with urllib.request.urlopen(base + "/static/" + name) as r:
             assert r.status == 200 and len(r.read()) > 500
@@ -309,3 +309,17 @@ def test_drawing_safety_zone_polygon_validated(web):
     assert "rot" not in body["items"][0]
     for bad in ([[0, 0], [1, 1]], [[0, 0]] * 13, [[0, 0], [1, "a"], [2, 2]], "x", [[0, 0, 0]] * 4):
         assert call(base, "/api/drawing", {"items": [dict(z, pts=bad)]}, cookie=eng)[0] == 400
+
+
+def test_sim_commands_only_for_the_configured_user(web):
+    base, app, state, calls, tmp = web
+    Users(tmp / "users.json").set("admin", "password3", "editor")
+    eng = login(base, "eng", "password1")
+    adm = login(base, "admin", "password3")
+    assert call(base, "/api/me", cookie=eng)[1]["sim"] is False
+    assert call(base, "/api/me", cookie=adm)[1]["sim"] is True
+    assert call(base, "/api/control", {"cmd": "sim", "on": True}, cookie=eng)[0] == 403
+    assert call(base, "/api/control", {"cmd": "sim", "on": True}, cookie=adm)[0] == 200
+    assert state.sent[-1] == {"cmd": "sim", "on": True, "user": "admin"}
+    assert call(base, "/api/control", {"cmd": "sim_pulse"}, cookie=adm)[0] == 400
+    assert call(base, "/api/control", {"cmd": "sim_pulse", "sensor": "C2"}, cookie=adm)[0] == 200

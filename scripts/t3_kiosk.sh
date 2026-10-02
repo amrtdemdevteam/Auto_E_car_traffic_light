@@ -30,4 +30,4 @@ BROWSER="$(command -v chromium || command -v chromium-browser || true)"
 exec "$BROWSER" --kiosk --noerrdialogs --disable-infobars --no-first-run \
   --disable-session-crashed-bubble --disable-translate --check-for-update-interval=31536000 \
   --touch-events=enabled --overscroll-history-navigation=0 --password-store=basic \
-  "$URL"
+  "${URL}?osk=1"

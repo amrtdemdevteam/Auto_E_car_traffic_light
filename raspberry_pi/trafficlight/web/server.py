@@ -463,7 +463,8 @@ def make_handler(app: App):
                 return self._static(path[len("/static/"):])
             if path == "/api/me":
                 s = app.session(self._token())
-                return self._json(200, {"user": s[0], "role": s[1], "icon": app.users.icon(s[0])} if s else {"user": None,
+                return self._json(200, {"user": s[0], "role": s[1], "icon": app.users.icon(s[0]),
+                                  "sim": s[0] == app.cfg["sim"]["user"] and s[1] == "editor"} if s else {"user": None,
                                   "setup_needed": app.users.count() == 0})
             s = self._user()
             if not s:
@@ -577,8 +578,14 @@ def make_handler(app: App):
                     return self._json(200, {"version": n2})
                 if path == "/api/control":
                     b = self._jbody()
-                    if b.get("cmd") not in ("maintenance", "clear_queue", "test_display", "identify", "restart"):
+                    if b.get("cmd") not in ("maintenance", "clear_queue", "test_display", "identify", "restart",
+                                            "sim", "sim_sensor", "sim_pulse"):
                         return self._err(400, "ไม่รู้จักคำสั่ง")
+                    if str(b["cmd"]).startswith("sim"):
+                        if user != app.cfg["sim"]["user"]:
+                            return self._err(403, "โหมดจำลองใช้ได้เฉพาะ " + str(app.cfg["sim"]["user"]))
+                        if b["cmd"] != "sim" and not isinstance(b.get("sensor"), str):
+                            return self._err(400, "ไม่รู้จักเซนเซอร์")
                     if b["cmd"] == "identify" and not (isinstance(b.get("display"), int) and 1 <= b["display"] <= 7):
                         return self._err(400, "ไม่รู้จักจอ")
                     b["user"] = user

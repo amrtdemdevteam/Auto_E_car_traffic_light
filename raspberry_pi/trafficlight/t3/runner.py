@@ -63,6 +63,25 @@ def _config_error_loop(cfg: dict, errors: list[str]) -> int:
     return 3
 
 
+def _sim_command(cmd: dict, cfg: dict, hub: SensorHub, ctrl: T3Controller, now: float) -> str:
+    """Admin test mode. Only the configured user may use it; the controller itself is untouched."""
+    user = str(cmd.get("user", "?"))
+    if user != cfg["sim"]["user"]:
+        logger.warning(f"T3 event=sim_denied user={user}")
+        return "โหมดจำลองใช้ได้เฉพาะ " + str(cfg["sim"]["user"])
+    name = cmd.get("cmd")
+    if name == "sim":
+        on = bool(cmd.get("on"))
+        res = hub.sim_set(on, now)
+        ctrl._log(f"{user} {res}", "sim_on" if on else "sim_off", user=user)
+        return res
+    if name == "sim_sensor":
+        return hub.sim_sensor(str(cmd.get("sensor", "")), str(cmd.get("state", "")), now)
+    if name == "sim_pulse":
+        return hub.sim_pulse(str(cmd.get("sensor", "")), now)
+    return "ไม่รู้จักคำสั่ง"
+
+
 def run(cfg: dict) -> int:
     signal.signal(signal.SIGTERM, _stop)
     signal.signal(signal.SIGINT, _stop)
@@ -86,7 +105,10 @@ def run(cfg: dict) -> int:
             events = hub.update(started)
             now = time.monotonic()
             for cmd in link.pop_commands():
-                result = ctrl.command(cmd, now)
+                if str(cmd.get("cmd", "")).startswith("sim"):
+                    result = _sim_command(cmd, cfg, hub, ctrl, now)
+                else:
+                    result = ctrl.command(cmd, now)
                 link.publish_result(cmd, result)
             ctrl.tick(now, events)
             link.tick(now)
@@ -100,6 +122,7 @@ def run(cfg: dict) -> int:
                 st["junction_name"] = cfg.get("junction_name", "")
                 st["config_version"] = cfg.get("_version")
                 st["loop_slow_count"] = slow_loops
+                st["sim"] = hub.sim_status(now)
                 link.publish_state(st)
             if ctrl.can_exit():
                 logger.info("T3 event=service_exit_for_restart")

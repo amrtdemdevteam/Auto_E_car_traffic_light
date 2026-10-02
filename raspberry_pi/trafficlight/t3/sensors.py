@@ -238,6 +238,14 @@ class SensorHub:
         self._reopen_s = float(cfg["sensor_defaults"].get("reopen_interval_s", 2.0))
         self._baud = int(cfg["sensor_defaults"].get("baudrate", 115200))
         self._reader_factory = reader_factory
+        # admin test mode: synthetic frames instead of the real readers (see sim_* below)
+        sim = cfg.get("sim", {})
+        self._sim_max_s = float(sim.get("max_s", 1800))
+        self._sim_pulse_s = float(sim.get("pulse_s", 1.5))
+        self.sim_on = False
+        self.sim_until = 0.0
+        self.sim_state: dict[str, str] = {}          # sensor -> "empty" | "present" | "dead"
+        self._sim_pulse_end: dict[str, float] = {}
 
     def _open(self, sid: str, now: float) -> None:
         port = self.ports[sid]
@@ -260,15 +268,71 @@ class SensorHub:
                 port.failed_logged = True
                 logger.warning(msg)
 
+    # ------------------------------------------------------------ test mode
+    def sim_set(self, on: bool, now: float) -> str:
+        self.sim_on = bool(on)
+        self.sim_state = {sid: "empty" for sid in self.sensors} if on else {}
+        self._sim_pulse_end = {}
+        self.sim_until = now + self._sim_max_s if on else 0.0
+        return "เปิดโหมดจำลอง" if on else "ปิดโหมดจำลอง"
+
+    def sim_sensor(self, sid: str, state: str, now: float) -> str:
+        if not self.sim_on:
+            return "ยังไม่ได้เปิดโหมดจำลอง"
+        if sid not in self.sensors or state not in ("empty", "present", "dead"):
+            return "ไม่รู้จักเซนเซอร์"
+        self.sim_state[sid] = state
+        self._sim_pulse_end.pop(sid, None)
+        self.sim_until = now + self._sim_max_s
+        return f"{sid}: {state}"
+
+    def sim_pulse(self, sid: str, now: float) -> str:
+        if not self.sim_on:
+            return "ยังไม่ได้เปิดโหมดจำลอง"
+        if sid not in self.sensors:
+            return "ไม่รู้จักเซนเซอร์"
+        self.sim_state[sid] = "present"
+        self._sim_pulse_end[sid] = now + self._sim_pulse_s
+        self.sim_until = now + self._sim_max_s
+        return f"{sid}: ผ่าน"
+
+    def sim_status(self, now: float) -> dict:
+        return {"on": self.sim_on, "left_s": max(0, round(self.sim_until - now)) if self.sim_on else 0,
+                "sensors": dict(self.sim_state)}
+
+    def _sim_frames(self, now: float) -> None:
+        if now >= self.sim_until:
+            self.sim_set(False, now)               # never stays on by accident
+            logger.info("T3 event=sim_timeout")
+            return
+        for sid, end in list(self._sim_pulse_end.items()):
+            if now >= end:
+                self.sim_state[sid] = "empty"
+                del self._sim_pulse_end[sid]
+        for sid, sensor in self.sensors.items():
+            st = self.sim_state.get(sid, "empty")
+            if st == "dead":
+                continue                           # no frames at all = sensor fault
+            if st == "present":
+                dist = int((sensor.min_cm + sensor.max_cm) // 2)
+            else:
+                dist = int(sensor.max_cm) + 50
+            sensor.ingest(dist, int(sensor.min_strength) + 100, now)
+
     def update(self, now: float) -> list[SensorEvent]:
         events: list[SensorEvent] = []
+        sim = self.sim_on
+        if sim:
+            self._sim_frames(now)
+            sim = self.sim_on
         for sid, sensor in self.sensors.items():
             self._open(sid, now)
             port = self.ports[sid]
             if port.reader is not None:
                 try:
                     for frame in port.reader.read_available():
-                        sensor.ingest(frame.distance_cm, frame.strength, now)
+                        if not sim:                # test mode: real frames are read and dropped
+                            sensor.ingest(frame.distance_cm, frame.strength, now)
                 except Exception as exc:  # noqa: BLE001
                     logger.error(f"T3 sensor={sid} read_error {exc}; reopening")
                     try:
