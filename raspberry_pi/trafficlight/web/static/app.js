@@ -381,6 +381,7 @@ function headerView() {
     <button class="alertbadge" id="hdr-alerts" data-act="alerts" hidden aria-label="การแจ้งเตือน"></button>
     <span class="who">
       <label class="themesw" title="สลับโหมดสว่าง / มืด"><span aria-hidden="true">☀</span><span class="sw"><input type="checkbox" data-theme-toggle aria-label="โหมดมืด" ${isDark() ? 'checked' : ''}><span></span></span><span aria-hidden="true">☾</span></label>
+      <button class="sec sm rotbtn" type="button" data-rotscreen title="หมุนหน้าจอนี้ 180° (สำหรับจอที่ติดกลับหัว · จำเฉพาะเครื่องนี้)" aria-label="หมุนหน้าจอ 180 องศา">⟲ หมุนจอ</button>
       ${avBtn(S.me.user, S.me.icon, 'avview')}<span class="mono">${esc(S.me.user)}</span>
       <button class="sec sm" data-act="logout">ออกจากระบบ</button></span>
   </header>`;
@@ -395,6 +396,7 @@ function loginView() {
     ${S.setupNeeded ? '<input id="lp2" type="password" autocomplete="new-password" placeholder="ยืนยันรหัสผ่านอีกครั้ง" aria-label="ยืนยันรหัสผ่าน" required>' : ''}
     <button type="submit">${S.setupNeeded ? 'สร้างบัญชีและเริ่มเซ็ตอัป' : 'เข้าสู่ระบบ'}</button>
     <span class="r small">${esc(S.loginErr || '')}</span>
+    <button class="sec sm rotbtn" type="button" data-rotscreen aria-label="หมุนหน้าจอ 180 องศา">⟲ หมุนจอ</button>
   </form>`;
 }
 

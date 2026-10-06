@@ -647,6 +647,78 @@ header .pill.r{background:color-mix(in srgb,var(--red) 14%,transparent);color:va
 <div id="toast" role="status" aria-live="polite"></div>
 <script>window.__T3_EXAMPLE__ = {"junction_id": "T3", "junction_name": "แยกพิเศษหน้า pillar", "junction_type": "t3", "loop_hz": 20, "mqtt": {"broker": "10.77.0.1", "port": 1883, "keepalive_s": 30, "base_topic": "factory/trafficlight"}, "sensor_defaults": {"baudrate": 115200, "min_detect_cm": 30, "max_detect_cm": 250, "min_strength": 100, "debounce_ms": 200, "gap_hold_s": 1.2, "manual_gap_hold_s": 0.2, "offline_timeout_s": 2.0, "recover_stable_s": 1.0, "fresh_timeout_s": 0.5, "reopen_interval_s": 2.0}, "sensors": {"C1.1": {"port": "/dev/ttyUSB0"}, "C1.2": {"port": "/dev/ttyUSB1"}, "C2": {"port": "/dev/ttyUSB2"}, "C3": {"port": "/dev/ttyUSB3"}, "C4": {"port": "/dev/ttyUSB4"}, "C5": {"port": "/dev/ttyUSB5"}}, "hand": {"hold_s": 3.0, "grace_ms": 300, "confirm_show_s": 1.0, "rearm_clear_s": 0.5, "max_pending_per_lane": 1}, "timing": {"manual_clear_s": 3.0, "auto_clear_s": 4.0, "special_green_s": 3.0, "auto_ticket_expiry_s": 7.0, "switch_all_red_s": 1.0, "display_ack_timeout_s": 2.0, "display_link_timeout_s": 5.0, "display_fault_timeout_s": 6.0, "command_refresh_s": 1.0, "startup_min_s": 3.0}, "priority": {"auto_first": true}, "lanes": [{"id": 1, "name": "เลน 1 Auto", "type": "auto", "approach": "S", "near_sensor": "C1.1", "far_sensor": "C1.2", "display": 1, "enabled": true, "priority": 0, "green_frame": "GO"}, {"id": 2, "name": "เลน 2 Manual", "type": "manual", "approach": "S", "sensor": "C2", "display": 2, "enabled": true, "priority": 0, "green_frame": "GO"}, {"id": 3, "name": "เลน 3 Manual พิเศษ", "type": "special", "approach": "W", "sensor": "C3", "display": 3, "enabled": true, "priority": 0, "green_frame": "GO"}, {"id": 4, "name": "เลน 4 Manual", "type": "manual", "approach": "N", "sensor": "C4", "display": 4, "enabled": true, "priority": 0, "green_frame": "GO"}, {"id": 5, "name": "เลน 5 Manual พิเศษ", "type": "special", "approach": "N", "sensor": "C5", "display": 5, "enabled": true, "priority": 0, "green_frame": "GO"}], "display_ip_base": 30, "displays": {"1": {"ip": "10.77.0.31"}, "2": {"ip": "10.77.0.32"}, "3": {"ip": "10.77.0.33"}, "4": {"ip": "10.77.0.34"}, "5": {"ip": "10.77.0.35"}}, "frames": {"enabled_reserve": []}, "ota": {"port": 65280, "password": "change-me"}, "web": {"bind": "0.0.0.0", "port": 8080, "session_hours": 8}, "log": {"directory": "/var/log/trafficlight", "rotation": "100 MB", "retention": "7 days", "level": "INFO", "sensor_sample_interval_s": 1.0}};
 window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 840 585\" role=\"img\" aria-label=\"แผนที่พื้นหลังแยก T3: 5 เลน กล่องควบคุม A ข้าง pillar และตำแหน่งติดตั้งเซนเซอร์\">\n<defs>\n<marker id=\"a1m\" viewBox=\"0 0 10 10\" refX=\"8\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto\"><path d=\"M0 0L10 5L0 10z\" class=\"ahm\"/></marker>\n</defs>\n<!-- lanes -->\n<rect x=\"400\" y=\"20\" width=\"360\" height=\"560\" class=\"fs\"/>\n<rect x=\"30\" y=\"250\" width=\"370\" height=\"90\" class=\"fs\"/>\n<rect x=\"400\" y=\"250\" width=\"360\" height=\"90\" class=\"fh\" opacity=\".28\"/>\n<line x1=\"400\" y1=\"20\" x2=\"400\" y2=\"250\" class=\"lm\"/><line x1=\"400\" y1=\"340\" x2=\"400\" y2=\"580\" class=\"lm\"/>\n<line x1=\"520\" y1=\"20\" x2=\"520\" y2=\"580\" class=\"ll\" stroke-dasharray=\"6 6\"/>\n<line x1=\"640\" y1=\"20\" x2=\"640\" y2=\"580\" class=\"ll\" stroke-dasharray=\"6 6\"/>\n<line x1=\"760\" y1=\"20\" x2=\"760\" y2=\"580\" class=\"lm\"/>\n<line x1=\"30\" y1=\"250\" x2=\"400\" y2=\"250\" class=\"lm\"/><line x1=\"30\" y1=\"340\" x2=\"400\" y2=\"340\" class=\"lm\"/>\n<text x=\"752\" y=\"334\" text-anchor=\"end\" class=\"tm\" font-size=\"12\" letter-spacing=\"2\">พื้นที่แยก</text>\n<!-- pillar & A -->\n<rect x=\"250\" y=\"340\" width=\"150\" height=\"80\" class=\"fh\" opacity=\".35\"/>\n<text x=\"325\" y=\"408\" text-anchor=\"middle\" class=\"tm\" font-size=\"12\">pillar</text>\n<rect x=\"342\" y=\"346\" width=\"44\" height=\"34\" class=\"fi\"/>\n<text x=\"364\" y=\"369\" text-anchor=\"middle\" class=\"fb\" font-size=\"16\" font-weight=\"600\" style=\"fill:var(--bg)\">A</text>\n<text x=\"240\" y=\"370\" text-anchor=\"end\" class=\"tm\" font-size=\"12\">กล่องควบคุม</text>\n<!-- flow arrows -->\n<g stroke-width=\"3\">\n<line x1=\"50\" y1=\"295\" x2=\"120\" y2=\"295\" class=\"lm\" marker-end=\"url(#a1m)\"/>\n<line x1=\"460\" y1=\"575\" x2=\"460\" y2=\"520\" class=\"lm\" marker-end=\"url(#a1m)\"/>\n<line x1=\"580\" y1=\"575\" x2=\"580\" y2=\"520\" class=\"lm\" marker-end=\"url(#a1m)\"/>\n<line x1=\"600\" y1=\"25\" x2=\"600\" y2=\"80\" class=\"lm\" marker-end=\"url(#a1m)\"/>\n<line x1=\"700\" y1=\"25\" x2=\"700\" y2=\"80\" class=\"lm\" marker-end=\"url(#a1m)\"/>\n<line x1=\"790\" y1=\"200\" x2=\"850\" y2=\"200\" class=\"lm\" marker-end=\"url(#a1m)\"/>\n<line x1=\"790\" y1=\"390\" x2=\"850\" y2=\"390\" class=\"lm\" marker-end=\"url(#a1m)\"/>\n</g>\n<text x=\"820\" y=\"185\" text-anchor=\"middle\" class=\"tm\" font-size=\"12\">ทางออก</text>\n<!-- lane labels -->\n<g font-size=\"15\" font-weight=\"600\" class=\"t\">\n<text x=\"140\" y=\"240\">เลน 3</text>\n<text x=\"436\" y=\"560\" text-anchor=\"end\">เลน 2</text>\n<text x=\"620\" y=\"560\">เลน 1</text>\n<text x=\"590\" y=\"45\" text-anchor=\"end\">เลน 4</text>\n<text x=\"712\" y=\"45\">เลน 5</text>\n</g>\n<!-- sensors: squares ink; ToF side-mounted: circles cyan -->\n<g font-size=\"12\" font-family=\"IBM Plex Mono, monospace\">\n<rect x=\"444\" y=\"400\" width=\"32\" height=\"22\" class=\"box\"/><text x=\"460\" y=\"416\" text-anchor=\"middle\" class=\"tn\">C2</text>\n<rect x=\"556\" y=\"400\" width=\"48\" height=\"22\" class=\"box\"/><text x=\"580\" y=\"416\" text-anchor=\"middle\" class=\"tn\">C1.1</text>\n<rect x=\"556\" y=\"480\" width=\"48\" height=\"22\" class=\"box\"/><text x=\"580\" y=\"496\" text-anchor=\"middle\" class=\"tn\">C1.2</text>\n<rect x=\"584\" y=\"168\" width=\"32\" height=\"22\" class=\"box\"/><text x=\"600\" y=\"184\" text-anchor=\"middle\" class=\"tn\">C4</text>\n<circle cx=\"360\" cy=\"325\" r=\"13\" class=\"fp sc\" stroke-width=\"2.5\"/><text x=\"360\" y=\"329\" text-anchor=\"middle\" class=\"tc\" font-weight=\"600\">C3</text>\n<circle cx=\"640\" cy=\"183\" r=\"13\" class=\"fp sc\" stroke-width=\"2.5\"/><text x=\"640\" y=\"187\" text-anchor=\"middle\" class=\"tc\" font-weight=\"600\">C5</text>\n</g>\n<line x1=\"580\" y1=\"422\" x2=\"580\" y2=\"480\" class=\"lm\" stroke-dasharray=\"3 4\"/>\n<text x=\"612\" y=\"455\" class=\"tm\" font-size=\"12\">14 m สาย</text>\n</svg>";</script>
+<script>/* Turn the whole page 180 degrees for a touch screen mounted upside down (its own menu cannot flip).
+ * Per browser only: kept in localStorage "tl_rot"; ?rot=180 turns it on, ?rot=0 off; any element with
+ * data-rotscreen toggles it. Touch still hits the right button because the browser hit-tests the turned page.
+ *
+ * Page code that measures positions itself (clientX - rect.left: map drag, drawing, 3D orbit, popups)
+ * would come out mirrored, so while turned clientX/Y and getBoundingClientRect are reported in the page's
+ * own (unturned) coordinates. Everything stays consistent with what the person sees. */
+(function () {
+  "use strict";
+  var KEY = "tl_rot";
+  var root = document.documentElement;
+  var on = false;
+  try {
+    var q = new URLSearchParams(location.search).get("rot");
+    if (q === "180") localStorage.setItem(KEY, "180");
+    if (q === "0") localStorage.removeItem(KEY);
+    on = localStorage.getItem(KEY) === "180";
+  } catch (e) { on = false; }
+
+  var st = document.createElement("style");
+  // html is exactly the viewport and turns about its centre; body scrolls instead of the window.
+  // Modal dialogs live in the top layer (not inside html), so they are turned on their own.
+  // `rotate` (not `transform`) so the dialog open animation keeps working.
+  st.textContent = "html.rot180{height:100%;overflow:hidden;rotate:180deg}\n" +
+    "html.rot180 body{height:100%;overflow:auto;overscroll-behavior:contain}\n" +
+    "html.rot180 dialog[open]{rotate:180deg}\n" +
+    ".rotbtn{font-size:14px}";
+  (document.head || root).appendChild(st);
+
+  function W() { return root.clientWidth; }
+  function H() { return root.clientHeight; }
+  function patchXY(proto) {
+    if (!proto) return;
+    ["clientX", "clientY"].forEach(function (k) {
+      var d = Object.getOwnPropertyDescriptor(proto, k);
+      if (!d || !d.get) return;
+      var get = d.get;
+      Object.defineProperty(proto, k, {configurable: true, enumerable: d.enumerable, get: function () {
+        var v = get.call(this);
+        if (!on) return v;
+        return (k === "clientX" ? W() : H()) - v;
+      }});
+    });
+  }
+  patchXY(window.MouseEvent && MouseEvent.prototype);
+  patchXY(window.Touch && Touch.prototype);
+  var gbcr = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    var r = gbcr.call(this);
+    if (!on || this === root) return r;
+    return new DOMRect(W() - r.right, H() - r.bottom, r.width, r.height);
+  };
+
+  function apply() {
+    root.classList.toggle("rot180", on);
+    document.querySelectorAll("[data-rotscreen]").forEach(function (b) { b.setAttribute("aria-pressed", on ? "true" : "false"); });
+  }
+  function toggle() {
+    on = !on;
+    try { if (on) localStorage.setItem(KEY, "180"); else localStorage.removeItem(KEY); } catch (e) { /* this time only */ }
+    apply();
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-rotscreen]");
+    if (!b) return;
+    e.preventDefault();
+    toggle();
+  });
+  apply();
+  window.T3Rotate = {toggle: toggle, isOn: function () { return on; }};
+})();
+</script>
 <script>// 64x32 HUB75 frame renderer (same pixels as esp32_display_t3/src/main.cpp).
 (function () {
   var F = {'A':'01110100011000111111100011000110001','B':'11110100011000111110100011000111110','C':'01110100011000010000100001000101110','D':'11110100011000110001100011000111110','E':'11111100001000011110100001000011111','F':'11111100001000011110100001000010000','G':'01110100011000010111100011000101111','H':'10001100011000111111100011000110001','I':'01110001000010000100001000010001110','K':'10001100101010011000101001001010001','L':'10000100001000010000100001000011111','M':'10001110111010110101100011000110001','N':'10001110011010110011100011000110001','O':'01110100011000110001100011000101110','P':'11110100011000111110100001000010000','R':'11110100011000111110101001001010001','S':'01111100001000001110000010000111110','T':'11111001000010000100001000010000100','U':'10001100011000110001100011000101110','W':'10001100011000110101101011010101010','0':'01110100011001110101110011000101110','1':'00100011000010000100001000010001110','2':'01110100010000100010001000100011111','3':'11110000010000101110000010000111110','4':'00010001100101010010111110001000010','5':'11111100001111000001000011000101110','6':'00110010001000011110100011000101110','7':'11111000010001000100010000100001000','8':'01110100011000101110100011000101110','9':'01110100011000101111000010001001100','/':'00001000100001000100010000100010000','.':'00000000000000000000000000110001100','-':'00000000000000011111000000000000000',' ':'00000000000000000000000000000000000'};
@@ -2885,6 +2957,7 @@ function headerView() {
     <button class="alertbadge" id="hdr-alerts" data-act="alerts" hidden aria-label="การแจ้งเตือน"></button>
     <span class="who">
       <label class="themesw" title="สลับโหมดสว่าง / มืด"><span aria-hidden="true">☀</span><span class="sw"><input type="checkbox" data-theme-toggle aria-label="โหมดมืด" ${isDark() ? 'checked' : ''}><span></span></span><span aria-hidden="true">☾</span></label>
+      <button class="sec sm rotbtn" type="button" data-rotscreen title="หมุนหน้าจอนี้ 180° (สำหรับจอที่ติดกลับหัว · จำเฉพาะเครื่องนี้)" aria-label="หมุนหน้าจอ 180 องศา">⟲ หมุนจอ</button>
       ${avBtn(S.me.user, S.me.icon, 'avview')}<span class="mono">${esc(S.me.user)}</span>
       <button class="sec sm" data-act="logout">ออกจากระบบ</button></span>
   </header>`;
@@ -2899,6 +2972,7 @@ function loginView() {
     ${S.setupNeeded ? '<input id="lp2" type="password" autocomplete="new-password" placeholder="ยืนยันรหัสผ่านอีกครั้ง" aria-label="ยืนยันรหัสผ่าน" required>' : ''}
     <button type="submit">${S.setupNeeded ? 'สร้างบัญชีและเริ่มเซ็ตอัป' : 'เข้าสู่ระบบ'}</button>
     <span class="r small">${esc(S.loginErr || '')}</span>
+    <button class="sec sm rotbtn" type="button" data-rotscreen aria-label="หมุนหน้าจอ 180 องศา">⟲ หมุนจอ</button>
   </form>`;
 }
 

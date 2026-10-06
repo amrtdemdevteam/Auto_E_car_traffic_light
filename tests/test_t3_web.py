@@ -248,7 +248,7 @@ def test_static_serves_all_ui_scripts(web):
     base = web[0]
     with urllib.request.urlopen(base + "/") as r:
         page = r.read().decode()
-    for name in ("led.js", "draw.js", "diag.js", "timing.js", "vehicles.js", "app.js", "osk.js"):
+    for name in ("led.js", "draw.js", "diag.js", "timing.js", "vehicles.js", "app.js", "osk.js", "rotate.js"):
         assert f"/static/{name}" in page
         with urllib.request.urlopen(base + "/static/" + name) as r:
             assert r.status == 200 and len(r.read()) > 500
