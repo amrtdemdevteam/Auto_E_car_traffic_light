@@ -120,7 +120,7 @@
 5. ครบ 4 s แล้วถ้าหัวคิวยังเป็นตั๋ว Auto → เขียวต่อ ไม่คั่น X (ถ้ายังไม่ matched ให้เขียวรอจน matched หรือหมดอายุ) ถ้าไม่มี → จบรอบ
 
 ### 5.2 Manual ปกติ (เลน 2, 4)
-1. เซนเซอร์ rising → ตั๋ว Manual
+1. เซนเซอร์ rising → ตั๋ว Manual (เลนหนึ่งมีตั๋วรอได้ไม่เกิน `manual_max_pending` = 1 ใบ รถคันเดียวที่เซนเซอร์เห็นเป็นหลายช่วง เช่น ตัวรถแล้วท้ายรถ/รถพ่วงเตี้ย ไม่ได้เขียวซ้ำ ตั๋วส่วนเกินถูกทิ้งและบันทึก `ticket_ignored`)
 2. ถึงคิวและผ่าน barrier → เขียว
 3. เซนเซอร์ filtered clear (หรือว่างอยู่แล้วตอนเริ่มเขียว นับจากตอนเริ่มเขียว) → นับ `manual_clear_s` = 3.0 s
 4. ครบแล้วจบรอบเสมอ **ไปทีละคัน ไม่ไหลต่อตูดกัน** รถคันถัดไปที่มาบังเซนเซอร์ระหว่างนับ 3 s ไม่ต่อเขียว ได้ตั๋วใหม่ รอคิวและผ่าน barrier ใหม่ (ถ้าเป็นหัวคิวก็ได้เขียวอีกครั้งหลัง X)
@@ -201,6 +201,7 @@
 | `hand.rearm_clear_s` | 0.5 | ออกแบบ |
 | `hand.max_pending_per_lane` | 1 | ยืนยัน |
 | `timing.manual_clear_s` | 3.0 | ข้อกำหนด T3 |
+| `timing.manual_max_pending` | 1 | ตั๋วรอได้ต่อเลน Manual ตรวจรถ (log ช่วงใช้งานจริงพบรถคันเดียวได้ 3–4 ตั๋ว) |
 | `timing.auto_clear_s` | 4.0 | ข้อกำหนด T3 |
 | `timing.special_green_s` | 3.0 | เท่า `manual_clear_s` (ลองก่อน) |
 | `timing.auto_ticket_expiry_s` | 7.0 | ข้อกำหนด T3 |
@@ -216,7 +217,7 @@
 ### 8.1 ค่ารวม (global) กับค่ารายเลน (local)
 
 - **ค่ารวมของแยก** ใช้ร่วมทุกเลน: `timing.switch_all_red_s`, `display_ack_timeout_s`, `display_link_timeout_s`, `display_fault_timeout_s`, `command_refresh_s`, `startup_min_s`, `priority.auto_first`, `sensor_defaults.offline_timeout_s` / `recover_stable_s`, OTA, MQTT
-- **ค่าเริ่มต้นตามประเภทเลน** (อยู่ใน `timing` / `hand`): Auto → `auto_clear_s`, `auto_ticket_expiry_s` · Manual ตรวจรถ → `manual_clear_s` · Manual ยื่นมือ → `special_green_s`, `hold_s`, `grace_ms`, `confirm_show_s`, `rearm_clear_s`, `max_pending_per_lane`
+- **ค่าเริ่มต้นตามประเภทเลน** (อยู่ใน `timing` / `hand`): Auto → `auto_clear_s`, `auto_ticket_expiry_s` · Manual ตรวจรถ → `manual_clear_s`, `manual_max_pending` · Manual ยื่นมือ → `special_green_s`, `hold_s`, `grace_ms`, `confirm_show_s`, `rearm_clear_s`, `max_pending_per_lane`
 - **ค่ารายเลน** `lanes[].params` ทับค่าเริ่มต้นของประเภทได้เฉพาะ key ของประเภทนั้น (เว้นว่าง = ใช้ค่าเริ่มต้น) เช่น `{"special_green_s": 6.0}`
 - **ค่ารายเซนเซอร์** `sensors.<id>` ทับ `sensor_defaults` ได้: `min_detect_cm`, `max_detect_cm`, `min_strength`, `debounce_ms`, `gap_hold_s`
 

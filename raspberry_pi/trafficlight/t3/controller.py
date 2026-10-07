@@ -258,7 +258,10 @@ class T3Controller:
         if ev.kind != "rising" or not lane.enabled or self.state == STARTING:
             return
         if lane.kind == "manual":
-            self.queue.add(lane.id, "manual", now, ev.sensor)
+            if len(self.queue.for_lane(lane.id)) < int(lane.p["manual_max_pending"]):
+                self.queue.add(lane.id, "manual", now, ev.sensor)
+            else:   # the same vehicle seen again (gap in the body, trailer): no second green
+                logger.info(f"T3 event=ticket_ignored lane={lane.id} sensor={ev.sensor} reason=already_waiting")
         elif lane.kind == "auto" and ev.sensor == lane.far:
             self.queue.add(lane.id, "auto", now, ev.sensor, matched=False,
                            expires_at=now + float(lane.p["auto_ticket_expiry_s"]))

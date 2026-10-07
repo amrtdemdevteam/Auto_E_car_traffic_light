@@ -355,3 +355,36 @@ def test_stale_sensor_is_never_reported_clear():
     s.tick(t)
     assert [e.kind for e in s.pop_events()] == ["offline"]
     assert not s.online
+
+
+def test_manual_vehicle_lane_keeps_one_pending_ticket():
+    # one vehicle seen in several pieces (body, gap, trailer) must not queue several greens
+    sim = Sim()
+    sim.ready()
+    sim.on("C1.1")                     # a green elsewhere keeps lane 4 waiting
+    sim.on("C1.2")
+    sim.step(0.6)
+    sim.until(lambda: sim.ctrl.active_lane == 1, limit=6)
+    for _ in range(3):
+        sim.on("C4")
+        sim.step(0.6)
+        sim.off("C4")
+        sim.step(1.6)                  # gap longer than the manual gap hold
+    assert len(sim.ctrl.queue.for_lane(4)) == 1
+
+
+def test_manual_max_pending_is_configurable():
+    cfg = t3_config()
+    cfg["timing"]["manual_max_pending"] = 2
+    sim = Sim(cfg)
+    sim.ready()
+    sim.on("C1.1")
+    sim.on("C1.2")
+    sim.step(0.6)
+    sim.until(lambda: sim.ctrl.active_lane == 1, limit=6)
+    for _ in range(3):
+        sim.on("C4")
+        sim.step(0.6)
+        sim.off("C4")
+        sim.step(1.6)
+    assert len(sim.ctrl.queue.for_lane(4)) == 2

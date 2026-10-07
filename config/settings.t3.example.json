@@ -38,6 +38,7 @@
   },
   "timing": {
     "manual_clear_s": 3.0,
+    "manual_max_pending": 1,
     "auto_clear_s": 4.0,
     "special_green_s": 3.0,
     "auto_ticket_expiry_s": 7.0,

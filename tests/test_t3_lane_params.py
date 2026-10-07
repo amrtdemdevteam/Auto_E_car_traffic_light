@@ -140,3 +140,15 @@ def test_manual_vehicle_sensor_uses_its_own_gap_hold():
     assert sensor_params(cfg, "M")["gap_hold_s"] == sd["manual_gap_hold_s"]
     assert sensor_params(cfg, "H")["gap_hold_s"] == sd["manual_gap_hold_s"]
     assert sensor_params(cfg, "M2")["gap_hold_s"] == 0.7      # the sensor's own value wins
+
+
+def test_manual_max_pending_must_be_a_positive_integer():
+    cfg = t3_config()
+    cfg["timing"]["manual_max_pending"] = 0
+    assert any("manual_max_pending" in e for e in validate(cfg))
+    cfg = t3_config()
+    _lane(cfg, 2)["params"] = {"manual_max_pending": 1.5}
+    assert any("จำนวนเต็ม" in e for e in validate(cfg))
+    cfg = t3_config()
+    _lane(cfg, 2)["params"] = {"manual_max_pending": 2}
+    assert validate(cfg) == []

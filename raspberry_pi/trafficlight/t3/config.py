@@ -22,7 +22,7 @@ MANUAL_MODES = ("vehicle", "hand")
 # lane type; a lane may override any of them in lane["params"].
 LANE_PARAM_KEYS = {
     "auto": ("auto_clear_s", "auto_ticket_expiry_s"),
-    "manual": ("manual_clear_s",),
+    "manual": ("manual_clear_s", "manual_max_pending"),
     "special": ("special_green_s", "hold_s", "grace_ms", "confirm_show_s", "rearm_clear_s",
                 "max_pending_per_lane"),
 }
@@ -64,6 +64,7 @@ DEFAULTS: dict = {
     },
     "timing": {
         "manual_clear_s": 3.0,
+        "manual_max_pending": 1,   # tickets a vehicle manual lane may hold at once: one vehicle seen in several pieces must not queue several greens
         "auto_clear_s": 4.0,
         "special_green_s": 3.0,
         "auto_ticket_expiry_s": 7.0,
@@ -153,7 +154,7 @@ def lane_kind(lane: dict) -> str:
 def lane_params(cfg: dict, lane: dict) -> dict:
     """Effective per-lane parameters: type defaults + the lane's overrides."""
     out = {k: cfg["timing"][k] for k in ("auto_clear_s", "auto_ticket_expiry_s",
-                                         "manual_clear_s", "special_green_s")}
+                                         "manual_clear_s", "special_green_s", "manual_max_pending")}
     out.update(cfg["hand"])
     out.update(lane.get("params") or {})
     return out
@@ -181,6 +182,9 @@ def validate(cfg: dict) -> list[str]:
     ):
         if not _num(t.get(key)) or t.get(key) <= 0:
             errors.append(f"timing.{key} ต้องเป็นตัวเลขมากกว่า 0")
+    mp = t.get("manual_max_pending")
+    if not isinstance(mp, int) or isinstance(mp, bool) or mp < 1:
+        errors.append("timing.manual_max_pending ต้องเป็นจำนวนเต็มอย่างน้อย 1")
     if _num(t.get("switch_all_red_s")) and t["switch_all_red_s"] < 0.5:
         errors.append("ช่วงสลับเลนต้องไม่น้อยกว่า 0.5 s")
     if _num(t.get("command_refresh_s")) and _num(t.get("display_link_timeout_s")):
@@ -243,6 +247,8 @@ def validate(cfg: dict) -> list[str]:
                 errors.append(f"{name}: ค่า {key} ใช้กับเลนประเภทนี้ไม่ได้")
             elif not _num(value) or value <= 0:
                 errors.append(f"{name}: {key} ต้องเป็นตัวเลขมากกว่า 0")
+        if kind == "manual" and "manual_max_pending" in params and not isinstance(params["manual_max_pending"], int):
+            errors.append(f"{name}: จำนวนตั๋วค้างต้องเป็นจำนวนเต็ม")
         if kind == "special":
             lp = lane_params(cfg, lane) if "timing" in cfg and "hand" in cfg else {}
             if _num(lp.get("grace_ms")) and not (100 <= lp["grace_ms"] <= 1000):
