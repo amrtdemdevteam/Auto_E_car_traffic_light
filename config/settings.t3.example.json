@@ -12,7 +12,7 @@
   "sensor_defaults": {
     "baudrate": 115200,
     "min_detect_cm": 30,
-    "max_detect_cm": 250,
+    "max_detect_cm": 190,
     "min_strength": 100,
     "debounce_ms": 200,
     "gap_hold_s": 1.2,

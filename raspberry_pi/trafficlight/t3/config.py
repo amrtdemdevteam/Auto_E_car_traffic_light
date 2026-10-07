@@ -43,7 +43,7 @@ DEFAULTS: dict = {
     "sensor_defaults": {
         "baudrate": 115200,
         "min_detect_cm": 30,
-        "max_detect_cm": 250,
+        "max_detect_cm": 190,   # floor measured 220-241 cm on site: keep >= 30 cm above the nearest floor
         "min_strength": 100,
         "debounce_ms": 200,
         "gap_hold_s": 1.2,                    # auto lanes (and any sensor without its own value)

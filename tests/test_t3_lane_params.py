@@ -77,7 +77,7 @@ def test_lane_params_validation():
     _lane(cfg, 2)["type"], _lane(cfg, 2)["mode"] = "manual", "wave"
     assert any("ตรวจรถ หรือ ยื่นมือ" in e for e in validate(cfg))
     cfg = t3_config()
-    cfg["sensors"]["C2"]["min_detect_cm"] = 300              # >= max 250
+    cfg["sensors"]["C2"]["min_detect_cm"] = 300              # >= max 190
     assert any("น้อยกว่าระยะไกลสุด" in e for e in validate(cfg))
 
 
