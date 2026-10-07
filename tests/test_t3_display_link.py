@@ -46,12 +46,13 @@ def test_virtual_display_answers_only_while_on_and_never_for_a_real_display():
     link.command(2, "STOP", "", 0.0)
     link.tick(0.1)
     assert link.last_ack(1) is None                         # off by default
-    link._status[2] = "online"                              # a real display B2 is connected
+    link._status[1] = "online"                              # stale retained status must not matter
     link.virtual_set(True, 0.2, 10)
+    link.on_ack(2, {"epoch": link.epoch, "seq": 2, "frame": "STOP", "green": False, "fw": "t3-1.0.0"}, now=0.25)
     link.tick(0.3)
     ack = link.last_ack(1)
     assert (ack.epoch, ack.seq, ack.green, ack.fw) == (link.epoch, s, True, "virtual")
-    assert link.last_ack(2) is None                         # the real one must answer itself
+    assert link.last_ack(2).fw == "t3-1.0.0"               # real B2 answers itself
     assert link.virtual_status(0.3) == {"on": True, "left_s": 10, "displays": [1]}
     link.tick(10.5)                                         # max_s reached: ends by itself
     assert link.last_ack(1) is None and link.virtual_status(10.5)["on"] is False

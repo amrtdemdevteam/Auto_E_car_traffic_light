@@ -54,6 +54,8 @@ class DisplayLink:
         # admin "จอจำลอง": the Pi answers the ACK of displays that are not connected,
         # so lanes can be tuned from the web UI without the LED panels. Never saved, ends by itself.
         self.virtual_until = 0.0
+        self.ack_timeout_s = float(cfg["timing"]["display_ack_timeout_s"])
+        self._real_ack_at: dict[int, float] = {}   # last ACK from a real display
 
         if client is None:
             import paho.mqtt.client as mqtt
@@ -107,6 +109,7 @@ class DisplayLink:
                   at=now, fw=str(data.get("fw", "")))
         with self._lock:
             self._acks[disp] = ack
+            self._real_ack_at[disp] = now
 
     # --------------------------------------------------------- controller API
     def command(self, disp: int, frame: str, arg: str, now: float) -> int:
@@ -152,8 +155,9 @@ class DisplayLink:
             return
         with self._lock:
             for disp, cmd in self._cmds.items():
-                if self._status.get(disp) == "online":
-                    continue            # a real display is connected: only it may answer
+                real = self._real_ack_at.get(disp)
+                if real is not None and now - real <= self.ack_timeout_s:
+                    continue            # a real display is answering: only it may answer
                 self._acks[disp] = Ack(epoch=self.epoch, seq=cmd.seq, frame=cmd.frame,
                                        green=is_green(cmd.frame), at=now, fw=VIRTUAL_FW)
 
