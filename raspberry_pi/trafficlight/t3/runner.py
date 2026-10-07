@@ -63,7 +63,8 @@ def _config_error_loop(cfg: dict, errors: list[str]) -> int:
     return 3
 
 
-def _sim_command(cmd: dict, cfg: dict, hub: SensorHub, ctrl: T3Controller, now: float) -> str:
+def _sim_command(cmd: dict, cfg: dict, hub: SensorHub, ctrl: T3Controller, now: float,
+                 link: DisplayLink | None = None) -> str:
     """Admin test mode. Only the configured user may use it; the controller itself is untouched."""
     user = str(cmd.get("user", "?"))
     if user != cfg["sim"]["user"]:
@@ -74,6 +75,11 @@ def _sim_command(cmd: dict, cfg: dict, hub: SensorHub, ctrl: T3Controller, now: 
         on = bool(cmd.get("on"))
         res = hub.sim_set(on, now)
         ctrl._log(f"{user} {res}", "sim_on" if on else "sim_off", user=user)
+        return res
+    if name == "sim_display" and link is not None:
+        on = bool(cmd.get("on"))
+        res = link.virtual_set(on, now, float(cfg["sim"]["max_s"]))
+        ctrl._log(f"{user} {res}", "sim_display_on" if on else "sim_display_off", user=user)
         return res
     if name == "sim_sensor":
         return hub.sim_sensor(str(cmd.get("sensor", "")), str(cmd.get("state", "")), now)
@@ -106,7 +112,7 @@ def run(cfg: dict) -> int:
             now = time.monotonic()
             for cmd in link.pop_commands():
                 if str(cmd.get("cmd", "")).startswith("sim"):
-                    result = _sim_command(cmd, cfg, hub, ctrl, now)
+                    result = _sim_command(cmd, cfg, hub, ctrl, now, link)
                 else:
                     result = ctrl.command(cmd, now)
                 link.publish_result(cmd, result)
@@ -123,6 +129,7 @@ def run(cfg: dict) -> int:
                 st["config_version"] = cfg.get("_version")
                 st["loop_slow_count"] = slow_loops
                 st["sim"] = hub.sim_status(now)
+                st["sim_display"] = link.virtual_status(now)
                 link.publish_state(st)
             if ctrl.can_exit():
                 logger.info("T3 event=service_exit_for_restart")

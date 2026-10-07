@@ -323,3 +323,6 @@ def test_sim_commands_only_for_the_configured_user(web):
     assert state.sent[-1] == {"cmd": "sim", "on": True, "user": "admin"}
     assert call(base, "/api/control", {"cmd": "sim_pulse"}, cookie=adm)[0] == 400
     assert call(base, "/api/control", {"cmd": "sim_pulse", "sensor": "C2"}, cookie=adm)[0] == 200
+    assert call(base, "/api/control", {"cmd": "sim_display", "on": True}, cookie=eng)[0] == 403
+    assert call(base, "/api/control", {"cmd": "sim_display", "on": True}, cookie=adm)[0] == 200
+    assert state.sent[-1] == {"cmd": "sim_display", "on": True, "user": "admin"}

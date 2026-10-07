@@ -23,6 +23,9 @@ from dataclasses import dataclass
 from loguru import logger
 
 from .controller import Ack
+from .frames import is_green
+
+VIRTUAL_FW = "virtual"   # fw of an ACK made up by the admin "จอจำลอง" mode
 
 
 @dataclass
@@ -48,6 +51,9 @@ class DisplayLink:
         self._control: queue.Queue = queue.Queue()
         self.connected = False
         self._clock = None  # set by runner: callable returning monotonic now
+        # admin "จอจำลอง": the Pi answers the ACK of displays that are not connected,
+        # so lanes can be tuned from the web UI without the LED panels. Never saved, ends by itself.
+        self.virtual_until = 0.0
 
         if client is None:
             import paho.mqtt.client as mqtt
@@ -116,7 +122,43 @@ class DisplayLink:
         with self._lock:
             return self._acks.get(disp)
 
+    # ---------------------------------------------- admin virtual displays
+    def virtual_set(self, on: bool, now: float, max_s: float) -> str:
+        self.virtual_until = now + float(max_s) if on else 0.0
+        if not on:
+            self._virtual_clear()
+        logger.warning(f"T3 event=virtual_display on={bool(on)} max_s={max_s}")
+        return "เปิดจอจำลอง (จอที่ไม่ได้ต่อ ตัว Pi ตอบแทน)" if on else "ปิดจอจำลอง"
+
+    def _virtual_clear(self) -> None:
+        with self._lock:
+            for d in [d for d, a in self._acks.items() if a.fw == VIRTUAL_FW]:
+                del self._acks[d]
+
+    def virtual_status(self, now: float) -> dict:
+        on = now < self.virtual_until
+        with self._lock:
+            disps = sorted(d for d, a in self._acks.items() if a.fw == VIRTUAL_FW)
+        return {"on": on, "left_s": max(0, round(self.virtual_until - now)) if on else 0,
+                "displays": disps if on else []}
+
+    def _virtual_ack(self, now: float) -> None:
+        if not self.virtual_until:
+            return
+        if now >= self.virtual_until:
+            self.virtual_until = 0.0
+            self._virtual_clear()
+            logger.info("T3 event=virtual_display_timeout")
+            return
+        with self._lock:
+            for disp, cmd in self._cmds.items():
+                if self._status.get(disp) == "online":
+                    continue            # a real display is connected: only it may answer
+                self._acks[disp] = Ack(epoch=self.epoch, seq=cmd.seq, frame=cmd.frame,
+                                       green=is_green(cmd.frame), at=now, fw=VIRTUAL_FW)
+
     def tick(self, now: float) -> None:
+        self._virtual_ack(now)
         for disp, cmd in self._cmds.items():
             if now - cmd.last_pub >= self.refresh_s:
                 cmd.last_pub = now

@@ -579,12 +579,12 @@ def make_handler(app: App):
                 if path == "/api/control":
                     b = self._jbody()
                     if b.get("cmd") not in ("maintenance", "clear_queue", "test_display", "identify", "restart",
-                                            "sim", "sim_sensor", "sim_pulse"):
+                                            "sim", "sim_sensor", "sim_pulse", "sim_display"):
                         return self._err(400, "ไม่รู้จักคำสั่ง")
                     if str(b["cmd"]).startswith("sim"):
                         if user != app.cfg["sim"]["user"]:
                             return self._err(403, "โหมดจำลองใช้ได้เฉพาะ " + str(app.cfg["sim"]["user"]))
-                        if b["cmd"] != "sim" and not isinstance(b.get("sensor"), str):
+                        if b["cmd"] in ("sim_sensor", "sim_pulse") and not isinstance(b.get("sensor"), str):
                             return self._err(400, "ไม่รู้จักเซนเซอร์")
                     if b["cmd"] == "identify" and not (isinstance(b.get("display"), int) and 1 <= b["display"] <= 7):
                         return self._err(400, "ไม่รู้จักจอ")

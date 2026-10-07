@@ -6,6 +6,7 @@
   let open = false, dock = null, bar = null, last = "";
 
   const simOf = () => (S.state && S.state.sim) || {on: false, left_s: 0, sensors: {}};
+  const vdOf = () => (S.state && S.state.sim_display) || {on: false, left_s: 0, displays: []};
   const mine = () => !!(S.me && S.me.sim);
   const send = async (body) => {
     try { await api("/api/control", {method: "POST", body}); } catch (e) { toast(e.message || "ส่งไม่ได้", true); }
@@ -22,6 +23,7 @@
       const a = b.dataset.sim;
       if (a === "tab") { open = !open; last = ""; draw(); return; }
       if (a === "on") send({cmd: "sim", on: b.dataset.on === "1"});
+      else if (a === "vd") send({cmd: "sim_display", on: b.dataset.on === "1"});
       else if (a === "pulse") send({cmd: "sim_pulse", sensor: b.dataset.s});
       else send({cmd: "sim_sensor", sensor: b.dataset.s, state: a});
     });
@@ -47,18 +49,24 @@
   function draw() {
     if (!S.me) { if (dock) { dock.style.display = "none"; bar.style.display = "none"; } return; }
     ensure();
-    const sim = simOf();
-    bar.style.display = sim.on ? "block" : "none";
-    bar.textContent = sim.on ? `โหมดจำลองเปิดอยู่ · เหลือ ${mmss(sim.left_s)}` : "";
+    const sim = simOf(), vd = vdOf();
+    const msg = [];
+    if (sim.on) msg.push(`โหมดจำลองเปิดอยู่ · เหลือ ${mmss(sim.left_s)}`);
+    if (vd.on) msg.push(`จอจำลอง: ไม่มีจอจริง ไฟเห็นเฉพาะในเว็บ · เหลือ ${mmss(vd.left_s)}`);
+    bar.style.display = msg.length ? "block" : "none";
+    bar.textContent = msg.join(" | ");
     if (!mine()) { dock.style.display = "none"; return; }
     dock.style.display = "block";
-    const key = JSON.stringify([open, sim, (S.state && S.state.lanes || []).map((l) => [l.id, l.green, l.enabled, l.tickets])]);
+    const key = JSON.stringify([open, sim, vd.on, (S.state && S.state.lanes || []).map((l) => [l.id, l.green, l.enabled, l.tickets])]);
     if (key === last) return;
     last = key;
     dock.className = open ? "open" : "";
     dock.innerHTML = `<button type="button" class="sm-tab" data-sim="tab" aria-label="จำลอง">${open ? "‹" : "จำลอง"}</button>
       <div class="sm-body"><div class="sm-top"><b>จำลอง</b>
         <button type="button" class="${sim.on ? "sec" : ""}" data-sim="on" data-on="${sim.on ? 0 : 1}">${sim.on ? "ปิดโหมดจำลอง" : "เปิดโหมดจำลอง"}</button></div>
+        <div class="sm-top"><span class="small">จอจำลอง <span class="mut">(ไม่ได้ต่อจอ)</span></span>
+        <button type="button" class="${vd.on ? "sec" : ""}" data-sim="vd" data-on="${vd.on ? 0 : 1}">${vd.on ? "ปิดจอจำลอง" : "เปิดจอจำลอง"}</button></div>
+        ${vd.on ? "" : '<p class="mut small">จอจำลอง: Pi ตอบแทนจอที่ไม่ได้ต่อ ใช้จูนจากเว็บเท่านั้น ห้ามเปิดตอนมีรถจริงวิ่งตามไฟ</p>'}
         ${sim.on ? lanesHtml(sim) : '<p class="mut small">เปิดแล้วจะไม่อ่านเซนเซอร์จริง ไฟและจอทำงานตามกติกาจริง</p>'}</div>`;
   }
   setInterval(draw, 500);
