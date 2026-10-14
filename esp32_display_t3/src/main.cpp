@@ -198,49 +198,32 @@ void sideArrow(bool mirror) {
   for (int x = 40; x <= 55; x++) { int k = 55 - x; for (int y = max(1, 15 - k); y <= min(30, 16 + k); y++) p(x, y); }
 }
 
-// ---- Combined green arrows (F28-F31): one merged arrow per frame.
-// Geometry is mirrored in web/static/led.js. Strokes are 7 px thick lines or curves, heads are triangles.
-// A pixel is lit when its centre lies on a stroke or inside a head.
-const float AW = 3.5f;  // half stroke width
-
-bool strokeHit(float x, float y, float x1, float y1, float x2, float y2) {
-  return segDist(x, y, x1, y1, x2, y2) <= AW;
+// ---- Combined green arrows (F28-F31), design "D": 45-degree heads with a 2-px tip (same style as GO),
+// 6 px shafts, side branches split low on the stem away from the top head. All shapes are centred on
+// the 64x32 panel. Coordinates are mirrored exactly in web/static/led.js.
+static bool arrowMirror = false;
+void ap(int x, int y) { px(arrowMirror ? 63 - x : x, y, C_G); }
+void aRect(int x0, int y0, int x1, int y1) {
+  for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++) ap(x, y);
 }
+void aUp(int cx, int tip, int h) { for (int k = 0; k < h; k++) aRect(cx - k, tip + k, cx + 1 + k, tip + k); }
+void aRight(int tip, int cy, int h) { for (int k = 0; k < h; k++) aRect(tip - k, cy - k, tip - k, cy + 1 + k); }
+void aLeft(int tip, int cy, int h) { for (int k = 0; k < h; k++) aRect(tip + k, cy - k, tip + k, cy + 1 + k); }
 
-bool triHit(float x, float y, float ax, float ay, float bx, float by, float cx, float cy) {
-  float d1 = (x - bx) * (ay - by) - (ax - bx) * (y - by);
-  float d2 = (x - cx) * (by - cy) - (bx - cx) * (y - cy);
-  float d3 = (x - ax) * (cy - ay) - (cx - ax) * (y - ay);
-  bool neg = d1 < 0 || d2 < 0 || d3 < 0, pos = d1 > 0 || d2 > 0 || d3 > 0;
-  return !(neg && pos);
-}
-
-// All heads share one size (base 18 px, length 10 px) and shafts are 7 px wide, so every frame has
-// the same visual weight. Bounding boxes are centred on the 64 px panel.
-// kind 0: straight + right (stem with a right-angle branch)   kind 1: left + right (T)   kind 2: straight + left + right
-bool arrowLit(int kind, float x, float y) {
-  if (kind == 0) {
-    if (strokeHit(x, y, 22, 31, 22, 11) || triHit(x, y, 22, 1, 13, 11, 31, 11)) return true;  // straight arm
-    if (strokeHit(x, y, 22, 18, 41, 18)) return true;                                          // right-angle arm
-    return triHit(x, y, 51, 18, 41, 9, 41, 27);                                                 // right head
-  }
-  if (kind == 1) {  // T: bar high so the figure is centred vertically
-    if (strokeHit(x, y, 13, 12, 51, 12) || triHit(x, y, 3, 12, 13, 3, 13, 21) || triHit(x, y, 61, 12, 51, 3, 51, 21)) return true;
-    return strokeHit(x, y, 32, 31, 32, 12);
-  }
-  // kind 2: stem continues up to a top head, so the bar sits lower
-  if (strokeHit(x, y, 13, 18, 51, 18) || triHit(x, y, 3, 18, 13, 9, 13, 27) || triHit(x, y, 61, 18, 51, 9, 51, 27)) return true;
-  if (strokeHit(x, y, 32, 31, 32, 11)) return true;
-  return triHit(x, y, 32, 1, 23, 11, 41, 11);                                                  // top head
-}
-
-// mirror=true draws the mirror image (used for GO_LEFT).
+// kind 0: straight + right (mirror = straight + left)   kind 1: left + right   kind 2: straight + left + right
 void renderArrow(int kind, bool mirror) {
-  for (int y = 0; y < 32; y++)
-    for (int x = 0; x < 64; x++) {
-      int bx = mirror ? 63 - x : x;
-      if (arrowLit(kind, bx + 0.5f, y + 0.5f)) px(x, y, C_G);
-    }
+  arrowMirror = mirror;
+  if (kind == 0) {
+    aUp(23, 0, 9); aRect(21, 9, 26, 29);            // straight
+    aRect(27, 19, 39, 24); aRight(47, 21, 9);        // low branch to the right
+  } else if (kind == 1) {
+    aRect(29, 10, 34, 27);                           // stem
+    aRect(16, 10, 47, 15); aLeft(8, 12, 9); aRight(55, 12, 9);
+  } else {
+    aUp(31, 1, 9); aRect(29, 10, 34, 30);            // straight
+    aRect(16, 19, 47, 24); aLeft(8, 21, 9); aRight(55, 21, 9);
+  }
+  arrowMirror = false;
 }
 
 void ring(int lit, bool dot, bool check) {

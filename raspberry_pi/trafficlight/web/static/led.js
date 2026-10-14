@@ -17,18 +17,17 @@
     function bigArrow() { for (var y = 2; y <= 15; y++) { var hw = y - 2; for (var x = 31 - hw; x <= 32 + hw; x++) set(x, y, C.G); } for (y = 16; y <= 29; y++) for (x = 28; x <= 35; x++) set(x, y, C.G); }
     function smallArrow() { for (var y = 3; y <= 15; y++) { var hw = y - 3; for (var x = 14 - hw; x <= 15 + hw; x++) set(x, y, C.G); } for (y = 16; y <= 29; y++) for (x = 11; x <= 18; x++) set(x, y, C.G); }
     function side(mir) { function p(x, y) { set(mir ? 63 - x : x, y, C.G); } for (var y = 12; y <= 19; y++) for (var x = 6; x <= 39; x++) p(x, y); for (x = 40; x <= 55; x++) { var k = 55 - x; for (y = Math.max(1, 15 - k); y <= Math.min(30, 16 + k); y++) p(x, y); } }
-    // combined green arrows F28-F31: mirrors arrowLit()/renderArrow() in esp32_display_t3/src/main.cpp
-    var AW = 3.5;
-    function strokeHit(x, y, x1, y1, x2, y2) { return seg(x, y, x1, y1, x2, y2) <= AW; }
-    function triHit(x, y, ax, ay, bx, by, cx, cy) { var d1 = (x - bx) * (ay - by) - (ax - bx) * (y - by), d2 = (x - cx) * (by - cy) - (bx - cx) * (y - cy), d3 = (x - ax) * (cy - ay) - (cx - ax) * (y - ay); var neg = d1 < 0 || d2 < 0 || d3 < 0, pos = d1 > 0 || d2 > 0 || d3 > 0; return !(neg && pos); }
-    function arrowLit(kind, x, y) {
-      if (kind === 0) { if (strokeHit(x, y, 22, 31, 22, 11) || triHit(x, y, 22, 1, 13, 11, 31, 11)) return true; if (strokeHit(x, y, 22, 18, 41, 18)) return true; return triHit(x, y, 51, 18, 41, 9, 41, 27); }
-      if (kind === 1) { if (strokeHit(x, y, 13, 12, 51, 12) || triHit(x, y, 3, 12, 13, 3, 13, 21) || triHit(x, y, 61, 12, 51, 3, 51, 21)) return true; return strokeHit(x, y, 32, 31, 32, 12); }
-      if (strokeHit(x, y, 13, 18, 51, 18) || triHit(x, y, 3, 18, 13, 9, 13, 27) || triHit(x, y, 61, 18, 51, 9, 51, 27)) return true;
-      if (strokeHit(x, y, 32, 31, 32, 11)) return true;
-      return triHit(x, y, 32, 1, 23, 11, 41, 11);
+    // combined green arrows F28-F31 (design "D"): mirrors renderArrow() in esp32_display_t3/src/main.cpp
+    function renderArrow(kind, mir) {
+      function ap(x, y) { set(mir ? 63 - x : x, y, C.G); }
+      function r(x0, y0, x1, y1) { for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) ap(x, y); }
+      function up(cx, tip, h) { for (var k = 0; k < h; k++) r(cx - k, tip + k, cx + 1 + k, tip + k); }
+      function rt(tip, cy, h) { for (var k = 0; k < h; k++) r(tip - k, cy - k, tip - k, cy + 1 + k); }
+      function lt(tip, cy, h) { for (var k = 0; k < h; k++) r(tip + k, cy - k, tip + k, cy + 1 + k); }
+      if (kind === 0) { up(23, 0, 9); r(21, 9, 26, 29); r(27, 19, 39, 24); rt(47, 21, 9); }
+      else if (kind === 1) { r(29, 10, 34, 27); r(16, 10, 47, 15); lt(8, 12, 9); rt(55, 12, 9); }
+      else { up(31, 1, 9); r(29, 10, 34, 30); r(16, 19, 47, 24); lt(8, 21, 9); rt(55, 21, 9); }
     }
-    function renderArrow(kind, mir) { for (var y = 0; y < 32; y++) for (var x = 0; x < 64; x++) if (arrowLit(kind, mir ? 63 - x + 0.5 : x + 0.5, y + 0.5)) set(x, y, C.G); }
     function ring(n, dot, check) { var cx = 15.5, cy = 16; each(function (x, y, px, py) { var d = Math.hypot(px - cx, py - cy); if (d >= 9.3 && d < 12.6) { var v = ang(px - cx, py - cy); if (v % 120 < 7 || v % 120 > 113) return; set(x, y, Math.floor(v / 120) < n ? C.B : C.D); } else if (dot && d <= 2.7) set(x, y, C.B); if (check && (seg(px, py, cx - 4.5, cy + 0.5, cx - 1.5, cy + 3.8) < 1.3 || seg(px, py, cx - 1.5, cy + 3.8, cx + 4.8, cy - 3.6) < 1.3)) set(x, y, C.W); }); }
     switch (f) {
       case 'START': border(); var sx = 18, sy = 16.5; each(function (x, y, px, py) { var d = Math.hypot(px - sx, py - sy), v = ang(px - sx, py - sy); if (d >= 7 && d < 9.6 && v > 38 && v < 322) set(x, y, C.W); if (Math.abs(px - sx) < 1.3 && py > sy - 10.5 && py < sy - 1) set(x, y, C.W); }); [34, 42, 50].forEach(function (x0, i) { for (var y = 15; y < 18; y++) for (var x = x0; x < x0 + 3; x++) set(x, y, i < 2 ? C.W : C.DW); }); break;
