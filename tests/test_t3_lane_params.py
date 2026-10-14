@@ -152,3 +152,22 @@ def test_manual_max_pending_must_be_a_positive_integer():
     cfg = t3_config()
     _lane(cfg, 2)["params"] = {"manual_max_pending": 2}
     assert validate(cfg) == []
+
+
+def test_green_frame_choices_include_the_combined_arrows_only():
+    cfg = t3_config()
+    for frame in (F.GO, F.GO_RIGHT, F.GO_LEFT, F.LEFT_RIGHT, F.GO_3WAY, F.LEFT, F.RIGHT):
+        _lane(cfg, 1)["green_frame"] = frame
+        assert validate(cfg) == [], frame
+    _lane(cfg, 1)["green_frame"] = "GO_N"
+    assert any("ภาพไฟเขียว" in e for e in validate(cfg))
+
+
+def test_lane_with_combined_green_frame_shows_it_while_it_has_the_green():
+    cfg = t3_config()
+    _lane(cfg, 1)["green_frame"] = F.GO_RIGHT
+    sim = Sim(cfg)
+    sim.ready()
+    sim.pulse("C1.1", 3.2)
+    sim.until(lambda: sim.shown(1) == F.GO_RIGHT, limit=5)
+    assert all(F.is_green(f) for f in (F.GO_RIGHT, F.GO_LEFT, F.LEFT_RIGHT, F.GO_3WAY))

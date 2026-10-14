@@ -198,6 +198,60 @@ void sideArrow(bool mirror) {
   for (int x = 40; x <= 55; x++) { int k = 55 - x; for (int y = max(1, 15 - k); y <= min(30, 16 + k); y++) p(x, y); }
 }
 
+// ---- Combined green arrows (F28-F31): one merged arrow per frame.
+// Geometry is mirrored in web/static/led.js. Strokes are 7 px thick lines or curves, heads are triangles.
+// A pixel is lit when its centre lies on a stroke or inside a head.
+const float AW = 3.5f;  // half stroke width
+
+bool strokeHit(float x, float y, float x1, float y1, float x2, float y2) {
+  return segDist(x, y, x1, y1, x2, y2) <= AW;
+}
+
+bool triHit(float x, float y, float ax, float ay, float bx, float by, float cx, float cy) {
+  float d1 = (x - bx) * (ay - by) - (ax - bx) * (y - by);
+  float d2 = (x - cx) * (by - cy) - (bx - cx) * (y - cy);
+  float d3 = (x - ax) * (cy - ay) - (cx - ax) * (y - ay);
+  bool neg = d1 < 0 || d2 < 0 || d3 < 0, pos = d1 > 0 || d2 > 0 || d3 > 0;
+  return !(neg && pos);
+}
+
+// Quadratic Bezier from (x0,y0) via (x1,y1) to (x2,y2), drawn as 12 short strokes.
+bool curveHit(float x, float y, float x0, float y0, float x1, float y1, float x2, float y2) {
+  float px0 = x0, py0 = y0;
+  for (int i = 1; i <= 12; i++) {
+    float t = i / 12.0f, u = 1 - t;
+    float qx = u * u * x0 + 2 * u * t * x1 + t * t * x2;
+    float qy = u * u * y0 + 2 * u * t * y1 + t * t * y2;
+    if (strokeHit(x, y, px0, py0, qx, qy)) return true;
+    px0 = qx; py0 = qy;
+  }
+  return false;
+}
+
+// kind 0: straight + right (fork, like a road sign)   kind 1: left + right (T)   kind 2: straight + left + right
+bool arrowLit(int kind, float x, float y) {
+  if (kind == 0) {
+    if (strokeHit(x, y, 20, 31, 20, 9) || triHit(x, y, 20, 1, 12, 9, 28, 9)) return true;  // straight arm
+    if (curveHit(x, y, 20, 26, 20, 14, 40, 11)) return true;                             // branch to the right
+    return triHit(x, y, 52, 11, 40, 4, 40, 18);                                           // right head
+  }
+  // T: bar at row 15 with heads on both ends, stem from the bottom
+  if (strokeHit(x, y, 16, 15, 48, 15)) return true;
+  if (triHit(x, y, 4, 15, 16, 7, 16, 23) || triHit(x, y, 60, 15, 48, 7, 48, 23)) return true;
+  if (kind == 1) return strokeHit(x, y, 32, 31, 32, 15);
+  if (strokeHit(x, y, 32, 31, 32, 9)) return true;                                        // kind 2: stem continues up
+  return triHit(x, y, 32, 1, 24, 9, 40, 9);
+}
+
+// mirror=true draws the mirror image (used for GO_LEFT).
+void renderArrow(int kind, bool mirror) {
+  for (int y = 0; y < 32; y++)
+    for (int x = 0; x < 64; x++) {
+      int bx = mirror ? 63 - x : x;
+      if (arrowLit(kind, bx + 0.5f, y + 0.5f)) px(x, y, C_G);
+    }
+}
+
 void ring(int lit, bool dot, bool check) {
   const float cx = 15.5f, cy = 16.0f;
   for (int y = 0; y < 32; y++)
@@ -301,6 +355,14 @@ void renderFrame(const String &f, const String &arg, int dots) {
     sideArrow(true);
   } else if (f == "RIGHT") {
     sideArrow(false);
+  } else if (f == "GO_RIGHT") {
+    renderArrow(0, false);   // ↑ with a branch to the right
+  } else if (f == "GO_LEFT") {
+    renderArrow(0, true);    // ↑ with a branch to the left
+  } else if (f == "LEFT_RIGHT") {
+    renderArrow(1, false);   // ← and → from one stem
+  } else if (f == "GO_3WAY") {
+    renderArrow(2, false);   // ↑, ←, →
   } else if (f == "GO_N") {
     smallArrow(); ctext(arg.length() ? arg.substring(0, 1) : String("3"), 5, C_W, 3, 30, 34);
   } else if (f == "STOP_N") {
@@ -315,12 +377,16 @@ void renderFrame(const String &f, const String &arg, int dots) {
       if (fb[y][x]) drawPhysicalPixel(x, y, col565(fb[y][x]));
 }
 
-bool isGreen(const String &f) { return f == "GO" || f == "LEFT" || f == "RIGHT" || f == "GO_N"; }
+bool isGreen(const String &f) {
+  return f == "GO" || f == "LEFT" || f == "RIGHT" || f == "GO_N" || f == "GO_RIGHT" || f == "GO_LEFT" ||
+         f == "LEFT_RIGHT" || f == "GO_3WAY";
+}
 
 bool knownFrame(const String &f) {
   static const char *names[] = {"START", "REBOOT", "LINKWAIT", "STOP", "GO", "HOLD", "HAND1", "HAND2",
                                 "HANDOK", "SENSOR", "LINKLOST", "CONFIG", "MAINT", "UPDATE", "LINKOK",
-                                "STOPHINT", "ALLSTOP", "CAUTION", "LEFT", "RIGHT", "GO_N", "STOP_N", "TEST"};
+                                "STOPHINT", "ALLSTOP", "CAUTION", "LEFT", "RIGHT", "GO_N", "STOP_N", "TEST",
+                                "GO_RIGHT", "GO_LEFT", "LEFT_RIGHT", "GO_3WAY"};
   for (const char *n : names) if (f == n) return true;
   return false;
 }

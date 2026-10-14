@@ -282,7 +282,7 @@ def validate(cfg: dict) -> list[str]:
             errors.append(f"{name}: จอ B{disp} ถูกใช้ซ้ำ")
         seen_displays.add(disp)
         if lane.get("green_frame", frames.GO) not in frames.LANE_GREEN_CHOICES:
-            errors.append(f"{name}: ภาพไฟเขียวต้องเป็น GO / LEFT / RIGHT")
+            errors.append(f"{name}: ภาพไฟเขียวไม่รู้จัก (ใช้ได้: GO, GO_RIGHT, GO_LEFT, LEFT_RIGHT, GO_3WAY, LEFT, RIGHT)")
         if not _num(lane.get("priority", 0)):
             errors.append(f"{name}: priority ต้องเป็นตัวเลข")
     if auto_count > 1:

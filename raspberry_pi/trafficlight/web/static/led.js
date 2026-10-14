@@ -17,6 +17,20 @@
     function bigArrow() { for (var y = 2; y <= 15; y++) { var hw = y - 2; for (var x = 31 - hw; x <= 32 + hw; x++) set(x, y, C.G); } for (y = 16; y <= 29; y++) for (x = 28; x <= 35; x++) set(x, y, C.G); }
     function smallArrow() { for (var y = 3; y <= 15; y++) { var hw = y - 3; for (var x = 14 - hw; x <= 15 + hw; x++) set(x, y, C.G); } for (y = 16; y <= 29; y++) for (x = 11; x <= 18; x++) set(x, y, C.G); }
     function side(mir) { function p(x, y) { set(mir ? 63 - x : x, y, C.G); } for (var y = 12; y <= 19; y++) for (var x = 6; x <= 39; x++) p(x, y); for (x = 40; x <= 55; x++) { var k = 55 - x; for (y = Math.max(1, 15 - k); y <= Math.min(30, 16 + k); y++) p(x, y); } }
+    // combined green arrows F28-F31: mirrors arrowLit()/renderArrow() in esp32_display_t3/src/main.cpp
+    var AW = 3.5;
+    function strokeHit(x, y, x1, y1, x2, y2) { return seg(x, y, x1, y1, x2, y2) <= AW; }
+    function triHit(x, y, ax, ay, bx, by, cx, cy) { var d1 = (x - bx) * (ay - by) - (ax - bx) * (y - by), d2 = (x - cx) * (by - cy) - (bx - cx) * (y - cy), d3 = (x - ax) * (cy - ay) - (cx - ax) * (y - ay); var neg = d1 < 0 || d2 < 0 || d3 < 0, pos = d1 > 0 || d2 > 0 || d3 > 0; return !(neg && pos); }
+    function curveHit(x, y, x0, y0, x1, y1, x2, y2) { var px0 = x0, py0 = y0; for (var i = 1; i <= 12; i++) { var t = i / 12, u = 1 - t; var qx = u * u * x0 + 2 * u * t * x1 + t * t * x2, qy = u * u * y0 + 2 * u * t * y1 + t * t * y2; if (strokeHit(x, y, px0, py0, qx, qy)) return true; px0 = qx; py0 = qy; } return false; }
+    function arrowLit(kind, x, y) {
+      if (kind === 0) { if (strokeHit(x, y, 20, 31, 20, 9) || triHit(x, y, 20, 1, 12, 9, 28, 9)) return true; if (curveHit(x, y, 20, 26, 20, 14, 40, 11)) return true; return triHit(x, y, 52, 11, 40, 4, 40, 18); }
+      if (strokeHit(x, y, 16, 15, 48, 15)) return true;
+      if (triHit(x, y, 4, 15, 16, 7, 16, 23) || triHit(x, y, 60, 15, 48, 7, 48, 23)) return true;
+      if (kind === 1) return strokeHit(x, y, 32, 31, 32, 15);
+      if (strokeHit(x, y, 32, 31, 32, 9)) return true;
+      return triHit(x, y, 32, 1, 24, 9, 40, 9);
+    }
+    function renderArrow(kind, mir) { for (var y = 0; y < 32; y++) for (var x = 0; x < 64; x++) if (arrowLit(kind, mir ? 63 - x + 0.5 : x + 0.5, y + 0.5)) set(x, y, C.G); }
     function ring(n, dot, check) { var cx = 15.5, cy = 16; each(function (x, y, px, py) { var d = Math.hypot(px - cx, py - cy); if (d >= 9.3 && d < 12.6) { var v = ang(px - cx, py - cy); if (v % 120 < 7 || v % 120 > 113) return; set(x, y, Math.floor(v / 120) < n ? C.B : C.D); } else if (dot && d <= 2.7) set(x, y, C.B); if (check && (seg(px, py, cx - 4.5, cy + 0.5, cx - 1.5, cy + 3.8) < 1.3 || seg(px, py, cx - 1.5, cy + 3.8, cx + 4.8, cy - 3.6) < 1.3)) set(x, y, C.W); }); }
     switch (f) {
       case 'START': border(); var sx = 18, sy = 16.5; each(function (x, y, px, py) { var d = Math.hypot(px - sx, py - sy), v = ang(px - sx, py - sy); if (d >= 7 && d < 9.6 && v > 38 && v < 322) set(x, y, C.W); if (Math.abs(px - sx) < 1.3 && py > sy - 10.5 && py < sy - 1) set(x, y, C.W); }); [34, 42, 50].forEach(function (x0, i) { for (var y = 15; y < 18; y++) for (var x = x0; x < x0 + 3; x++) set(x, y, i < 2 ? C.W : C.DW); }); break;
@@ -39,6 +53,10 @@
       case 'CAUTION': for (var y5 = 2; y5 <= 29; y5++) { var hw5 = Math.floor((y5 - 2) * 15 / 27); for (var x5 = 31 - hw5; x5 <= 32 + hw5; x5++) set(x5, y5, C.Y); } break;
       case 'LEFT': side(true); break;
       case 'RIGHT': side(false); break;
+      case 'GO_RIGHT': renderArrow(0, false); break;
+      case 'GO_LEFT': renderArrow(0, true); break;
+      case 'LEFT_RIGHT': renderArrow(1, false); break;
+      case 'GO_3WAY': renderArrow(2, false); break;
       case 'GO_N': smallArrow(); ctext(String(a || 3).charAt(0), 5, C.W, 3, 30, 34); break;
       case 'STOP_N': for (var yy = 0; yy < 24; yy++) for (var xx = 0; xx < 24; xx++) { if (Math.abs(xx - yy) <= 3 || Math.abs(xx + yy - 23) <= 3) set(4 + xx, 4 + yy, C.R); } ctext(String(a || 3).charAt(0), 5, C.W, 3, 30, 34); break;
       default: bigX();
@@ -61,5 +79,5 @@
       ctx.fill();
     }
   };
-  window.GREEN_FRAMES = {GO: 1, LEFT: 1, RIGHT: 1, GO_N: 1};
+  window.GREEN_FRAMES = {GO: 1, LEFT: 1, RIGHT: 1, GO_N: 1, GO_RIGHT: 1, GO_LEFT: 1, LEFT_RIGHT: 1, GO_3WAY: 1};
 })();
