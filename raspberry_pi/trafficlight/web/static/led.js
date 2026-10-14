@@ -21,14 +21,12 @@
     var AW = 3.5;
     function strokeHit(x, y, x1, y1, x2, y2) { return seg(x, y, x1, y1, x2, y2) <= AW; }
     function triHit(x, y, ax, ay, bx, by, cx, cy) { var d1 = (x - bx) * (ay - by) - (ax - bx) * (y - by), d2 = (x - cx) * (by - cy) - (bx - cx) * (y - cy), d3 = (x - ax) * (cy - ay) - (cx - ax) * (y - ay); var neg = d1 < 0 || d2 < 0 || d3 < 0, pos = d1 > 0 || d2 > 0 || d3 > 0; return !(neg && pos); }
-    function curveHit(x, y, x0, y0, x1, y1, x2, y2) { var px0 = x0, py0 = y0; for (var i = 1; i <= 12; i++) { var t = i / 12, u = 1 - t; var qx = u * u * x0 + 2 * u * t * x1 + t * t * x2, qy = u * u * y0 + 2 * u * t * y1 + t * t * y2; if (strokeHit(x, y, px0, py0, qx, qy)) return true; px0 = qx; py0 = qy; } return false; }
     function arrowLit(kind, x, y) {
-      if (kind === 0) { if (strokeHit(x, y, 20, 31, 20, 9) || triHit(x, y, 20, 1, 12, 9, 28, 9)) return true; if (curveHit(x, y, 20, 26, 20, 14, 40, 11)) return true; return triHit(x, y, 52, 11, 40, 4, 40, 18); }
-      if (strokeHit(x, y, 16, 15, 48, 15)) return true;
-      if (triHit(x, y, 4, 15, 16, 7, 16, 23) || triHit(x, y, 60, 15, 48, 7, 48, 23)) return true;
-      if (kind === 1) return strokeHit(x, y, 32, 31, 32, 15);
-      if (strokeHit(x, y, 32, 31, 32, 9)) return true;
-      return triHit(x, y, 32, 1, 24, 9, 40, 9);
+      if (kind === 0) { if (strokeHit(x, y, 22, 31, 22, 11) || triHit(x, y, 22, 1, 13, 11, 31, 11)) return true; if (strokeHit(x, y, 22, 18, 41, 18)) return true; return triHit(x, y, 51, 18, 41, 9, 41, 27); }
+      if (kind === 1) { if (strokeHit(x, y, 13, 12, 51, 12) || triHit(x, y, 3, 12, 13, 3, 13, 21) || triHit(x, y, 61, 12, 51, 3, 51, 21)) return true; return strokeHit(x, y, 32, 31, 32, 12); }
+      if (strokeHit(x, y, 13, 18, 51, 18) || triHit(x, y, 3, 18, 13, 9, 13, 27) || triHit(x, y, 61, 18, 51, 9, 51, 27)) return true;
+      if (strokeHit(x, y, 32, 31, 32, 11)) return true;
+      return triHit(x, y, 32, 1, 23, 11, 41, 11);
     }
     function renderArrow(kind, mir) { for (var y = 0; y < 32; y++) for (var x = 0; x < 64; x++) if (arrowLit(kind, mir ? 63 - x + 0.5 : x + 0.5, y + 0.5)) set(x, y, C.G); }
     function ring(n, dot, check) { var cx = 15.5, cy = 16; each(function (x, y, px, py) { var d = Math.hypot(px - cx, py - cy); if (d >= 9.3 && d < 12.6) { var v = ang(px - cx, py - cy); if (v % 120 < 7 || v % 120 > 113) return; set(x, y, Math.floor(v / 120) < n ? C.B : C.D); } else if (dot && d <= 2.7) set(x, y, C.B); if (check && (seg(px, py, cx - 4.5, cy + 0.5, cx - 1.5, cy + 3.8) < 1.3 || seg(px, py, cx - 1.5, cy + 3.8, cx + 4.8, cy - 3.6) < 1.3)) set(x, y, C.W); }); }

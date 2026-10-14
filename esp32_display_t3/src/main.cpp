@@ -215,32 +215,23 @@ bool triHit(float x, float y, float ax, float ay, float bx, float by, float cx, 
   return !(neg && pos);
 }
 
-// Quadratic Bezier from (x0,y0) via (x1,y1) to (x2,y2), drawn as 12 short strokes.
-bool curveHit(float x, float y, float x0, float y0, float x1, float y1, float x2, float y2) {
-  float px0 = x0, py0 = y0;
-  for (int i = 1; i <= 12; i++) {
-    float t = i / 12.0f, u = 1 - t;
-    float qx = u * u * x0 + 2 * u * t * x1 + t * t * x2;
-    float qy = u * u * y0 + 2 * u * t * y1 + t * t * y2;
-    if (strokeHit(x, y, px0, py0, qx, qy)) return true;
-    px0 = qx; py0 = qy;
-  }
-  return false;
-}
-
-// kind 0: straight + right (fork, like a road sign)   kind 1: left + right (T)   kind 2: straight + left + right
+// All heads share one size (base 18 px, length 10 px) and shafts are 7 px wide, so every frame has
+// the same visual weight. Bounding boxes are centred on the 64 px panel.
+// kind 0: straight + right (stem with a right-angle branch)   kind 1: left + right (T)   kind 2: straight + left + right
 bool arrowLit(int kind, float x, float y) {
   if (kind == 0) {
-    if (strokeHit(x, y, 20, 31, 20, 9) || triHit(x, y, 20, 1, 12, 9, 28, 9)) return true;  // straight arm
-    if (curveHit(x, y, 20, 26, 20, 14, 40, 11)) return true;                             // branch to the right
-    return triHit(x, y, 52, 11, 40, 4, 40, 18);                                           // right head
+    if (strokeHit(x, y, 22, 31, 22, 11) || triHit(x, y, 22, 1, 13, 11, 31, 11)) return true;  // straight arm
+    if (strokeHit(x, y, 22, 18, 41, 18)) return true;                                          // right-angle arm
+    return triHit(x, y, 51, 18, 41, 9, 41, 27);                                                 // right head
   }
-  // T: bar at row 15 with heads on both ends, stem from the bottom
-  if (strokeHit(x, y, 16, 15, 48, 15)) return true;
-  if (triHit(x, y, 4, 15, 16, 7, 16, 23) || triHit(x, y, 60, 15, 48, 7, 48, 23)) return true;
-  if (kind == 1) return strokeHit(x, y, 32, 31, 32, 15);
-  if (strokeHit(x, y, 32, 31, 32, 9)) return true;                                        // kind 2: stem continues up
-  return triHit(x, y, 32, 1, 24, 9, 40, 9);
+  if (kind == 1) {  // T: bar high so the figure is centred vertically
+    if (strokeHit(x, y, 13, 12, 51, 12) || triHit(x, y, 3, 12, 13, 3, 13, 21) || triHit(x, y, 61, 12, 51, 3, 51, 21)) return true;
+    return strokeHit(x, y, 32, 31, 32, 12);
+  }
+  // kind 2: stem continues up to a top head, so the bar sits lower
+  if (strokeHit(x, y, 13, 18, 51, 18) || triHit(x, y, 3, 18, 13, 9, 13, 27) || triHit(x, y, 61, 18, 51, 9, 51, 27)) return true;
+  if (strokeHit(x, y, 32, 31, 32, 11)) return true;
+  return triHit(x, y, 32, 1, 23, 11, 41, 11);                                                  // top head
 }
 
 // mirror=true draws the mirror image (used for GO_LEFT).
