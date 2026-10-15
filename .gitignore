@@ -18,3 +18,11 @@ config/wifi.local
 backups/
 /esp32_display/src/main_old.cpp.bak
 .pytest_cache/
+
+# Field leftovers on the engineering PC (never commit)
+/_to_delete/
+/_incoming/
+/_archive_*/
+*.tar
+/t3_timeline*.txt
+/T3_ONSITE_STEPS.txt

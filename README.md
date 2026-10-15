@@ -96,7 +96,7 @@ Current repository unit suite covers directional pair logic, reverse lockout, of
 
 ## T3 junction (5 lanes, web UI) — separate module
 
-T3 does not change V1. Full spec: `docs/T3_DESIGN.md`. Status: tested by simulation only, **not field-tested**.
+T3 does not change V1. Full spec: `docs/T3_DESIGN.md`. Status: **in field use at the T3 junction since Oct 2026**, display firmware `t3-1.2.1`.
 
 ```bash
 sudo ./install.sh --t3                       # controller starts in CONFIG mode (no lane) + web UI service
@@ -107,6 +107,8 @@ sudo trafficlight-user add engineer01 --role editor
 ```
 
 - Pi code: `raspberry_pi/trafficlight/t3/` (controller) and `raspberry_pi/trafficlight/web/` (web UI, port 8080)
-- ESP32 firmware: `esp32_display_t3/` — first flash by USB `pio run -e t3_display1 -t upload` (…5), then OTA from the web
-- Change `OTA_PASSWORD` in `esp32_display_t3/include/device_config.h` and `ota.password` in settings.json together
+- ESP32 firmware: `esp32_display_t3/` — first flash by USB (setup wizard or `pio run -e t3_display1 -t upload` …5), then OTA from the web (lane card → อัปเดตเฟิร์มแวร์; pick `firmware/t3/display<n>/firmware.bin` for the display number shown)
+- Release flow (PC): `tools\build_t3_firmware.bat` → commit + push → `tools\deploy_t3_to_pi.bat` → OTA each display → press เปิดเลน. Details: `docs/T3_DESIGN.md` section 14
+- Display frames are drawn in code: `esp32_display_t3/src/main.cpp` and `raspberry_pi/trafficlight/web/static/led.js` must stay identical
+- OTA password: `-DOTA_PASSWORD` in `esp32_display_t3/platformio.ini` (overrides `include/device_config.h`) and `ota.password` in the Pi settings must match
 - Tests: `PYTHONPATH=raspberry_pi python3 -m pytest -q tests`

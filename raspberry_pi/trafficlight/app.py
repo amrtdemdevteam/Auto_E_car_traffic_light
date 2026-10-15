@@ -1,6 +1,5 @@
 from __future__ import annotations
 import argparse, signal, time
-from pathlib import Path
 from loguru import logger
 from .config import load_config
 from .logging.log_manager import setup_logging
