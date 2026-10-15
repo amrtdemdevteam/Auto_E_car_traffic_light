@@ -768,7 +768,7 @@ window.__T3_MAP__ = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"20 10 8
       case 'STOPHINT': bigX(); each(function (x, y, px, py) { if (x < 48 || y < 18) return; var d = Math.hypot(px - 56, py - 25); if (d < 1.6 || (d >= 3.6 && d < 5)) set(x, y, C.B); }); break;
       case 'TEST': for (var tx = 0; tx < 64; tx++) { set(tx, 0, C.B); set(tx, 31, C.B); } for (var ty = 0; ty < 32; ty++) { set(0, ty, C.B); set(63, ty, C.B); } ctext('TEST', 4, C.W, 2); ctext(String(a || ''), 22, C.B); break;
       case 'ALLSTOP': border(2); bigX(); break;
-      case 'CAUTION': for (var y5 = 2; y5 <= 29; y5++) { var hw5 = Math.floor((y5 - 2) * 15 / 27); for (var x5 = 31 - hw5; x5 <= 32 + hw5; x5++) set(x5, y5, C.Y); } break;
+      case 'CAUTION': for (var y5 = 2; y5 <= 29; y5++) { var hw5 = Math.floor((y5 - 2) * 15 / 27); for (var x5 = 31 - hw5; x5 <= 32 + hw5; x5++) set(x5, y5, C.Y); } for (var y6 = 10; y6 <= 26; y6++) if (y6 <= 20 || y6 >= 23) for (var x6 = 30; x6 <= 33; x6++) delete m[x6 + ',' + y6]; break;
       case 'LEFT': side(true); break;
       case 'RIGHT': side(false); break;
       case 'GO_RIGHT': renderArrow(0, false); break;

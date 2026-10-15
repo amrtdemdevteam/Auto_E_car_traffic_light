@@ -325,6 +325,8 @@ void renderFrame(const String &f, const String &arg, int dots) {
     border(2); bigX();
   } else if (f == "CAUTION") {
     for (int y = 2; y <= 29; y++) { int hw = (y - 2) * 15 / 27; for (int x = 31 - hw; x <= 32 + hw; x++) px(x, y, C_Y); }
+    // "!" cut out of the triangle (dark pixels): bar rows 10-20, dot rows 23-26, 4 px wide
+    for (int y = 10; y <= 26; y++) if (y <= 20 || y >= 23) for (int x = 30; x <= 33; x++) px(x, y, C_NONE);
   } else if (f == "LEFT") {
     sideArrow(true);
   } else if (f == "RIGHT") {
