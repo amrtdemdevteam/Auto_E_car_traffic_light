@@ -171,3 +171,48 @@ def test_lane_with_combined_green_frame_shows_it_while_it_has_the_green():
     sim.pulse("C1.1", 3.2)
     sim.until(lambda: sim.shown(1) == F.GO_RIGHT, limit=5)
     assert all(F.is_green(f) for f in (F.GO_RIGHT, F.GO_LEFT, F.LEFT_RIGHT, F.GO_3WAY))
+
+
+def test_green_mask_must_have_at_least_one_direction():
+    cfg = t3_config()
+    for mask in (1, 5, 21, 31):
+        _lane(cfg, 1)["green_mask"] = mask
+        assert validate(cfg) == [], mask
+    for bad in (0, 32, -1, "5", True, None):
+        _lane(cfg, 1)["green_mask"] = bad
+        assert any("ทิศลูกศร" in e for e in validate(cfg)), bad
+
+
+def test_lane_with_green_mask_shows_arrow_frame_with_the_mask():
+    cfg = t3_config()
+    _lane(cfg, 1)["green_frame"] = F.GO_RIGHT     # mask wins over the legacy frame
+    _lane(cfg, 1)["green_mask"] = 31
+    sim = Sim(cfg)
+    sim.ready()
+    sim.pulse("C1.1", 3.2)
+    sim.until(lambda: sim.shown(1) == F.ARROW, limit=5)
+    assert sim.ctrl._frames[1] == (F.ARROW, "31")
+    assert F.is_green(F.ARROW)
+
+
+def test_legacy_frames_map_to_masks():
+    assert F.mask_of(F.GO) == F.DIR_BITS["U"]
+    assert F.mask_of(F.GO_3WAY) == 1 + 4 + 16
+    assert F.mask_of(F.LEFT_RIGHT) == 1 + 16
+
+
+def test_firmware_and_web_bitmaps_match_the_design():
+    import importlib.util, json, pathlib, re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("arrow_design", root / "tools" / "arrow_design.py")
+    ad = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ad)
+    maps = ad.bitmaps()
+    header = (root / "esp32_display_t3" / "src" / "arrow_bitmaps.h").read_text()
+    rows = [int(v, 16) for v in re.findall(r"0x([0-9A-F]{16})ULL", header)]
+    assert rows == [maps[m][y] for m in range(1, 32) for y in range(32)]
+    led = (root / "raspberry_pi" / "trafficlight" / "web" / "static" / "led.js").read_text()
+    js = json.loads(re.search(r"var ARROW_BITMAP = (\[.*?\]);", led).group(1).replace("'", '"'))
+    assert js == ["".join(f"{r:016X}" for r in maps[m]) for m in range(1, 32)]
+    main = (root / "esp32_display_t3" / "src" / "main.cpp").read_text()
+    assert '"ARROW"' in main and "ARROW_BITMAP" in main

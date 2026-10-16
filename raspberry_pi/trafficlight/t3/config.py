@@ -283,6 +283,8 @@ def validate(cfg: dict) -> list[str]:
         seen_displays.add(disp)
         if lane.get("green_frame", frames.GO) not in frames.LANE_GREEN_CHOICES:
             errors.append(f"{name}: ภาพไฟเขียวไม่รู้จัก (ใช้ได้: GO, GO_RIGHT, GO_LEFT, LEFT_RIGHT, GO_3WAY, LEFT, RIGHT)")
+        if "green_mask" in lane and not frames.valid_mask(lane.get("green_mask")):
+            errors.append(f"{name}: ทิศลูกศรไฟเขียวต้องเลือกอย่างน้อยหนึ่งทิศ")
         if not _num(lane.get("priority", 0)):
             errors.append(f"{name}: priority ต้องเป็นตัวเลข")
     if auto_count > 1:

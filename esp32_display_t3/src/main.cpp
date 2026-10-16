@@ -14,6 +14,7 @@
 #include <esp_task_wdt.h>
 #include <math.h>
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
+#include "arrow_bitmaps.h"
 #include "EthOTA.h"
 #include "device_config.h"
 
@@ -339,6 +340,17 @@ void renderFrame(const String &f, const String &arg, int dots) {
     renderArrow(1, false);   // ← and → from one stem
   } else if (f == "GO_3WAY") {
     renderArrow(2, false);   // ↑, ←, →
+  } else if (f == "ARROW") {
+    // F32: arrow from a direction mask (1=L 2=UL 4=U 8=UR 16=R), bitmaps from tools/arrow_design.py
+    long m = arg.toInt();
+    if (m >= 1 && m <= 31) {
+      for (int y = 0; y < PANEL_H; y++) {
+        uint64_t row = ARROW_BITMAP[m - 1][y];
+        for (int x = 0; x < PANEL_W; x++) if ((row >> x) & 1ULL) px(x, y, C_G);
+      }
+    } else {
+      bigX();  // bad mask: never green
+    }
   } else if (f == "GO_N") {
     smallArrow(); ctext(arg.length() ? arg.substring(0, 1) : String("3"), 5, C_W, 3, 30, 34);
   } else if (f == "STOP_N") {
@@ -355,14 +367,14 @@ void renderFrame(const String &f, const String &arg, int dots) {
 
 bool isGreen(const String &f) {
   return f == "GO" || f == "LEFT" || f == "RIGHT" || f == "GO_N" || f == "GO_RIGHT" || f == "GO_LEFT" ||
-         f == "LEFT_RIGHT" || f == "GO_3WAY";
+         f == "LEFT_RIGHT" || f == "GO_3WAY" || f == "ARROW";
 }
 
 bool knownFrame(const String &f) {
   static const char *names[] = {"START", "REBOOT", "LINKWAIT", "STOP", "GO", "HOLD", "HAND1", "HAND2",
                                 "HANDOK", "SENSOR", "LINKLOST", "CONFIG", "MAINT", "UPDATE", "LINKOK",
                                 "STOPHINT", "ALLSTOP", "CAUTION", "LEFT", "RIGHT", "GO_N", "STOP_N", "TEST",
-                                "GO_RIGHT", "GO_LEFT", "LEFT_RIGHT", "GO_3WAY"};
+                                "GO_RIGHT", "GO_LEFT", "LEFT_RIGHT", "GO_3WAY", "ARROW"};
   for (const char *n : names) if (f == n) return true;
   return false;
 }

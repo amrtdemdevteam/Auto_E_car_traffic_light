@@ -64,6 +64,7 @@ class Lane:
     near: str | None = None            # auto
     far: str | None = None             # auto
     green_frame: str = F.GO
+    green_mask: int | None = None               # ARROW direction mask; overrides green_frame
     p: dict = field(default_factory=dict)       # effective per-lane parameters
     reasons: set = field(default_factory=set)   # why the lane is disabled
     pending_maint: bool = False
@@ -91,7 +92,8 @@ class T3Controller:
             lane = Lane(
                 id=lc["id"], kind=lane_kind(lc), display=lc["display"], name=lc.get("name", ""),
                 sensor=lc.get("sensor"), near=lc.get("near_sensor"), far=lc.get("far_sensor"),
-                green_frame=lc.get("green_frame", F.GO), p=lane_params(cfg, lc),
+                green_frame=lc.get("green_frame", F.GO), green_mask=lc.get("green_mask"),
+                p=lane_params(cfg, lc),
             )
             if not lc.get("enabled", True):
                 lane.reasons.add("config_disabled")
@@ -458,6 +460,8 @@ class T3Controller:
         if self.state == STARTING:
             return F.START, ""
         if self.state == GREEN and self.active_lane == lane.id:
+            if lane.green_mask is not None:
+                return F.ARROW, str(lane.green_mask)
             return lane.green_frame, ""
         if "config_disabled" in lane.reasons:
             return F.CONFIG, ""

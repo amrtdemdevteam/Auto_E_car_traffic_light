@@ -31,17 +31,22 @@ GO_RIGHT = "GO_RIGHT"    # F28 green: one arrow, straight + right branch
 GO_LEFT = "GO_LEFT"      # F29 green: one arrow, straight + left branch
 LEFT_RIGHT = "LEFT_RIGHT"  # F30 green: one T arrow, left + right
 GO_3WAY = "GO_3WAY"      # F31 green: one T arrow with a straight stem, straight + left + right
+ARROW = "ARROW"          # F32 green: arrow built from a direction mask (arg = "1".."31")
+
+# Direction bits for ARROW. A lane's green_mask is the sum of the bits it shows.
+DIR_BITS = {"L": 1, "UL": 2, "U": 4, "UR": 8, "R": 16}
+MASK_MIN, MASK_MAX = 1, 31
 
 ALL_FRAMES = {
     START, REBOOT, LINKWAIT, STOP, GO, HOLD, HAND1, HAND2, HANDOK, SENSOR,
     LINKLOST, CONFIG, MAINT, UPDATE, LINKOK, STOPHINT, ALLSTOP, CAUTION,
     LEFT, RIGHT, GO_N, STOP_N, TEST, GO_RIGHT, GO_LEFT,
-    LEFT_RIGHT, GO_3WAY,
+    LEFT_RIGHT, GO_3WAY, ARROW,
 }
 
 # Frames that mean "you may go". The firmware only shows these while the
 # command is fresh and the controller is online.
-GREEN_FRAMES = {GO, LEFT, RIGHT, GO_N, GO_RIGHT, GO_LEFT, LEFT_RIGHT, GO_3WAY}
+GREEN_FRAMES = {GO, LEFT, RIGHT, GO_N, GO_RIGHT, GO_LEFT, LEFT_RIGHT, GO_3WAY, ARROW}
 
 # Frames a lane may be configured to show while it has the green.
 LANE_GREEN_CHOICES = {GO, LEFT, RIGHT, GO_RIGHT, GO_LEFT, LEFT_RIGHT, GO_3WAY}
@@ -49,3 +54,18 @@ LANE_GREEN_CHOICES = {GO, LEFT, RIGHT, GO_RIGHT, GO_LEFT, LEFT_RIGHT, GO_3WAY}
 
 def is_green(frame: str) -> bool:
     return frame in GREEN_FRAMES
+
+
+def valid_mask(mask) -> bool:
+    """True for a direction mask with at least one direction (1..31)."""
+    return isinstance(mask, int) and not isinstance(mask, bool) and MASK_MIN <= mask <= MASK_MAX
+
+
+def mask_of(frame: str) -> int:
+    """Direction mask that a legacy green_frame name shows (used by the web UI)."""
+    return {
+        GO: DIR_BITS["U"], LEFT: DIR_BITS["L"], RIGHT: DIR_BITS["R"],
+        GO_RIGHT: DIR_BITS["U"] | DIR_BITS["R"], GO_LEFT: DIR_BITS["U"] | DIR_BITS["L"],
+        LEFT_RIGHT: DIR_BITS["L"] | DIR_BITS["R"],
+        GO_3WAY: DIR_BITS["L"] | DIR_BITS["U"] | DIR_BITS["R"],
+    }.get(frame, DIR_BITS["U"])

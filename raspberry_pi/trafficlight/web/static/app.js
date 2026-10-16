@@ -53,6 +53,11 @@ const KIND_SUB = {auto: 'รถ Auto · เซนเซอร์ 2 ตัว', v
 const ROLE_TH = {far: 'ไกล', near: 'ใกล้', vehicle: 'จับรถ', hand: 'จับมือ'};
 const STATE_TH = {STARTING: 'กำลังเริ่มระบบ', IDLE: 'พร้อม', SWITCHING: 'กำลังสลับเลน',
   GREEN: 'เขียว', CONFIG_ERROR: 'รอตั้งค่า'};
+// ARROW frame: direction bits (same as frames.DIR_BITS on the Pi and the ESP32 bitmaps)
+const ARROW_DIRS = [[1, '←', 'ซ้าย'], [2, '↖', 'เฉียงซ้าย'], [4, '↑', 'ตรง'], [8, '↗', 'เฉียงขวา'], [16, '→', 'ขวา']];
+const LEGACY_MASK = {GO: 4, LEFT: 1, RIGHT: 16, GO_RIGHT: 20, GO_LEFT: 5, LEFT_RIGHT: 17, GO_3WAY: 21};
+function laneMask(l) { const m = l && l.green_mask; return m >= 1 && m <= 31 ? m : (LEGACY_MASK[(l && l.green_frame) || 'GO'] || 4); }
+function drawArrowPreviews() { $$('canvas[data-arrow]').forEach((c) => drawLED(c, 'ARROW', c.dataset.arrow)); }
 const GREEN_TH = {GO: '↑ ตรง', GO_RIGHT: '↑ ตรง + → ขวา', GO_LEFT: '↑ ตรง + ← ซ้าย', LEFT_RIGHT: '← ซ้าย + → ขวา', GO_3WAY: '↑ ตรง + ← ซ้าย + → ขวา', LEFT: '← ซ้าย', RIGHT: '→ ขวา'};
 const DISPLAY_IDS = [1, 2, 3, 4, 5, 6, 7];
 
@@ -94,6 +99,7 @@ const INFO = {
   startup_min_s: ['รอตอนเริ่มระบบ', 'หลังเปิดระบบ รออย่างน้อยเท่านี้ก่อนเริ่มควบคุม'],
   auto_first: ['Auto ได้คิวก่อน', 'รถ Auto ได้คิวก่อน Manual ที่รออยู่ แต่ไม่ตัดไฟเขียวที่กำลังวิ่ง'],
   green_frame: ['ภาพไฟเขียว', 'ภาพบนจอตอนเลนนี้ได้ไฟเขียว'],
+  green_mask: ['ลูกศรตอนไฟเขียว', 'กดเลือกทิศที่รถเลนนี้ไปได้ (เลือกได้หลายทิศ) · จอจะแสดงลูกศรรวมทุกทิศที่เลือก · ต้องอัปเดตเฟิร์มแวร์จอเป็น t3-1.3.0 ขึ้นไป'],
   priority: ['ลำดับความสำคัญ', 'เลขมากได้คิวก่อน เท่ากันใครมาก่อนได้ก่อน'],
   enabled: ['เปิดใช้เลน', 'ปิด = เลนนี้ไม่รับคิว จอแสดง CONFIG'],
   name: ['ชื่อเลน', 'ชื่อที่แสดงในหน้าเว็บและบันทึก'],
@@ -494,6 +500,12 @@ function editorHtml(ctx) {
     <div class="seg dirseg" role="group" aria-label="ทิศทางรถวิ่งเลน ${l.id}" ${segDis}>${[[270, '↑', 'ขึ้น'], [90, '↓', 'ลง'], [180, '←', 'ซ้าย'], [0, '→', 'ขวา']].map(([d, a, t]) =>
       `<button class="${hd === d ? 'on' : ''}" data-act="setdir" data-lane="${l.id}" data-d="${d}" title="รถวิ่ง${t}" aria-label="รถวิ่ง${t}" ${ro}>${a}</button>`).join('')}</div>
     <div class="small mut" style="margin-top:6px">ใช้กับรถจำลองบนแผนที่ 3 มิติ · ปรับทีหลังได้ที่ปุ่ม “ทิศรถ ↻” บนไอคอนเลน</div></div>`;
+  const gm = laneMask(l);
+  const arrowSec = `<div><div class="sec-t">ลูกศรตอนไฟเขียว${infoBtn('green_mask')}</div>
+    <div class="seg dirseg" role="group" aria-label="ทิศลูกศรไฟเขียวเลน ${l.id}" ${segDis}>${ARROW_DIRS.map(([bit, a, t]) =>
+      `<button class="${gm & bit ? 'on' : ''}" data-act="arrowdir" data-bit="${bit}" title="${t}" aria-label="${t}" aria-pressed="${gm & bit ? 'true' : 'false'}" ${ro}>${a}</button>`).join('')}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><canvas data-arrow="${gm}" width="192" height="96" style="width:192px;height:96px;border-radius:6px" aria-label="ตัวอย่างจอเลน ${l.id}"></canvas>
+    <span class="small mut">เฟรม F${String(gm).padStart(2, '0')} · ${ARROW_DIRS.filter(([bit]) => gm & bit).map(([, , t]) => t).join(' + ')}</span></div></div>`;
   const sensSec = `<div><div class="sec-t">เซนเซอร์${infoBtn('port')}</div><div class="list">${laneSensors(l).map(({sid, role}) => sensorRow(E, cfg, sid, role, ro)).join('')}</div></div>`;
   const params = LANE_PARAMS[k].map(([key, label, unit, min, max, step]) => {
     const dflt = key in (cfg.timing || {}) ? cfg.timing[key] : (cfg.hand || {})[key];
@@ -509,7 +521,6 @@ function editorHtml(ctx) {
     <div><div class="sec-t">เวลาของเลนนี้ <span class="mut" style="font-weight:400;margin-left:6px">ช่องว่าง = ค่าเริ่มต้น</span></div><div class="list">${params}</div></div>
     ${sensParams}
     <div><div class="sec-t">อื่น ๆ</div><div class="list">
-      <div class="li-row"><span class="lab">ภาพไฟเขียว${infoBtn('green_frame')}</span><span class="val"><select data-e="green_frame" aria-label="ภาพไฟเขียว" ${ro}>${Object.entries(GREEN_TH).map(([g, t]) => `<option value="${g}" ${(l.green_frame || 'GO') === g ? 'selected' : ''}>${t}</option>`).join('')}</select></span></div>
       <div class="li-row"><span class="lab">ชื่อเลน${infoBtn('name')}</span><span class="val"><input type="text" data-e="name" value="${esc(l.name || '')}" placeholder="เลน ${l.id}" aria-label="ชื่อเลน" ${ro}></span></div>
       <div class="li-row"><span class="lab">ลำดับความสำคัญ${infoBtn('priority')}</span><span class="val"><input type="number" data-e="priority" data-num="1" value="${esc(l.priority ?? 0)}" min="0" max="9" step="1" aria-label="ลำดับความสำคัญ" ${ro}></span></div>
       <div class="li-row"><span class="lab">เปิดใช้เลน${infoBtn('enabled')}</span><span class="val"><label class="sw"><input type="checkbox" data-e="enabled" aria-label="เปิดใช้เลน" ${l.enabled !== false ? 'checked' : ''} ${ro}><span></span></label></span></div>
@@ -522,7 +533,7 @@ function editorHtml(ctx) {
       <label class="filebtn">อัปเดตเฟิร์มแวร์<input type="file" accept=".bin" data-ota="${l.display}" aria-label="ไฟล์เฟิร์มแวร์ B${l.display}" hidden></label>
       <span class="small">${otaStatus(l.display)}</span></div>` : '';
   return `<div class="ed" data-editor="${l.id}">
-    ${ops}${typeSec}${dispSec}${dirSec}${sensSec}${more}
+    ${ops}${typeSec}${dispSec}${dirSec}${arrowSec}${sensSec}${more}
     <div class="edfoot">
       ${isEditor() && !E.isNew ? '<button class="danger" data-act="dellane">ลบเลน</button>' : ''}
       <span class="sp"></span>
@@ -831,6 +842,7 @@ function updateLive() {
   if (qe) qe.innerHTML = q.length ? q.map((t, i) => `<div><span class="mono">${i + 1}</span><span>เลน ${t.lane} · ${KQ[t.kind] || t.kind}${t.kind === 'auto' && !t.matched ? ' · รถยังไม่ถึง' : ''}</span><span class="sp"></span><span class="mono">${t.age_s} s</span></div>`).join('') : '<span class="empty">ไม่มีคิว</span>';
   const ev = $('#events');
   if (ev) ev.innerHTML = ((st && st.events) || []).slice().reverse().map((e) => `<div><span class="mono">${new Date(e.t * 1000).toLocaleTimeString('th-TH')}</span><span>${esc(e.text)}</span></div>`).join('') || '<span class="empty">—</span>';
+  drawArrowPreviews();
   $$('canvas[data-disp]').forEach((c) => {
     const n = Number(c.dataset.disp);
     if (!n) return;
@@ -1291,6 +1303,13 @@ document.addEventListener('click', async (ev) => {
     else if (act === 'vehs') { S.vehOff = !S.vehOff; keepView(); render(); }
     else if (act === 'flowreset') {
       if (await confirmDialog('เริ่มนับสรุปใหม่?', '<p class="mut">ตัวเลขสรุปทั้งหมดจะเริ่มจากศูนย์ ไม่กระทบการทำงานของไฟ</p>', 'เริ่มนับใหม่')) { FLOW.data = await api('/api/flow/reset', {method: 'POST', body: {}}); FLOW.at = Date.now(); flowRender(); toast('เริ่มนับใหม่แล้ว'); }
+    }
+    else if (act === 'arrowdir') {
+      if (!S.edit) return;
+      const m = laneMask(S.edit.lane) ^ Number(b.dataset.bit);
+      if (!m) { toast('ต้องเลือกอย่างน้อยหนึ่งทิศ', true); return; }
+      S.edit.lane.green_mask = m;
+      render(); drawArrowPreviews();
     }
     else if (act === 'setdir') {
       const id = Number(b.dataset.lane), d = Number(b.dataset.d);
