@@ -21,8 +21,8 @@ MANUAL_MODES = ("vehicle", "hand")
 # Per-lane parameters. The value in `timing` / `hand` is the default for the
 # lane type; a lane may override any of them in lane["params"].
 LANE_PARAM_KEYS = {
-    "auto": ("auto_clear_s", "auto_ticket_expiry_s"),
-    "manual": ("manual_clear_s", "manual_max_pending"),
+    "auto": ("auto_clear_s", "auto_ticket_expiry_s", "min_green_s", "auto_far_merge_s"),
+    "manual": ("manual_clear_s", "manual_max_pending", "min_green_s"),
     "special": ("special_green_s", "hold_s", "grace_ms", "confirm_show_s", "rearm_clear_s",
                 "max_pending_per_lane"),
 }
@@ -68,6 +68,8 @@ DEFAULTS: dict = {
         "auto_clear_s": 4.0,
         "special_green_s": 3.0,
         "auto_ticket_expiry_s": 7.0,
+        "min_green_s": 2.0,         # Auto / Manual vehicle lanes: a green never ends before this (hand lanes use special_green_s)
+        "auto_far_merge_s": 3.0,    # far sensor sees the same Auto again within this time after it cleared: no new ticket
         "switch_all_red_s": 1.0,
         "display_ack_timeout_s": 2.0,
         "display_link_timeout_s": 5.0,
@@ -153,7 +155,7 @@ def lane_kind(lane: dict) -> str:
 
 def lane_params(cfg: dict, lane: dict) -> dict:
     """Effective per-lane parameters: type defaults + the lane's overrides."""
-    out = {k: cfg["timing"][k] for k in ("auto_clear_s", "auto_ticket_expiry_s",
+    out = {k: cfg["timing"][k] for k in ("auto_clear_s", "auto_ticket_expiry_s", "min_green_s", "auto_far_merge_s",
                                          "manual_clear_s", "special_green_s", "manual_max_pending")}
     out.update(cfg["hand"])
     out.update(lane.get("params") or {})
@@ -182,6 +184,9 @@ def validate(cfg: dict) -> list[str]:
     ):
         if not _num(t.get(key)) or t.get(key) <= 0:
             errors.append(f"timing.{key} ต้องเป็นตัวเลขมากกว่า 0")
+    for key in ("min_green_s", "auto_far_merge_s"):
+        if not _num(t.get(key)) or t.get(key) < 0:
+            errors.append(f"timing.{key} ต้องเป็นตัวเลขไม่ติดลบ")
     mp = t.get("manual_max_pending")
     if not isinstance(mp, int) or isinstance(mp, bool) or mp < 1:
         errors.append("timing.manual_max_pending ต้องเป็นจำนวนเต็มอย่างน้อย 1")

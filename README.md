@@ -96,7 +96,7 @@ Current repository unit suite covers directional pair logic, reverse lockout, of
 
 ## T3 junction (5 lanes, web UI) — separate module
 
-T3 does not change V1. Full spec: `docs/T3_DESIGN.md`. Status: **in field use at the T3 junction since Oct 2026**, display firmware `t3-1.3.0` (ลูกศรตามทิศ 31 แบบ ตั้งจากการ์ดเลน "ลูกศรตอนไฟเขียว").
+T3 does not change V1. Full spec: `docs/T3_DESIGN.md`. Status: **in field use at the T3 junction since Oct 2026**, display firmware `t3-1.4.0` (ยื่นมือ 1/2, จุดฟ้ารอคิว; ลูกศรตามทิศ 31 แบบ ตั้งจากการ์ดเลน "ลูกศรตอนไฟเขียว").
 
 ```bash
 sudo ./install.sh --t3                       # controller starts in CONFIG mode (no lane) + web UI service

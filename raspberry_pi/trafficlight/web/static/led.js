@@ -31,16 +31,18 @@
       else if (kind === 1) { r(29, 10, 34, 27); r(16, 10, 47, 15); lt(8, 12, 9); rt(55, 12, 9); }
       else { up(31, 1, 9); r(29, 10, 34, 30); r(16, 19, 47, 24); lt(8, 21, 9); rt(55, 21, 9); }
     }
-    function ring(n, dot, check) { var cx = 15.5, cy = 16; each(function (x, y, px, py) { var d = Math.hypot(px - cx, py - cy); if (d >= 9.3 && d < 12.6) { var v = ang(px - cx, py - cy); if (v % 120 < 7 || v % 120 > 113) return; set(x, y, Math.floor(v / 120) < n ? C.B : C.D); } else if (dot && d <= 2.7) set(x, y, C.B); if (check && (seg(px, py, cx - 4.5, cy + 0.5, cx - 1.5, cy + 3.8) < 1.3 || seg(px, py, cx - 1.5, cy + 3.8, cx + 4.8, cy - 3.6) < 1.3)) set(x, y, C.W); }); }
+    // hand progress ring: 2 segments (t3-1.4.0, HOLD -> 1/2 -> OK)
+    function ring(n, dot, check) { var cx = 15.5, cy = 16, sg = 180; each(function (x, y, px, py) { var d = Math.hypot(px - cx, py - cy); if (d >= 9.3 && d < 12.6) { var v = ang(px - cx, py - cy); if (v % sg < 7 || v % sg > sg - 7) return; set(x, y, Math.floor(v / sg) < n ? C.B : C.D); } else if (dot && d <= 2.7) set(x, y, C.B); if (check && (seg(px, py, cx - 4.5, cy + 0.5, cx - 1.5, cy + 3.8) < 1.3 || seg(px, py, cx - 1.5, cy + 3.8, cx + 4.8, cy - 3.6) < 1.3)) set(x, y, C.W); }); }
     switch (f) {
       case 'START': border(); var sx = 18, sy = 16.5; each(function (x, y, px, py) { var d = Math.hypot(px - sx, py - sy), v = ang(px - sx, py - sy); if (d >= 7 && d < 9.6 && v > 38 && v < 322) set(x, y, C.W); if (Math.abs(px - sx) < 1.3 && py > sy - 10.5 && py < sy - 1) set(x, y, C.W); }); [34, 42, 50].forEach(function (x0, i) { for (var y = 15; y < 18; y++) for (var x = x0; x < x0 + 3; x++) set(x, y, i < 2 ? C.W : C.DW); }); break;
       case 'REBOOT': border(); var rx = 32, ry = 16.5; each(function (x, y, px, py) { var d = Math.hypot(px - rx, py - ry); if (d >= 8 && d < 10.6 && ang(px - rx, py - ry) >= 40) set(x, y, C.W); var tx = rx + 5, ty = ry - 9.3, bx = rx - 1; if (px >= bx && px <= tx && Math.abs(py - ty) <= 5.2 * (tx - px) / (tx - bx)) set(x, y, C.W); }); break;
       case 'LINKWAIT': border(); ctext('LINK', 7, C.W); ctext('WAIT', 18, C.W); break;
       case 'GO': bigArrow(); break;
       case 'HOLD': ring(0, true, false); ctext('HOLD', 12, C.W, 1, 31, 33); break;
-      case 'HAND1': ring(1, true, false); text('1/3', 31, 9, C.W, 2, 1); break;
-      case 'HAND2': ring(2, true, false); text('2/3', 31, 9, C.W, 2, 1); break;
-      case 'HANDOK': ring(3, false, true); text('OK', 37, 9, C.W, 2, 2); break;
+      case 'HAND1': ring(1, true, false); text('1/2', 31, 9, C.W, 2, 1); break;
+      case 'HAND2': ring(2, true, false); text('2/2', 31, 9, C.W, 2, 1); break;
+      case 'HANDOK': ring(2, false, true); text('OK', 37, 9, C.W, 2, 2); break;
+      case 'STOP': bigX(); if (a === 'Q') each(function (x, y, px, py) { if (Math.hypot(px - 57, py - 25) <= 3.8) set(x, y, C.B); }); break;
       case 'SENSOR': border(); ctext('SENSOR', 3, C.W); ctext(String(a || '?'), 12, C.W); ctext('BROKEN', 21, C.W); break;
       case 'LINKLOST': border(); ctext('LINK', 7, C.W); ctext('LOST', 18, C.W); break;
       case 'LINKOK': border(); ctext('LINK', 7, C.W); ctext('OK', 18, C.W); break;

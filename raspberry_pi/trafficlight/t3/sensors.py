@@ -137,7 +137,7 @@ class FilteredSensor:
 class HandDetector:
     """Hold-to-request for special lanes.
 
-    phases: idle -> track (HOLD / HAND1 / HAND2) -> confirmed (HANDOK) -> rearm -> idle
+    phases: idle -> track (HOLD / HAND1) -> confirmed (HANDOK) -> rearm -> idle
     """
 
     def __init__(self, sensor: FilteredSensor, hand_cfg: dict):
@@ -183,7 +183,7 @@ class HandDetector:
                 self.reset()
                 return False
             held = now - self._start
-            step = min(3, int(held))
+            step = min(2, int(held / (self.hold_s / 2)))   # two steps: HOLD, 1/2, then OK
             if step != self._last_logged_step:
                 self._last_logged_step = step
                 logger.info(f"T3 event=hand_progress sensor={s.id} step={step}")
@@ -206,12 +206,11 @@ class HandDetector:
 
     def display_frame(self, now: float) -> str | None:
         if self.phase == "track" and self._start is not None:
-            held = now - self._start
-            if held < 1.0:
+            # two steps over hold_s: HOLD (first half), HAND1 = "1/2" (second half), then HANDOK.
+            # HAND2 is no longer used (kept in the firmware for old controllers).
+            if now - self._start < self.hold_s / 2:
                 return "HOLD"
-            if held < 2.0:
-                return "HAND1"
-            return "HAND2"
+            return "HAND1"
         if self.phase == "confirmed":
             return "HANDOK"
         return None

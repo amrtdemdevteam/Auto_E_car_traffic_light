@@ -500,15 +500,15 @@ function scene3dHtml(items) {
     if (it.type === 'ellipse') {
       const n = Math.max(2, Math.min(28, Math.ceil(H / 4)));
       let sl = '';
-      for (let i = 0; i <= n; i++) sl += `<i class="sl" style="transform:translateZ(${(z + H * i / n).toFixed(1)}px);filter:brightness(${(0.78 + 0.22 * i / n).toFixed(2)})"></i>`;
+      for (let i = 0; i <= n; i++) sl += `<i class="sl" style="transform:translateZ(${(z + H * i / n).toFixed(1)}px);--k:${Math.round(78 + 22 * i / n)}%"></i>`;
       out += `<div class="bx cyl" style="left:${it.x}px;top:${it.y}px;width:${it.w}px;height:${it.h}px;--c:${color};--s:${st};--sw:${sw}px;transform:${rot}">${sl}</div>`;
     } else {
       out += `<div class="bx" style="left:${it.x}px;top:${it.y}px;width:${it.w}px;height:${it.h}px;--c:${color};--s:${st};--sw:${sw}px;--r:${it.r || 0}px;transform:${rot}">`
         + `<i class="fc top" style="transform:translateZ(${z + H}px)"></i>`
-        + `<i class="fc side" style="left:0;top:0;width:${it.w}px;height:${H}px;transform-origin:0 0;transform:translateZ(${z}px) rotateX(90deg);filter:brightness(.86)"></i>`
-        + `<i class="fc side" style="left:0;top:${it.h}px;width:${it.w}px;height:${H}px;transform-origin:0 0;transform:translateZ(${z}px) rotateX(90deg);filter:brightness(.72)"></i>`
-        + `<i class="fc side" style="left:0;top:0;width:${H}px;height:${it.h}px;transform-origin:0 0;transform:translateZ(${z}px) rotateY(-90deg);filter:brightness(.8)"></i>`
-        + `<i class="fc side" style="left:${it.w}px;top:0;width:${H}px;height:${it.h}px;transform-origin:0 0;transform:translateZ(${z}px) rotateY(-90deg);filter:brightness(.66)"></i></div>`;
+        + `<i class="fc side" style="left:0;top:0;width:${it.w}px;height:${H}px;transform-origin:0 0;transform:translateZ(${z}px) rotateX(90deg);--k:86%"></i>`
+        + `<i class="fc side" style="left:0;top:${it.h}px;width:${it.w}px;height:${H}px;transform-origin:0 0;transform:translateZ(${z}px) rotateX(90deg);--k:72%"></i>`
+        + `<i class="fc side" style="left:0;top:0;width:${H}px;height:${it.h}px;transform-origin:0 0;transform:translateZ(${z}px) rotateY(-90deg);--k:80%"></i>`
+        + `<i class="fc side" style="left:${it.w}px;top:0;width:${H}px;height:${it.h}px;transform-origin:0 0;transform:translateZ(${z}px) rotateY(-90deg);--k:66%"></i></div>`;
     }
   }
   return out;

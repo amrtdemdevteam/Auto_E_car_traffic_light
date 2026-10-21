@@ -19,14 +19,14 @@ function tlPush(id, key, v) {
   try { localStorage.setItem('t3stats', JSON.stringify(T.stats)); } catch (e) { /* ignore */ }
 }
 const laneById = (id) => ((S.cfg && S.cfg.lanes) || []).find((x) => x.id === id);
-const laneTiming = (l) => ({...((S.cfg && S.cfg.timing) || {}), ...((l && l.params) || {})});
+const laneTiming = (l) => ({...((S.defaults && S.defaults.timing) || {}), ...((S.cfg && S.cfg.timing) || {}), ...((l && l.params) || {})});
 
 // expected green time of a lane: measured average, else a guess from its settings
 function estGreen(l) {
   const m = tlAvg((T.stats[l.id] || {}).g), tm = laneTiming(l), k = kindOf(l);
   if (k === 'hand') return {v: tm.special_green_s, exact: true};
   if (m !== null) return {v: m, exact: false};
-  return {v: (k === 'auto' ? tm.auto_clear_s : tm.manual_clear_s) + 2, exact: false, guess: true};
+  return {v: Math.max(tm.min_green_s || 0, (k === 'auto' ? tm.auto_clear_s : tm.manual_clear_s) + 2), exact: false, guess: true};
 }
 
 // called on every status poll

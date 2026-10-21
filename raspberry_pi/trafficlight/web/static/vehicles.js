@@ -58,37 +58,46 @@ function vehSpawn(l, s, phase) {
   VEH.list.push({id: ++VEH.seq, lane: l.id, kind: kindOf(l) === 'auto' ? 'auto' : 'manual', s, v: phase === 'go' ? 60 : 50, phase, fade: 0});
 }
 
-// called on every status poll: decide which vehicles exist and which may go
+// called on every status poll: decide which vehicles exist and which may go.
+// One vehicle per ticket (2026-10-21): the controller's queue and its green count decide how many
+// vehicles exist, never the raw sensors -- a long Auto train with dolly gaps used to draw 3-4 vehicles.
 function vehSync() {
-  const st = S.state, now = Date.now();
+  const st = S.state;
   if (!st || S.stale || !S.cfg) { VEH.list = []; return; }
-  const occ = {};
-  (st.sensors || []).forEach((x) => { occ[x.id] = !!x.occupied; });
   const q = st.queue || [];
   const lanes = (S.cfg.lanes || []).filter((l) => S.layout.lanes[String(l.id)]);
   VEH.list = VEH.list.filter((v) => lanes.some((l) => l.id === v.lane));
+  VEH.srv = VEH.srv || {};
   lanes.forEach((l) => {
     const P = vPath(l), mine = VEH.list.filter((v) => v.lane === l.id);
-    const sens = laneSensors(l), far = sens.find((x) => x.role === 'far'), near = sens.find((x) => x.role === 'near');
-    const farOcc = far ? occ[far.sid] : false;
-    const anyOcc = sens.some((x) => occ[x.sid]);
-    const tickets = q.some((t) => t.lane === l.id);
+    const tickets = q.filter((t) => t.lane === l.id).length;
     const green = st.state === 'GREEN' && st.active_lane === l.id;
-    const leaving = mine.some((v) => v.phase === 'go' && v.s < P.stop + VL * 1.3);   // a vehicle is still passing the sensors
-    if (!anyOcc) VEH.clr[l.id] = true;                    // the sensors were free since the last vehicle went
-    const cooled = (VEH.cool[l.id] || 0) < now && VEH.clr[l.id] !== false;
-    if (green) {
-      const flip = mine.filter(isWaiting);
-      flip.forEach((v) => { v.phase = 'go'; VEH.cool[l.id] = now + 3500; VEH.clr[l.id] = anyOcc ? false : true; });
-      if (anyOcc && !leaving && cooled && !flip.length) { vehSpawn(l, Math.max(0, P.stop - 70), 'go'); VEH.cool[l.id] = now + 3500; VEH.clr[l.id] = false; }
-      VEH.idle[l.id] = now;
-      return;
-    }
-    const want = kindOf(l) === 'auto' ? (farOcc || anyOcc || tickets) : (anyOcc || tickets);
-    if (want) VEH.idle[l.id] = now;
     const waiting = mine.filter(isWaiting);
-    if (want && !waiting.length && !leaving && cooled) vehSpawn(l, kindOf(l) === 'auto' && farOcc && !anyOcc ? 0 : Math.max(0, P.stop - 170), 'approach');
-    if (!want && waiting.length && now - (VEH.idle[l.id] || now) > 5000) waiting.forEach((v) => { v.fade = 1; });   // the request went away: the vehicle drives off
+    if (green) {
+      const served = Number(st.green_served) || 1;          // vehicles this green has let through so far
+      if (VEH.srv[l.id] === undefined) {                      // the green just started: the first vehicle goes
+        const flip = waiting.slice().sort((a, b) => b.s - a.s).slice(0, 1);
+        if (flip.length) flip[0].phase = 'go'; else vehSpawn(l, Math.max(0, P.stop - 70), 'go');
+        VEH.srv[l.id] = 1;
+      }
+      while (VEH.srv[l.id] < served) {                         // green extended: one more vehicle of the same lane
+        const w = mine.filter(isWaiting).sort((a, b) => b.s - a.s)[0];
+        if (w) w.phase = 'go'; else vehSpawn(l, Math.max(0, P.stop - 170), 'go');
+        VEH.srv[l.id] += 1;
+      }
+    } else {
+      delete VEH.srv[l.id];
+    }
+    const want = Math.min(3, tickets);                          // vehicles that wait for this lane = its tickets
+    const nowWaiting = mine.filter(isWaiting).filter((v) => !v.fade);
+    if (!green && nowWaiting.length < want) {
+      const auto = kindOf(l) === 'auto';
+      const far = q.some((t) => t.lane === l.id && t.kind === 'auto' && !t.matched);
+      for (let i = nowWaiting.length; i < want; i++) vehSpawn(l, auto && far ? 0 : Math.max(0, P.stop - 170), 'approach');
+    }
+    if (!green && nowWaiting.length > want) {
+      nowWaiting.sort((a, b) => a.s - b.s).slice(0, nowWaiting.length - want).forEach((v) => { v.fade = 1; });   // ticket gone: drive off
+    }
   });
 }
 
@@ -120,7 +129,7 @@ function vehStep(dt) {
 // ------------------------------------------------------------------ models (CSS 3D boxes)
 function vbox(x0, y0, z0, x1, y1, z1, color, cls = '') {
   const w = x1 - x0, d = y1 - y0, H = z1 - z0, c = color ? `--c:${color};` : '';
-  const side = (l, t, wd, ht, tf, b) => `<i class="fc side" style="left:${l}px;top:${t}px;width:${wd}px;height:${ht}px;transform-origin:0 0;transform:translateZ(${z0}px) ${tf};filter:brightness(${b})"></i>`;
+  const side = (l, t, wd, ht, tf, b) => `<i class="fc side" style="left:${l}px;top:${t}px;width:${wd}px;height:${ht}px;transform-origin:0 0;transform:translateZ(${z0}px) ${tf};--k:${Math.round(b * 100)}%"></i>`;
   return `<div class="bx ${cls}" style="left:${x0}px;top:${y0}px;width:${w}px;height:${d}px;${c}--s:transparent;--sw:0px;--r:0px">`
     + `<i class="fc top" style="transform:translateZ(${z1}px)"></i>`
     + side(0, 0, w, H, 'rotateX(90deg)', .86) + side(0, d, w, H, 'rotateX(90deg)', .72)
@@ -171,10 +180,16 @@ function vehRender(dt) {
   });
   VEH.els.forEach((el, id) => { if (!alive.has(id)) { el.remove(); VEH.els.delete(id); } });
 }
+// Pi screen ("lite", app.js): about 20 frames a second is enough and leaves the CPU / GPU for the UI.
+// Nothing to move (no vehicles, hidden tab): skip the work.
 function vehLoop(ts) {
-  const dt = Math.min(0.1, (ts - (VEH.last || ts)) / 1000);
-  VEH.last = ts;
-  if (dt > 0) { vehStep(dt); vehRender(dt); }
   requestAnimationFrame(vehLoop);
+  const minDt = document.documentElement.classList.contains('lite') ? 0.05 : 0;
+  const el = (ts - (VEH.last || ts)) / 1000;
+  if (VEH.last && el < minDt) return;
+  VEH.last = ts;
+  if (document.hidden || (!VEH.list.length && !VEH.els.size)) return;
+  const dt = Math.min(0.1, el);
+  if (dt > 0) { vehStep(dt); vehRender(dt); }
 }
 requestAnimationFrame(vehLoop);

@@ -265,8 +265,18 @@ class T3Controller:
             else:   # the same vehicle seen again (gap in the body, trailer): no second green
                 logger.info(f"T3 event=ticket_ignored lane={lane.id} sensor={ev.sensor} reason=already_waiting")
         elif lane.kind == "auto" and ev.sensor == lane.far:
-            self.queue.add(lane.id, "auto", now, ev.sensor, matched=False,
-                           expires_at=now + float(lane.p["auto_ticket_expiry_s"]))
+            expires = now + float(lane.p["auto_ticket_expiry_s"])
+            waiting = self.queue.oldest_unmatched_auto(lane.id)
+            if waiting is not None:
+                # the same Auto seen again by the far sensor (dolly gap, body gap): one ticket only
+                waiting.expires_at = max(waiting.expires_at or 0.0, expires)
+                logger.info(f"T3 event=ticket_ignored lane={lane.id} sensor={ev.sensor} reason=auto_already_waiting")
+                return
+            last_clear = self.sensors[ev.sensor].last_clear_at
+            if last_clear is not None and now - last_clear < float(lane.p["auto_far_merge_s"]):
+                logger.info(f"T3 event=ticket_ignored lane={lane.id} sensor={ev.sensor} reason=auto_far_merge")
+                return
+            self.queue.add(lane.id, "auto", now, ev.sensor, matched=False, expires_at=expires)
             self._log(f"{ev.sensor} เจอ Auto → แทรกหน้าคิว", "auto_requested")
         elif lane.kind == "auto" and ev.sensor == lane.near:
             tk = self.queue.oldest_unmatched_auto(lane.id)
@@ -419,6 +429,9 @@ class T3Controller:
                 svc.clear_since = max(svc.started, s.last_clear_at or svc.started)
             hold = float(lane.p["auto_clear_s"] if lane.kind == "auto" else lane.p["manual_clear_s"])
             done = svc.clear_since is not None and now - svc.clear_since >= hold
+            # minimum green: the driver always gets this long, even when the sensor lost the vehicle
+            if done and now - svc.started < float(lane.p["min_green_s"]):
+                done = False
         if not done:
             return
         if lane.pending_maint or not lane.enabled:
@@ -479,6 +492,8 @@ class T3Controller:
                 return f, ""
         if lane.kind == "special" and F.STOPHINT in self.cfg.get("frames", {}).get("enabled_reserve", []):
             return F.STOPHINT, ""
+        if self.queue.for_lane(lane.id):
+            return F.STOP, F.STOP_QUEUED   # X + blue dot: this lane has a ticket and waits its turn
         return F.STOP, ""
 
     def _apply_frames(self, now: float) -> None:
@@ -520,6 +535,7 @@ class T3Controller:
         return {
             "state": self.state,
             "active_lane": self.active_lane,
+            "green_served": self.service.served if self.service else 0,   # vehicles let through by this green
             "exit_requested": self.exit_requested,
             "epoch": self.link.epoch,
             "lanes": lanes,

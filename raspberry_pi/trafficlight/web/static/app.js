@@ -38,6 +38,11 @@ function setTheme(t) {
 }
 try { const t = localStorage.getItem('t3theme'); if (t === 'light' || t === 'dark') S.theme = t; } catch (e) { /* ignore */ }
 applyTheme();
+// Pi touch screen (kiosk opens ?osk=1) or any ARM Linux browser: light rendering (app.css .lite, vehicles.js)
+try {
+  const lite = /[?&]osk=1/.test(location.search) || /aarch64|armv7|armv8|Raspberry/i.test(navigator.userAgent) || /[?&]lite=1/.test(location.search);
+  if (lite && !/[?&]lite=0/.test(location.search)) document.documentElement.classList.add('lite');
+} catch (e) { /* ignore */ }
 try { const v = JSON.parse(localStorage.getItem('t3view') || 'null'); if (v) { S.v3d = !!v.v3d; S.vehOff = !!v.vehOff; if (v.cam) S.cam = {...S.cam, ...v.cam}; } } catch (e) { /* ignore */ }
 try { S.dirs = JSON.parse(localStorage.getItem('t3dirs') || '{}') || {}; } catch (e) { S.dirs = {}; }
 function keepDirs() { try { localStorage.setItem('t3dirs', JSON.stringify(S.dirs)); } catch (e) { /* ignore */ } }
@@ -78,7 +83,9 @@ const INFO = {
   manual_clear_s: ['เคลียร์หลังรถพ้น', 'หลังท้ายรถพ้นเซนเซอร์ ไฟเขียวค้างต่ออีกเท่านี้'],
   manual_max_pending: ['คิวค้างสูงสุด', 'จำนวนคิวที่เลนตรวจรถค้างได้พร้อมกัน รถคันเดียวที่เซนเซอร์เห็นเป็นหลายช่วงจะไม่ได้เขียวซ้ำ'],
   special_green_s: ['เวลาไฟเขียว', 'เลนยื่นมือได้ไฟเขียวนานเท่านี้ทุกครั้ง'],
-  hold_s: ['ยื่นมือค้าง', 'ต้องยื่นมือค้างนานเท่านี้จึงได้คิว จอแสดง 1/3 2/3 ระหว่างนับ'],
+  hold_s: ['ยื่นมือค้าง', 'ต้องยื่นมือค้างนานเท่านี้จึงได้คิว จอแสดง HOLD แล้ว 1/2 (ครึ่งเวลา) แล้ว OK'],
+  min_green_s: ['เขียวขั้นต่ำ', 'ไฟเขียวอย่างน้อยเท่านี้ทุกครั้ง แม้เซนเซอร์ไม่เห็นรถแล้ว กันไฟแดงก่อนคนขับออกตัวทัน'],
+  auto_far_merge_s: ['รวมเป็นคันเดียว', 'เซนเซอร์ไกลเห็นรถอีกครั้งภายในเวลานี้หลังว่าง ถือเป็น Auto คันเดิม ไม่เพิ่มคิว'],
   grace_ms: ['อนุโลมมือหลุด', 'มือหลุดจากเซนเซอร์สั้นกว่านี้ยังนับต่อ กันมือสั่น'],
   confirm_show_s: ['แสดงเครื่องหมายถูก', 'จอแสดงเครื่องหมายถูกนานเท่านี้หลังได้คิว'],
   rearm_clear_s: ['เอามือออกก่อนขอใหม่', 'ต้องเอามือออกนานเท่านี้ก่อนขอคิวครั้งต่อไป'],
@@ -115,8 +122,10 @@ const INFO = {
 
 // [key, label, unit, min, max, step]
 const LANE_PARAMS = {
-  auto: [['auto_clear_s', 'เคลียร์หลังรถพ้น', 's', 0.5, 30, 0.5], ['auto_ticket_expiry_s', 'อายุคิว', 's', 1, 60, 0.5]],
-  vehicle: [['manual_clear_s', 'เคลียร์หลังรถพ้น', 's', 0.5, 30, 0.5], ['manual_max_pending', 'คิวค้างสูงสุด', '', 1, 5, 1]],
+  auto: [['auto_clear_s', 'เคลียร์หลังรถพ้น', 's', 0.5, 30, 0.5], ['auto_ticket_expiry_s', 'อายุคิว', 's', 1, 60, 0.5],
+    ['min_green_s', 'เขียวขั้นต่ำ', 's', 0.5, 30, 0.5], ['auto_far_merge_s', 'รวมเป็นคันเดียว', 's', 0.5, 10, 0.5]],
+  vehicle: [['manual_clear_s', 'เคลียร์หลังรถพ้น', 's', 0.5, 30, 0.5], ['manual_max_pending', 'คิวค้างสูงสุด', '', 1, 5, 1],
+    ['min_green_s', 'เขียวขั้นต่ำ', 's', 0.5, 30, 0.5]],
   hand: [['special_green_s', 'เวลาไฟเขียว', 's', 1, 60, 0.5], ['hold_s', 'ยื่นมือค้าง', 's', 1, 10, 0.5],
     ['grace_ms', 'อนุโลมมือหลุด', 'ms', 100, 1000, 50], ['confirm_show_s', 'แสดงเครื่องหมายถูก', 's', 0.2, 5, 0.1],
     ['rearm_clear_s', 'เอามือออกก่อนขอใหม่', 's', 0.1, 5, 0.1], ['max_pending_per_lane', 'คิวค้างสูงสุด', '', 1, 5, 1]],
@@ -128,7 +137,8 @@ const SENSOR_PARAMS = [['min_detect_cm', 'ระยะใกล้สุด', 'c
 // row: ['num', path, label, unit, min, max, step] | ['bool', path, label] | ['reserve', key] | ['text', path, label, infoKey]
 const CATS = [
   ['auto', 'เลน Auto', [['ค่าเริ่มต้นของทุกเลน Auto', [
-    ['num', 'timing.auto_clear_s', 'เคลียร์หลังรถพ้น', 's', 0.5, 30, 0.5], ['num', 'timing.auto_ticket_expiry_s', 'อายุคิว', 's', 1, 60, 0.5]]]]],
+    ['num', 'timing.auto_clear_s', 'เคลียร์หลังรถพ้น', 's', 0.5, 30, 0.5], ['num', 'timing.auto_ticket_expiry_s', 'อายุคิว', 's', 1, 60, 0.5],
+    ['num', 'timing.auto_far_merge_s', 'รวมเป็นคันเดียว', 's', 0.5, 10, 0.5]]]]],
   ['manual', 'เลน Manual', [
     ['เซนเซอร์จับรถ', [['num', 'timing.manual_clear_s', 'เคลียร์หลังรถพ้น', 's', 0.5, 30, 0.5], ['num', 'timing.manual_max_pending', 'คิวค้างสูงสุด', '', 1, 5, 1]]],
     ['ยื่นมือ', [['num', 'timing.special_green_s', 'เวลาไฟเขียว', 's', 1, 60, 0.5], ['num', 'hand.hold_s', 'ยื่นมือค้าง', 's', 1, 10, 0.5],
@@ -142,6 +152,7 @@ const CATS = [
     ['เซนเซอร์เสีย', [['num', 'sensor_defaults.offline_timeout_s', 'ถือว่าเซนเซอร์เสีย', 's', 0.5, 10, 0.5], ['num', 'sensor_defaults.recover_stable_s', 'กลับมาใช้ได้', 's', 0.2, 10, 0.1]]]]],
   ['safety', 'ความปลอดภัย', [
     ['การสลับเลน', [['num', 'timing.switch_all_red_s', 'สลับเลน · ทุกจอ X', 's', 0.5, 10, 0.1],
+      ['num', 'timing.min_green_s', 'เขียวขั้นต่ำ · Auto / Manual ตรวจรถ', 's', 0.5, 30, 0.5],
       ['bool', 'priority.auto_first', 'Auto ได้คิวก่อน']]],
     ['การสื่อสารกับจอ', [['num', 'timing.display_ack_timeout_s', 'รอจอยืนยัน', 's', 0.5, 10, 0.5], ['num', 'timing.display_link_timeout_s', 'อายุคำสั่งจอ', 's', 1, 5, 0.5],
       ['num', 'timing.display_fault_timeout_s', 'เวลาเผื่อจอเสีย', 's', 2, 30, 0.5],
@@ -508,7 +519,8 @@ function editorHtml(ctx) {
     <span class="small mut">เฟรม F${String(gm).padStart(2, '0')} · ${ARROW_DIRS.filter(([bit]) => gm & bit).map(([, , t]) => t).join(' + ')}</span></div></div>`;
   const sensSec = `<div><div class="sec-t">เซนเซอร์${infoBtn('port')}</div><div class="list">${laneSensors(l).map(({sid, role}) => sensorRow(E, cfg, sid, role, ro)).join('')}</div></div>`;
   const params = LANE_PARAMS[k].map(([key, label, unit, min, max, step]) => {
-    const dflt = key in (cfg.timing || {}) ? cfg.timing[key] : (cfg.hand || {})[key];
+    const D = S.defaults || {}, tm = {...(D.timing || {}), ...(cfg.timing || {})}, hd = {...(D.hand || {}), ...(cfg.hand || {})};
+    const dflt = key in tm ? tm[key] : hd[key];
     return numRow(`p_${l.id}_${key}`, label, key, unit, min, max, step, (l.params || {})[key], dflt, `data-p="${key}"`, ro);
   }).join('');
   const sensParams = laneSensors(l).map(({sid, role}) => {

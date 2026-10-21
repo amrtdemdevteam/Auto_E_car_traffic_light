@@ -7,7 +7,7 @@ from __future__ import annotations
 START = "START"          # F01
 REBOOT = "REBOOT"        # F02
 LINKWAIT = "LINKWAIT"    # F03
-STOP = "STOP"            # F04
+STOP = "STOP"            # F04 (arg "Q" = X + blue dot: the lane is in the queue, firmware t3-1.4.0+)
 GO = "GO"                # F05
 HOLD = "HOLD"            # F06
 HAND1 = "HAND1"          # F07
@@ -32,6 +32,8 @@ GO_LEFT = "GO_LEFT"      # F29 green: one arrow, straight + left branch
 LEFT_RIGHT = "LEFT_RIGHT"  # F30 green: one T arrow, left + right
 GO_3WAY = "GO_3WAY"      # F31 green: one T arrow with a straight stem, straight + left + right
 ARROW = "ARROW"          # F32 green: arrow built from a direction mask (arg = "1".."31")
+
+STOP_QUEUED = "Q"        # STOP arg: the lane has a ticket and waits its turn
 
 # Direction bits for ARROW. A lane's green_mask is the sum of the bits it shows.
 DIR_BITS = {"L": 1, "UL": 2, "U": 4, "UR": 8, "R": 16}

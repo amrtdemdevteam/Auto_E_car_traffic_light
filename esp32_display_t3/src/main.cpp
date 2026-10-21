@@ -227,17 +227,18 @@ void renderArrow(int kind, bool mirror) {
   arrowMirror = false;
 }
 
+// hand progress ring, 2 segments since t3-1.4.0 (HOLD -> 1/2 -> OK, timing from the controller's hold_s)
 void ring(int lit, bool dot, bool check) {
-  const float cx = 15.5f, cy = 16.0f;
+  const float cx = 15.5f, cy = 16.0f, seg = 180.0f;
   for (int y = 0; y < 32; y++)
     for (int x = 0; x < 32; x++) {
       float fx = x + 0.5f, fy = y + 0.5f;
       float d = hypotf(fx - cx, fy - cy);
       if (d >= 9.3f && d < 12.6f) {
         float a = angleFromUp(fx - cx, fy - cy);
-        float m = fmodf(a, 120.0f);
-        if (m < 7.0f || m > 113.0f) continue;
-        int k = (int)(a / 120.0f);
+        float m = fmodf(a, seg);
+        if (m < 7.0f || m > seg - 7.0f) continue;
+        int k = (int)(a / seg);
         px(x, y, k < lit ? C_B : C_D);
       } else if (dot && d <= 2.7f) {
         px(x, y, C_B);
@@ -281,11 +282,11 @@ void renderFrame(const String &f, const String &arg, int dots) {
   } else if (f == "HOLD") {
     ring(0, true, false); ctext("HOLD", 12, C_W, 1, 31, 33);
   } else if (f == "HAND1") {
-    ring(1, true, false); text("1/3", 31, 9, C_W, 2, 1);
+    ring(1, true, false); text("1/2", 31, 9, C_W, 2, 1);
   } else if (f == "HAND2") {
-    ring(2, true, false); text("2/3", 31, 9, C_W, 2, 1);
+    ring(2, true, false); text("2/2", 31, 9, C_W, 2, 1);   // not sent by controllers since t3-1.4.0
   } else if (f == "HANDOK") {
-    ring(3, false, true); text("OK", 37, 9, C_W, 2, 2);
+    ring(2, false, true); text("OK", 37, 9, C_W, 2, 2);
   } else if (f == "SENSOR") {
     border(); ctext("SENSOR", 3, C_W); ctext(arg.length() ? arg : String("?"), 12, C_W); ctext("BROKEN", 21, C_W);
   } else if (f == "LINKLOST") {
@@ -357,6 +358,11 @@ void renderFrame(const String &f, const String &arg, int dots) {
     smallX(); ctext(arg.length() ? arg.substring(0, 1) : String("3"), 5, C_W, 3, 30, 34);
   } else {
     bigX();  // STOP and anything unknown: never green
+    if (f == "STOP" && arg == "Q") {   // the lane has a ticket and waits its turn: blue dot, bottom right
+      for (int y = 18; y < 32; y++)
+        for (int x = 50; x < 64; x++)
+          if (hypotf(x + 0.5f - 57.0f, y + 0.5f - 25.0f) <= 3.8f) px(x, y, C_B);
+    }
   }
 
   matrix->fillScreen(0);

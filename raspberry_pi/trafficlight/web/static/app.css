@@ -461,9 +461,9 @@ button.swatch.on{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--accent)}
 .mapbox .stage{position:absolute;left:0;top:0;width:1000px;height:700px;transform-origin:0 0;transform-style:preserve-3d}
 .mapbox .stage svg.dmap{position:absolute;left:0;top:0;width:1000px;height:700px;border-radius:6px;box-shadow:0 30px 60px rgba(0,0,0,.25)}
 .bx{position:absolute;transform-style:preserve-3d}
-.bx .fc{position:absolute;background:var(--c);box-shadow:inset 0 0 0 var(--sw) var(--s)}
+.bx .fc{position:absolute;background:color-mix(in srgb,var(--c) var(--k,100%),#000);box-shadow:inset 0 0 0 var(--sw) var(--s)}
 .bx .fc.top{left:0;top:0;width:100%;height:100%;border-radius:var(--r,0)}
-.bx.cyl .sl{position:absolute;left:0;top:0;width:100%;height:100%;border-radius:50%;background:var(--c)}
+.bx.cyl .sl{position:absolute;left:0;top:0;width:100%;height:100%;border-radius:50%;background:color-mix(in srgb,var(--c) var(--k,100%),#000)}
 .bx.cyl .sl:last-child{box-shadow:inset 0 0 0 var(--sw) var(--s)}
 .mapbox.v3d .stage .wg,.mapbox.v3d .stage .wg:hover,.mapbox.v3d .stage .wg.dragging{transform-origin:0 0;
   transform:translateZ(calc(20px * var(--sc,1))) rotateZ(calc(-1 * var(--rz,0deg))) rotateX(calc(-1 * var(--tilt,0deg))) rotate(var(--rot,0deg)) scale(var(--sc,1)) translate(-50%,-50%)}
@@ -481,7 +481,7 @@ button.swatch.on{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--accent)}
 .veh[data-lamp="r"] .lr{--c:#ff3b30}
 .veh[data-lamp="a"] .la{--c:#ffb340}
 .veh[data-lamp="g"] .lg{--c:#30d158}
-.veh[data-lamp="r"] .lr .fc,.veh[data-lamp="a"] .la .fc,.veh[data-lamp="g"] .lg .fc{filter:none!important;box-shadow:0 0 10px var(--c)}
+.veh[data-lamp="r"] .lr .fc,.veh[data-lamp="a"] .la .fc,.veh[data-lamp="g"] .lg .fc{--k:100%;box-shadow:0 0 10px var(--c)}
 .veh .mdl{position:absolute;left:0;top:0;transform-style:preserve-3d;transform:scale3d(1.3,1.3,1.3)}
 
 .flowcard{margin-top:24px}
@@ -626,3 +626,11 @@ header .pill.r{background:color-mix(in srgb,var(--red) 14%,transparent);color:va
 .sm-s button{min-height:40px;padding:0 10px;font-size:14px}
 .sm-s button.on{background:var(--ink);color:var(--panel)}
 .sm-go{background:var(--accent,#0A84FF);color:#fff}
+
+/* Pi screen (html.lite, set by app.js on the kiosk / ARM browsers): no blur and no soft shadows over the map.
+   backdrop-filter and big blurred shadows are redrawn on every change under them and made the Pi screen slow. */
+.lite *,.lite *::backdrop{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.lite header,.lite .maptools label{background:var(--panel)}
+.lite .mapbox .stage svg.dmap{box-shadow:none}
+.lite .veh .fc{box-shadow:none!important}
+.lite button,.lite button:hover,.lite button:active{transition:none;filter:none}

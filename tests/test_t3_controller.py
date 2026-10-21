@@ -130,10 +130,10 @@ def test_hand_swinging_creates_no_ticket_hold_3s_creates_one():
     sim.until(lambda: sim.shown(4) == F.GO)
     sim.on("C3")
     sim.step(1.2)
-    assert sim.shown(3) == F.HAND1
-    sim.step(1.0)
-    assert sim.shown(3) == F.HAND2
-    sim.step(1.0)
+    assert sim.shown(3) == F.HOLD                  # first half of the 3 s hold
+    sim.step(0.6)
+    assert sim.shown(3) == F.HAND1                 # "1/2"
+    sim.step(1.4)
     assert sim.shown(3) == F.HANDOK
     assert len(sim.ctrl.queue.for_lane(3)) == 1
     sim.off("C3")
@@ -255,7 +255,7 @@ def test_near_sensor_fault_disables_auto_lane():
 
 
 def test_dead_display_closes_only_its_lane_and_releases_after_the_timeout():
-    sim = Sim()
+    sim = Sim(t3_config(min_green_s=0.5))
     sim.ready()
     sim.on("C2")
     sim.until(lambda: sim.shown(2) == F.GO)
@@ -388,3 +388,77 @@ def test_manual_max_pending_is_configurable():
         sim.off("C4")
         sim.step(1.6)
     assert len(sim.ctrl.queue.for_lane(4)) == 2
+
+
+# ---------------------------------------------------------------- 2026-10-21 field fixes
+def test_min_green_holds_even_when_the_sensor_lost_the_vehicle():
+    sim = Sim(t3_config(min_green_s=5.0))
+    sim.ready()
+    sim.pulse("C2", 0.5)                           # vehicle seen, then lost before its green
+    sim.until(lambda: sim.shown(2) == F.GO, limit=3)
+    t = sim.until(lambda: sim.shown(2) != F.GO, limit=12)
+    assert 4.9 <= t <= 5.4                         # not 3 s (manual_clear_s): the minimum green
+
+
+def test_min_green_does_not_shorten_a_long_green():
+    sim = Sim(t3_config(min_green_s=1.0))
+    sim.ready()
+    sim.on("C2")
+    sim.until(lambda: sim.shown(2) == F.GO, limit=3)
+    sim.step(6.0)
+    assert sim.shown(2) == F.GO                    # vehicle still on the sensor
+    sim.off("C2")
+    t = sim.until(lambda: sim.shown(2) != F.GO, limit=10)
+    assert 3.0 <= t <= 3.6                         # gap hold + manual_clear_s as before
+
+
+def test_far_sensor_seeing_one_auto_in_pieces_makes_one_ticket():
+    sim = Sim()
+    sim.ready()
+    sim.on("C4")                                   # lane 4 busy: the Auto ticket waits
+    sim.until(lambda: sim.shown(4) == F.GO)
+    for _ in range(4):                             # one Auto, far sensor sees it 4 times
+        sim.pulse("C1.2", 0.5)
+        sim.step(1.5)
+    autos = [t for t in sim.ctrl.queue.for_lane(1) if t.kind == "auto"]
+    assert len(autos) == 1
+
+
+def test_far_sensor_again_soon_after_clear_is_the_same_auto():
+    sim = Sim(t3_config(auto_far_merge_s=3.0))
+    sim.ready()
+    sim.pulse("C1.2", 0.5)
+    sim.pulse("C1.1", 0.5)                         # near: matched, gets the green
+    sim.until(lambda: sim.ctrl.active_lane == 1, limit=3)
+    n = len(sim.ctrl.queue.tickets)
+    sim.pulse("C1.2", 0.3)                         # trailer seen by the far sensor 0.5 s later
+    assert len(sim.ctrl.queue.tickets) == n
+
+
+def test_stop_shows_queue_dot_while_the_lane_waits():
+    sim = Sim()
+    sim.ready()
+    sim.on("C4")
+    sim.until(lambda: sim.shown(4) == F.GO)
+    sim.on("C2")                                   # lane 2 gets a ticket and waits
+    sim.step(1.0)
+    assert sim.ctrl._frames[sim.ctrl.lanes[2].display] == (F.STOP, F.STOP_QUEUED)
+    assert sim.ctrl._frames[sim.ctrl.lanes[3].display] == (F.STOP, "")   # no ticket: plain X
+
+
+def test_hand_two_steps_follow_hold_s():
+    cfg = t3_config()
+    for l in cfg["lanes"]:
+        if l["id"] == 3:
+            l["params"] = {"hold_s": 2.0}
+    sim = Sim(cfg)
+    sim.ready()
+    sim.on("C4")
+    sim.until(lambda: sim.shown(4) == F.GO)
+    sim.on("C3")
+    sim.step(0.7)
+    assert sim.shown(3) == F.HOLD
+    sim.step(0.7)
+    assert sim.shown(3) == F.HAND1
+    sim.step(0.8)
+    assert sim.shown(3) == F.HANDOK

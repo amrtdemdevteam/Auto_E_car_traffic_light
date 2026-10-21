@@ -42,7 +42,7 @@ def test_per_lane_special_green_overrides_type_default_only_for_that_lane():
 
 def test_per_lane_manual_clear_time():
     cfg = t3_config()
-    _lane(cfg, 2)["params"] = {"manual_clear_s": 1.0}
+    _lane(cfg, 2)["params"] = {"manual_clear_s": 1.0, "min_green_s": 0.5}
     sim = Sim(cfg)
     sim.ready()
     sim.on("C2")
