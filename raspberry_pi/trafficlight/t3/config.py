@@ -22,7 +22,8 @@ MANUAL_MODES = ("vehicle", "hand")
 # lane type; a lane may override any of them in lane["params"].
 LANE_PARAM_KEYS = {
     "auto": ("auto_clear_s", "auto_ticket_expiry_s", "min_green_s", "auto_far_merge_s"),
-    "manual": ("manual_clear_s", "manual_max_pending", "min_green_s"),
+    "manual": ("manual_clear_s", "manual_max_pending", "min_green_s",
+               "follow_max_per_round", "follow_merge_s", "follow_arrive_s"),
     "special": ("special_green_s", "hold_s", "grace_ms", "confirm_show_s", "rearm_clear_s",
                 "max_pending_per_lane"),
 }
@@ -70,6 +71,10 @@ DEFAULTS: dict = {
         "auto_ticket_expiry_s": 7.0,
         "min_green_s": 2.0,         # Auto / Manual vehicle lanes: a green never ends before this (hand lanes use special_green_s)
         "auto_far_merge_s": 3.0,    # far sensor sees the same Auto again within this time after it cleared: no new ticket
+        # Manual vehicle lane with a follow sensor (lane["follow_sensor"], upstream of the stop-line sensor):
+        "follow_max_per_round": 2,  # vehicles one round may let through (stop-line vehicle + followers), one green each
+        "follow_merge_s": 3.0,      # follow sensor sees a vehicle again within this time after it cleared: same vehicle
+        "follow_arrive_s": 7.0,     # follower's green ends if it has not reached the stop-line sensor within this time
         "switch_all_red_s": 1.0,
         "display_ack_timeout_s": 2.0,
         "display_link_timeout_s": 5.0,
@@ -136,7 +141,7 @@ def sensor_params(cfg: dict, sensor_id: str) -> dict:
     """Effective parameters of one sensor: defaults + its own overrides."""
     params = dict(cfg["sensor_defaults"])
     own = {k: v for k, v in cfg["sensors"].get(sensor_id, {}).items() if k != "port"}
-    manual = any(l.get("type") in ("manual", "special") and l.get("sensor") == sensor_id
+    manual = any(l.get("type") in ("manual", "special") and sensor_id in (l.get("sensor"), l.get("follow_sensor"))
                  for l in cfg.get("lanes") or [])
     if manual and "gap_hold_s" not in own:
         params["gap_hold_s"] = params["manual_gap_hold_s"]
@@ -156,7 +161,8 @@ def lane_kind(lane: dict) -> str:
 def lane_params(cfg: dict, lane: dict) -> dict:
     """Effective per-lane parameters: type defaults + the lane's overrides."""
     out = {k: cfg["timing"][k] for k in ("auto_clear_s", "auto_ticket_expiry_s", "min_green_s", "auto_far_merge_s",
-                                         "manual_clear_s", "special_green_s", "manual_max_pending")}
+                                         "manual_clear_s", "special_green_s", "manual_max_pending",
+                                         "follow_max_per_round", "follow_merge_s", "follow_arrive_s")}
     out.update(cfg["hand"])
     out.update(lane.get("params") or {})
     return out
@@ -165,7 +171,7 @@ def lane_params(cfg: dict, lane: dict) -> dict:
 def lane_sensors(lane: dict) -> list[str]:
     if lane.get("type") == "auto":
         return [s for s in (lane.get("near_sensor"), lane.get("far_sensor")) if s]
-    return [lane["sensor"]] if lane.get("sensor") else []
+    return [s for s in (lane.get("sensor"), lane.get("follow_sensor")) if s]
 
 
 def _num(value) -> bool:
@@ -184,9 +190,14 @@ def validate(cfg: dict) -> list[str]:
     ):
         if not _num(t.get(key)) or t.get(key) <= 0:
             errors.append(f"timing.{key} ต้องเป็นตัวเลขมากกว่า 0")
-    for key in ("min_green_s", "auto_far_merge_s"):
+    for key in ("min_green_s", "auto_far_merge_s", "follow_merge_s"):
         if not _num(t.get(key)) or t.get(key) < 0:
             errors.append(f"timing.{key} ต้องเป็นตัวเลขไม่ติดลบ")
+    if not _num(t.get("follow_arrive_s")) or t.get("follow_arrive_s") <= 0:
+        errors.append("timing.follow_arrive_s ต้องเป็นตัวเลขมากกว่า 0")
+    fm = t.get("follow_max_per_round")
+    if not isinstance(fm, int) or isinstance(fm, bool) or fm < 1:
+        errors.append("timing.follow_max_per_round ต้องเป็นจำนวนเต็มอย่างน้อย 1")
     mp = t.get("manual_max_pending")
     if not isinstance(mp, int) or isinstance(mp, bool) or mp < 1:
         errors.append("timing.manual_max_pending ต้องเป็นจำนวนเต็มอย่างน้อย 1")
@@ -254,17 +265,26 @@ def validate(cfg: dict) -> list[str]:
                 errors.append(f"{name}: {key} ต้องเป็นตัวเลขมากกว่า 0")
         if kind == "manual" and "manual_max_pending" in params and not isinstance(params["manual_max_pending"], int):
             errors.append(f"{name}: จำนวนตั๋วค้างต้องเป็นจำนวนเต็ม")
+        if kind == "manual" and "follow_max_per_round" in params and not isinstance(params["follow_max_per_round"], int):
+            errors.append(f"{name}: ต่อคิวสูงสุดต้องเป็นจำนวนเต็ม")
+        follow = lane.get("follow_sensor")
+        if follow and kind != "manual":
+            errors.append(f"{name}: เซนเซอร์ต่อคิวใช้ได้เฉพาะเลน Manual แบบจับรถ")
+        if follow and follow == lane.get("sensor"):
+            errors.append(f"{name}: เซนเซอร์ต่อคิวต้องเป็นคนละตัวกับเซนเซอร์หลัก")
+        enabled = lane.get("enabled", True)
         if kind == "special":
             lp = lane_params(cfg, lane) if "timing" in cfg and "hand" in cfg else {}
             if _num(lp.get("grace_ms")) and not (100 <= lp["grace_ms"] <= 1000):
                 errors.append(f"{name}: อนุโลมมือหลุดต้องอยู่ระหว่าง 100–1000 ms")
             if "max_pending_per_lane" in params and not isinstance(params["max_pending_per_lane"], int):
                 errors.append(f"{name}: จำนวนตั๋วค้างต้องเป็นจำนวนเต็ม")
+        # a lane switched off in the config (enabled: false) may have no sensor; it keeps its display (LANE OFF)
         if ltype == "auto":
             auto_count += 1
-            if not lane.get("near_sensor") or not lane.get("far_sensor"):
+            if enabled and (not lane.get("near_sensor") or not lane.get("far_sensor")):
                 errors.append(f"{name}: เลน Auto ต้องมีเซนเซอร์ใกล้และไกล")
-        elif not lane.get("sensor"):
+        elif enabled and not lane.get("sensor"):
             errors.append(f"{name}: ต้องเลือกเซนเซอร์")
         for sid in lane_sensors(lane):
             for key in SENSOR_PARAM_KEYS:

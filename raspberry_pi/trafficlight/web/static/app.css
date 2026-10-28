@@ -613,19 +613,39 @@ header .pill.r{background:color-mix(in srgb,var(--red) 14%,transparent);color:va
 #simbar{display:none;position:fixed;bottom:12px;right:16px;z-index:90;padding:6px 16px;border-radius:980px;background:#D92D20;color:#fff;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.25)}
 #simdock{display:none;position:fixed;left:0;top:70px;bottom:0;z-index:85;width:0}
 #simdock .sm-tab{position:absolute;left:0;top:40vh;width:34px;height:96px;padding:0;border-radius:0 12px 12px 0;writing-mode:vertical-rl;font-size:15px}
-#simdock.open .sm-tab{left:300px;height:44px;writing-mode:horizontal-tb;top:12px}
-#simdock .sm-body{display:none;position:absolute;left:0;top:0;bottom:0;width:300px;overflow:auto;background:var(--panel);box-shadow:var(--shadow-up,0 8px 30px rgba(0,0,0,.2));padding:14px}
+#simdock.open .sm-tab{display:none}
+#simdock .sm-body{display:none;position:absolute;left:0;top:0;bottom:0;width:340px;overflow:auto;background:var(--panel);box-shadow:0 8px 30px rgba(0,0,0,.18);padding:16px 16px 24px;border-radius:0 16px 0 0}
 #simdock.open .sm-body{display:block}
-.sm-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
-.sm-l{border-top:1px solid var(--line);padding:10px 0}
+.sm-hd{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.sm-hd b{font-size:17px}
+.sm-x{margin-left:auto;width:36px;height:36px;min-height:0;padding:0;border-radius:50%;background:var(--fill);color:var(--ink);font-size:20px;line-height:1}
+.sm-warn{background:#FEF3F2;color:#B42318;border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+.sm-step{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;margin-bottom:8px}
+.sm-step.on{border-color:#22A559;background:rgba(34,165,89,.08)}
+.sm-n{flex:none;width:24px;height:24px;border-radius:50%;background:var(--fill);display:grid;place-items:center;font-size:12px;font-weight:700}
+.sm-step.on .sm-n{background:#22A559;color:#fff}
+.sm-st{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.sm-st small{font-size:12px;color:var(--mut);line-height:1.35}
+.sm-tg{flex:none;min-width:64px;min-height:36px;padding:0 14px;font-size:14px}
+.sm-tg.on{background:var(--fill);color:var(--ink)}
+.sm-tg:disabled{opacity:.4;cursor:not-allowed}
+.sm-note{font-size:12px;color:var(--mut);margin:4px 2px 14px}
+.sm-sec{font-size:12px;font-weight:700;color:var(--mut);letter-spacing:.04em;margin:4px 2px 6px}
+.sm-l{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:8px}
 .sm-h{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.sm-lamp{padding:1px 10px;border-radius:980px;background:var(--fill);font-size:12px;font-weight:600}
-.sm-lamp.g{background:#22A559;color:#fff}
-.sm-s{display:flex;align-items:center;gap:4px;margin:4px 0;flex-wrap:wrap}
-.sm-s .mono{width:34px;font-size:12px;color:var(--mut)}
-.sm-s button{min-height:40px;padding:0 10px;font-size:14px}
-.sm-s button.on{background:var(--ink);color:var(--panel)}
-.sm-go{background:var(--accent,#0A84FF);color:#fff}
+.sm-h b{font-size:14px}
+.sm-dot{flex:none;width:12px;height:12px;border-radius:50%;background:#98A2B3}
+.sm-dot.g{background:#22A559;box-shadow:0 0 0 3px rgba(34,165,89,.25)}
+.sm-dot.r{background:#D92D20}
+.sm-q{margin-left:auto;font-size:12px;color:var(--mut)}
+.sm-why{font-size:12px;color:#B42318;margin:-2px 0 6px 20px}
+.sm-s{display:flex;align-items:center;gap:6px;margin:6px 0 0}
+.sm-id{flex:none;width:36px;font-size:12px;color:var(--mut)}
+.sm-seg{display:flex;flex:1;background:var(--fill);border-radius:10px;padding:2px;gap:2px}
+.sm-seg button{flex:1;min-height:34px;padding:0 4px;font-size:13px;border-radius:8px;background:transparent;color:var(--ink)}
+.sm-seg button.on{background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.15);font-weight:600}
+.sm-seg button.bad.on{background:#D92D20;color:#fff}
+.sm-go{flex:none;min-height:38px;padding:0 14px;font-size:14px;background:var(--accent,#0A84FF);color:#fff}
 
 /* Pi screen (html.lite, set by app.js on the kiosk / ARM browsers): no blur and no soft shadows over the map.
    backdrop-filter and big blurred shadows are redrawn on every change under them and made the Pi screen slow. */

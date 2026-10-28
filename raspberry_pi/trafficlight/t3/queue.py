@@ -5,6 +5,9 @@ Order (docs/T3_DESIGN.md section 4.2):
   2. lane priority (higher first)
   3. created_at (first come first served)
   4. exact tie -> round robin starting after the lane that had the last green
+A follower ticket (lane follow sensor) is the lane's next vehicle: it sits right behind that
+lane's own waiting ticket, or, when the lane has none left (it is green now), right after the
+Auto tickets, ahead of every other lane.
 """
 from __future__ import annotations
 
@@ -23,11 +26,12 @@ class Ticket:
     source: str
     matched: bool = True      # auto tickets from the far sensor start unmatched
     expires_at: float | None = None
+    follow: bool = False      # from a lane's follow sensor (next vehicle of that lane)
 
     def as_dict(self, now: float) -> dict:
         return {
             "id": self.id, "lane": self.lane, "kind": self.kind, "source": self.source,
-            "age_s": round(now - self.created_at, 1), "matched": self.matched,
+            "age_s": round(now - self.created_at, 1), "matched": self.matched, "follow": self.follow,
         }
 
 
@@ -41,8 +45,8 @@ class TicketQueue:
         self._ids = count(1)
 
     def add(self, lane: int, kind: str, now: float, source: str,
-            matched: bool = True, expires_at: float | None = None) -> Ticket:
-        ticket = Ticket(next(self._ids), lane, kind, now, source, matched, expires_at)
+            matched: bool = True, expires_at: float | None = None, follow: bool = False) -> Ticket:
+        ticket = Ticket(next(self._ids), lane, kind, now, source, matched, expires_at, follow)
         self.tickets.append(ticket)
         logger.info(f"T3 event=ticket_created id={ticket.id} lane={lane} kind={kind} "
                     f"source={source} matched={matched}")
@@ -85,8 +89,13 @@ class TicketQueue:
         cands = [t for t in self.tickets if lane_ok(t.lane)]
 
         def key(t: Ticket):
+            if t.follow:
+                own = [o for o in self.tickets if o.lane == t.lane and not o.follow]
+                if own:   # right behind the lane's own waiting ticket
+                    return key(min(own, key=lambda o: o.id))[:-1] + (t.id,)
             auto_rank = 0 if (self.auto_first and t.kind == "auto") else 1
-            return (auto_rank, -float(self.lane_priority.get(t.lane, 0)), t.created_at,
+            next_rank = 0 if t.follow else 1
+            return (auto_rank, next_rank, -float(self.lane_priority.get(t.lane, 0)), t.created_at,
                     self._rr_rank(t.lane), t.id)
         return sorted(cands, key=key)
 

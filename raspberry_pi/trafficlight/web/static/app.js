@@ -55,7 +55,7 @@ function keepView() { try { localStorage.setItem('t3view', JSON.stringify({v3d: 
 // ------------------------------------------------------------------ words
 const KIND_TH = {auto: 'Auto', vehicle: 'Manual', hand: 'Manual'};
 const KIND_SUB = {auto: 'รถ Auto · เซนเซอร์ 2 ตัว', vehicle: 'ขอทางด้วยเซนเซอร์จับรถ', hand: 'ขอทางด้วยการยื่นมือ'};
-const ROLE_TH = {far: 'ไกล', near: 'ใกล้', vehicle: 'จับรถ', hand: 'จับมือ'};
+const ROLE_TH = {far: 'ไกล', near: 'ใกล้', vehicle: 'จับรถ', hand: 'จับมือ', follow: 'ต่อคิว'};
 const STATE_TH = {STARTING: 'กำลังเริ่มระบบ', IDLE: 'พร้อม', SWITCHING: 'กำลังสลับเลน',
   GREEN: 'เขียว', CONFIG_ERROR: 'รอตั้งค่า'};
 // ARROW frame: direction bits (same as frames.DIR_BITS on the Pi and the ESP32 bitmaps)
@@ -76,6 +76,10 @@ const INFO = {
   find: ['หาด้วยมือ', 'กดแล้วเอามือบังเซนเซอร์ตัวนั้นค้างไว้ประมาณ 2 วินาที ระบบเลือกพอร์ตที่ระยะเปลี่ยนให้เอง'],
   far: ['เซนเซอร์ไกล', 'อยู่ห่างจากแยก เจอรถ Auto = แทรกหน้าคิวไว้ก่อน รถยังไม่ถึง'],
   near: ['เซนเซอร์ใกล้', 'อยู่ติดแยก เจอรถ = รถถึงแล้ว ให้ไฟเขียวได้ และใช้นับเวลาเคลียร์'],
+  follow: ['เซนเซอร์ต่อคิว', 'ติดถอยหลังจากเซนเซอร์หลัก (ไม่บังคับ) · ระหว่างเลนนี้รอคิวหรือเขียว ถ้าเจอรถคันถัดไป ให้คิวต่อทันที (เขียว → X → เขียว) ได้สูงสุดตามค่า ต่อคิวสูงสุด'],
+  follow_max_per_round: ['ต่อคิวสูงสุด', 'จำนวนรถต่อรอบของเลนนี้ (คันที่เซนเซอร์หลัก + คันที่ต่อคิว) คันถัดไปต้องรอรอบหน้า'],
+  follow_merge_s: ['รวมเป็นคันเดียว (ต่อคิว)', 'เซนเซอร์ต่อคิวเห็นรถอีกครั้งภายในเวลานี้หลังว่าง ถือเป็นคันเดิม เช่นช่องระหว่าง dolly'],
+  follow_arrive_s: ['รอคันที่ต่อคิวถึงเส้น', 'คันที่ต่อคิวได้เขียวแล้ว ถ้ายังไม่ถึงเซนเซอร์หลักภายในเวลานี้ จบไฟเขียว'],
   vehicle: ['เซนเซอร์จับรถ', 'มองลงพื้นกลางเลน รถจอดทับ = ขอทาง'],
   hand: ['เซนเซอร์จับมือ', 'ติดข้างเลนด้านคนขับ ยื่นมือค้าง = ขอทาง'],
   auto_clear_s: ['เคลียร์หลังรถพ้น', 'หลังท้ายรถหรือ dolly พ้นเซนเซอร์ใกล้ ไฟเขียวค้างต่ออีกเท่านี้'],
@@ -108,7 +112,7 @@ const INFO = {
   green_frame: ['ภาพไฟเขียว', 'ภาพบนจอตอนเลนนี้ได้ไฟเขียว'],
   green_mask: ['ลูกศรตอนไฟเขียว', 'กดเลือกทิศที่รถเลนนี้ไปได้ (เลือกได้หลายทิศ) · จอจะแสดงลูกศรรวมทุกทิศที่เลือก · ต้องอัปเดตเฟิร์มแวร์จอเป็น t3-1.3.0 ขึ้นไป'],
   priority: ['ลำดับความสำคัญ', 'เลขมากได้คิวก่อน เท่ากันใครมาก่อนได้ก่อน'],
-  enabled: ['เปิดใช้เลน', 'ปิด = เลนนี้ไม่รับคิว จอแสดง CONFIG'],
+  enabled: ['เปิดใช้เลน', 'ปิด = เลนนี้ไม่รับคิว จอแสดง LANE OFF · เลนที่ปิดถอดเซนเซอร์ออกได้'],
   name: ['ชื่อเลน', 'ชื่อที่แสดงในหน้าเว็บและบันทึก'],
   STOPHINT: ['F16 X + จุดยื่นมือ', 'เลนยื่นมือแสดง X พร้อมจุดบอกตำแหน่งยื่นมือ แทน X ธรรมดา'],
   GO_N: ['F21–F23 เขียว + นับถอยหลัง', 'เตรียมไว้ ยังไม่มีเงื่อนไขเรียกใช้'],
@@ -126,6 +130,8 @@ const LANE_PARAMS = {
     ['min_green_s', 'เขียวขั้นต่ำ', 's', 0.5, 30, 0.5], ['auto_far_merge_s', 'รวมเป็นคันเดียว', 's', 0.5, 10, 0.5]],
   vehicle: [['manual_clear_s', 'เคลียร์หลังรถพ้น', 's', 0.5, 30, 0.5], ['manual_max_pending', 'คิวค้างสูงสุด', '', 1, 5, 1],
     ['min_green_s', 'เขียวขั้นต่ำ', 's', 0.5, 30, 0.5]],
+  follow: [['follow_max_per_round', 'ต่อคิวสูงสุด', 'คัน', 1, 5, 1], ['follow_merge_s', 'รวมเป็นคันเดียว (ต่อคิว)', 's', 0.5, 10, 0.5],
+    ['follow_arrive_s', 'รอคันที่ต่อคิวถึงเส้น', 's', 1, 30, 0.5]],
   hand: [['special_green_s', 'เวลาไฟเขียว', 's', 1, 60, 0.5], ['hold_s', 'ยื่นมือค้าง', 's', 1, 10, 0.5],
     ['grace_ms', 'อนุโลมมือหลุด', 'ms', 100, 1000, 50], ['confirm_show_s', 'แสดงเครื่องหมายถูก', 's', 0.2, 5, 0.1],
     ['rearm_clear_s', 'เอามือออกก่อนขอใหม่', 's', 0.1, 5, 0.1], ['max_pending_per_lane', 'คิวค้างสูงสุด', '', 1, 5, 1]],
@@ -141,6 +147,8 @@ const CATS = [
     ['num', 'timing.auto_far_merge_s', 'รวมเป็นคันเดียว', 's', 0.5, 10, 0.5]]]]],
   ['manual', 'เลน Manual', [
     ['เซนเซอร์จับรถ', [['num', 'timing.manual_clear_s', 'เคลียร์หลังรถพ้น', 's', 0.5, 30, 0.5], ['num', 'timing.manual_max_pending', 'คิวค้างสูงสุด', '', 1, 5, 1]]],
+    ['เซนเซอร์ต่อคิว (เลนที่มี)', [['num', 'timing.follow_max_per_round', 'ต่อคิวสูงสุด', 'คัน', 1, 5, 1],
+      ['num', 'timing.follow_merge_s', 'รวมเป็นคันเดียว (ต่อคิว)', 's', 0.5, 10, 0.5], ['num', 'timing.follow_arrive_s', 'รอคันที่ต่อคิวถึงเส้น', 's', 1, 30, 0.5]]],
     ['ยื่นมือ', [['num', 'timing.special_green_s', 'เวลาไฟเขียว', 's', 1, 60, 0.5], ['num', 'hand.hold_s', 'ยื่นมือค้าง', 's', 1, 10, 0.5],
       ['num', 'hand.grace_ms', 'อนุโลมมือหลุด', 'ms', 100, 1000, 50], ['num', 'hand.confirm_show_s', 'แสดงเครื่องหมายถูก', 's', 0.2, 5, 0.1],
       ['num', 'hand.rearm_clear_s', 'เอามือออกก่อนขอใหม่', 's', 0.1, 5, 0.1], ['num', 'hand.max_pending_per_lane', 'คิวค้างสูงสุด', '', 1, 5, 1]]]]],
@@ -224,15 +232,16 @@ function kindOf(l) {
 }
 function laneSensors(l) {
   const k = kindOf(l);
-  if (k === 'auto') return [{sid: l.far_sensor, role: 'far'}, {sid: l.near_sensor, role: 'near'}];
-  if (k) return [{sid: l.sensor, role: k}];
+  if (k === 'auto') return [{sid: l.far_sensor, role: 'far'}, {sid: l.near_sensor, role: 'near'}].filter((x) => x.sid);
+  if (k === 'vehicle') return [{sid: l.sensor, role: k}, {sid: l.follow_sensor, role: 'follow'}].filter((x) => x.sid);
+  if (k) return [{sid: l.sensor, role: k}].filter((x) => x.sid);
   return [];
 }
 function setKind(E, kind) {
   const l = E.lane;
   const byRole = {};
   laneSensors(l).forEach(({sid, role}) => { byRole[role] = E.sensors[sid]; });
-  delete l.sensor; delete l.near_sensor; delete l.far_sensor; delete l.mode;
+  delete l.sensor; delete l.near_sensor; delete l.far_sensor; delete l.mode; delete l.follow_sensor;
   const id = l.id;
   E.sensors = {};
   if (kind === 'auto') {
@@ -281,6 +290,7 @@ function laneMissing(cfg, l, sensors) {
   const miss = [];
   if (!kindOf(l)) miss.push('ประเภท');
   if (!l.display) miss.push('จอ');
+  if (l.enabled !== false && kindOf(l) && kindOf(l) !== 'auto' && !l.sensor) miss.push('เซนเซอร์');
   laneSensors(l).forEach(({sid}) => { if (!(sensors ? sensors[sid] || {} : getSensor(cfg, sid)).port) miss.push('พอร์ต ' + sid); });
   return miss;
 }
@@ -517,8 +527,18 @@ function editorHtml(ctx) {
       `<button class="${gm & bit ? 'on' : ''}" data-act="arrowdir" data-bit="${bit}" title="${t}" aria-label="${t}" aria-pressed="${gm & bit ? 'true' : 'false'}" ${ro}>${a}</button>`).join('')}</div>
     <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><canvas data-arrow="${gm}" width="192" height="96" style="width:192px;height:96px;border-radius:6px" aria-label="ตัวอย่างจอเลน ${l.id}"></canvas>
     <span class="small mut">เฟรม F${String(gm).padStart(2, '0')} · ${ARROW_DIRS.filter(([bit]) => gm & bit).map(([, , t]) => t).join(' + ')}</span></div></div>`;
-  const sensSec = `<div><div class="sec-t">เซนเซอร์${infoBtn('port')}</div><div class="list">${laneSensors(l).map(({sid, role}) => sensorRow(E, cfg, sid, role, ro)).join('')}</div></div>`;
-  const params = LANE_PARAMS[k].map(([key, label, unit, min, max, step]) => {
+  // vehicle lane: optional follow sensor; a lane switched off may give its sensor away
+  const sensBtns = !isEditor() ? '' : [
+    k === 'vehicle' && l.sensor && !l.follow_sensor ? `<button class="plain sm" data-act="addfollow">+ เซนเซอร์ต่อคิว</button>${infoBtn('follow')}` : '',
+    k === 'vehicle' && l.follow_sensor ? `<button class="plain sm" data-act="delfollow">ถอดเซนเซอร์ต่อคิว ${esc(l.follow_sensor)}</button>` : '',
+    k !== 'auto' && l.enabled === false && l.sensor ? `<button class="plain sm" data-act="delsensor">ถอดเซนเซอร์ ${esc(l.sensor)} ออกจากเลนที่ปิด</button>` : '',
+    k !== 'auto' && !l.sensor ? '<button class="plain sm" data-act="addsensor">+ ใส่เซนเซอร์</button>' : '',
+  ].filter(Boolean).join(' ');
+  const sensRows = laneSensors(l).map(({sid, role}) => sensorRow(E, cfg, sid, role, ro)).join('')
+    || '<div class="li-row"><span class="lab mut">ไม่มีเซนเซอร์ · เลนนี้ปิดอยู่ (จอแสดง LANE OFF)</span></div>';
+  const sensSec = `<div><div class="sec-t">เซนเซอร์${infoBtn('port')}</div><div class="list">${sensRows}</div>${sensBtns ? `<div style="margin-top:8px;display:flex;gap:12px;flex-wrap:wrap">${sensBtns}</div>` : ''}</div>`;
+  const rows = LANE_PARAMS[k].concat(k === 'vehicle' && l.follow_sensor ? LANE_PARAMS.follow : []);
+  const params = rows.map(([key, label, unit, min, max, step]) => {
     const D = S.defaults || {}, tm = {...(D.timing || {}), ...(cfg.timing || {})}, hd = {...(D.hand || {}), ...(cfg.hand || {})};
     const dflt = key in tm ? tm[key] : hd[key];
     return numRow(`p_${l.id}_${key}`, label, key, unit, min, max, step, (l.params || {})[key], dflt, `data-p="${key}"`, ro);
@@ -1288,6 +1308,21 @@ document.addEventListener('click', async (ev) => {
     else if (act === 'addlane') addLane();
     else if (act === 'cancel') closeLane();
     else if (act === 'kind') { setKind(S.edit, b.dataset.k); render(); }
+    else if (act === 'addfollow' && S.edit) {
+      const E = S.edit, l = E.lane, id = l.id;
+      const main = `C${id}.1`, fol = `C${id}.2`;
+      if (l.sensor !== main && !E.sensors[main]) { E.sensors[main] = E.sensors[l.sensor] || {port: ''}; delete E.sensors[l.sensor]; l.sensor = main; }
+      l.follow_sensor = fol; E.sensors[fol] = E.sensors[fol] || {port: ''};
+      render();
+    }
+    else if (act === 'delfollow' && S.edit) {
+      const E = S.edit, l = E.lane;
+      delete E.sensors[l.follow_sensor]; delete l.follow_sensor;
+      ['follow_max_per_round', 'follow_merge_s', 'follow_arrive_s'].forEach((k) => { if (l.params) delete l.params[k]; });
+      render();
+    }
+    else if (act === 'delsensor' && S.edit) { const E = S.edit; delete E.sensors[E.lane.sensor]; delete E.lane.sensor; render(); }
+    else if (act === 'addsensor' && S.edit) { const E = S.edit, sid = `C${E.lane.id}`; E.lane.sensor = sid; E.sensors[sid] = E.sensors[sid] || {port: ''}; render(); }
     else if (act === 'savelane') await saveLane();
     else if (act === 'clr') {
       const inp = document.getElementById(b.dataset.for);
@@ -1410,7 +1445,7 @@ document.addEventListener('change', async (ev) => {
       else if (k === 'enabled') v = t.checked;
       else if (t.dataset.num) v = Number(v || 0);
       S.edit.lane[k] = v;
-      if (k === 'display') render();
+      if (k === 'display' || k === 'enabled') render();   // enabled: the sensor buttons of a lane switched off
     } else if (S.edit && t.dataset.p) {
       S.edit.lane.params = S.edit.lane.params || {};
       const v = readNum(t);

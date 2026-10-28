@@ -8,6 +8,11 @@ Safety invariants (tests/test_t3_controller.py):
   * every green grant passes the all-red barrier (docs/T3_DESIGN.md 6.2)
   * no green while STARTING
   * a sensor fault on the active lane ends that green at once; only that lane is closed
+
+Follow sensor (manual vehicle lane, lane["follow_sensor"], upstream of the stop-line sensor):
+while the lane waits or is green, a new vehicle on the follow sensor gets the lane's next
+ticket, served right after (green -> all-red -> green), at most follow_max_per_round vehicles
+per round. A follow sensor fault never closes the lane.
 """
 from __future__ import annotations
 
@@ -52,6 +57,8 @@ class _Service:
     clear_since: float | None = None
     end_at: float | None = None
     served: int = 1
+    follow: bool = False                # serving a follower ticket
+    arrived: bool = True                # follower reached the stop-line sensor
 
 
 @dataclass
@@ -63,16 +70,18 @@ class Lane:
     sensor: str | None = None          # manual / special
     near: str | None = None            # auto
     far: str | None = None             # auto
+    follow: str | None = None          # manual vehicle: optional follow sensor upstream of `sensor`
     green_frame: str = F.GO
     green_mask: int | None = None               # ARROW direction mask; overrides green_frame
     p: dict = field(default_factory=dict)       # effective per-lane parameters
     reasons: set = field(default_factory=set)   # why the lane is disabled
     pending_maint: bool = False
     test_until: float = 0.0
+    round_count: int = 0               # vehicles counted in the current follow round
 
     @property
     def sensors(self) -> list[str]:
-        return [s for s in (self.near, self.far, self.sensor) if s]
+        return [s for s in (self.near, self.far, self.sensor, self.follow) if s]
 
     @property
     def enabled(self) -> bool:
@@ -92,6 +101,7 @@ class T3Controller:
             lane = Lane(
                 id=lc["id"], kind=lane_kind(lc), display=lc["display"], name=lc.get("name", ""),
                 sensor=lc.get("sensor"), near=lc.get("near_sensor"), far=lc.get("far_sensor"),
+                follow=lc.get("follow_sensor") if lane_kind(lc) == "manual" else None,
                 green_frame=lc.get("green_frame", F.GO), green_mask=lc.get("green_mask"),
                 p=lane_params(cfg, lc),
             )
@@ -240,6 +250,9 @@ class T3Controller:
         if lane is None:
             return
         reason = f"sensor:{ev.sensor}"
+        if ev.sensor == lane.follow:
+            self._on_follow_event(lane, ev, now)
+            return
         if ev.kind == "offline":
             if lane.kind == "auto" and ev.sensor == lane.far:
                 self._log(f"C1.2 ({ev.sensor}) เสีย เลน {lane.id} ใช้ {lane.near} แทรกคิวแทน",
@@ -262,6 +275,7 @@ class T3Controller:
         if lane.kind == "manual":
             if len(self.queue.for_lane(lane.id)) < int(lane.p["manual_max_pending"]):
                 self.queue.add(lane.id, "manual", now, ev.sensor)
+                lane.round_count = 1          # this vehicle starts a new follow round
             else:   # the same vehicle seen again (gap in the body, trailer): no second green
                 logger.info(f"T3 event=ticket_ignored lane={lane.id} sensor={ev.sensor} reason=already_waiting")
         elif lane.kind == "auto" and ev.sensor == lane.far:
@@ -289,6 +303,34 @@ class T3Controller:
                     self.service.served += 1
             elif not serving:
                 self.queue.add(lane.id, "auto", now, ev.sensor, matched=True)
+
+    def _on_follow_event(self, lane: Lane, ev: SensorEvent, now: float) -> None:
+        if ev.kind == "offline":
+            self._log(f"เซนเซอร์ต่อคิว {ev.sensor} เสีย เลน {lane.id} ใช้ {lane.sensor} ตัวเดียว",
+                      "follow_sensor_degraded", sensor=ev.sensor)
+            return
+        if ev.kind == "recovered":
+            self._log(f"เซนเซอร์ต่อคิว {ev.sensor} กลับมาทำงาน", "sensor_recovered", sensor=ev.sensor)
+            return
+        if ev.kind != "rising" or not lane.enabled or self.state == STARTING:
+            return
+        last_clear = self.sensors[ev.sensor].last_clear_at
+        if last_clear is not None and now - last_clear < float(lane.p["follow_merge_s"]):
+            logger.info(f"T3 event=ticket_ignored lane={lane.id} sensor={ev.sensor} reason=follow_merge")
+            return
+        busy = bool(self.queue.for_lane(lane.id)) or self.active_lane == lane.id
+        if not busy:   # lane idle: the stop-line sensor makes the ticket when the vehicle gets there
+            logger.info(f"T3 event=ticket_ignored lane={lane.id} sensor={ev.sensor} reason=follow_lane_idle")
+            return
+        if lane.round_count >= int(lane.p["follow_max_per_round"]):
+            logger.info(f"T3 event=ticket_ignored lane={lane.id} sensor={ev.sensor} reason=follow_round_full")
+            return
+        if any(t.follow for t in self.queue.for_lane(lane.id)):
+            logger.info(f"T3 event=ticket_ignored lane={lane.id} sensor={ev.sensor} reason=follow_already_waiting")
+            return
+        self.queue.add(lane.id, "manual", now, ev.sensor, follow=True)
+        lane.round_count += 1
+        self._log(f"{ev.sensor} เจอคันถัดไป → เลน {lane.id} ได้คิวต่อ", "follow_requested", lane=lane.id)
 
     def _active_lane_fault(self, lane: Lane, sensor: str, now: float) -> None:
         # only this lane is affected: its green ends (all-red barrier + display ACK as usual),
@@ -329,6 +371,10 @@ class T3Controller:
                         self._log(f"{sid} ยังไม่มีข้อมูล เลน {lane.id} ใช้ {lane.near} แทน",
                                   "far_sensor_degraded", sensor=sid)
                         continue
+                    if sid == lane.follow:
+                        self._log(f"เซนเซอร์ต่อคิว {sid} ยังไม่มีข้อมูล เลน {lane.id} ใช้ {lane.sensor} ตัวเดียว",
+                                  "follow_sensor_degraded", sensor=sid)
+                        continue
                     self._disable(lane, f"sensor:{sid}", now, drop=True)
         self.state = IDLE
         # vehicles already standing on a sensor at start-up still get a ticket
@@ -337,6 +383,7 @@ class T3Controller:
                 continue
             if lane.kind == "manual" and self.sensors[lane.sensor].occupied:
                 self.queue.add(lane.id, "manual", now, lane.sensor)
+                lane.round_count = 1
             elif lane.kind == "auto" and self.sensors[lane.near].occupied:
                 self.queue.add(lane.id, "auto", now, lane.near, matched=True)
         self._log("ระบบพร้อม", "ready")
@@ -405,7 +452,7 @@ class T3Controller:
         self.queue.last_served_lane = lane.id
         self.active_lane = lane.id
         self.state = GREEN
-        self.service = _Service(lane.id, lane.kind, now)
+        self.service = _Service(lane.id, lane.kind, now, follow=ticket.follow, arrived=not ticket.follow)
         if lane.kind == "special":
             self.service.end_at = now + float(lane.p["special_green_s"])
         self._log(f"เลน {lane.id} เขียว (ตั๋ว #{ticket.id})", "green_granted",
@@ -423,6 +470,15 @@ class T3Controller:
         else:
             sid = lane.near if lane.kind == "auto" else lane.sensor
             s = self.sensors[sid]
+            if not svc.arrived:
+                # follower still driving up to the stop line: keep green until it is seen there
+                if s.occupied:
+                    svc.arrived = True
+                elif now - svc.started >= float(lane.p["follow_arrive_s"]):
+                    self._end_green(now, reason="follow_not_arrived")
+                    return
+                else:
+                    return
             if s.occupied and lane.kind != "manual":
                 svc.clear_since = None            # Auto: the next car of the stream keeps the green
             elif not s.occupied and svc.clear_since is None:
@@ -459,6 +515,8 @@ class T3Controller:
         self.active_lane = None
         self.service = None
         self.state = IDLE
+        if not self.queue.for_lane(lane.id):
+            lane.round_count = 0
         if lane.pending_maint:
             lane.pending_maint = False
             self._disable(lane, "maintenance", now, drop=True)
@@ -477,7 +535,7 @@ class T3Controller:
                 return F.ARROW, str(lane.green_mask)
             return lane.green_frame, ""
         if "config_disabled" in lane.reasons:
-            return F.CONFIG, ""
+            return F.MAINT, ""            # lane switched off in the config: LANE OFF (CONFIG = real config error only)
         if "maintenance" in lane.reasons:
             return F.MAINT, ""
         bad = sorted(r.split(":", 1)[1] for r in lane.reasons if r.startswith("sensor:"))
@@ -524,7 +582,8 @@ class T3Controller:
             ack = self.link.last_ack(lane.display)
             lanes.append({
                 "id": lane.id, "name": lane.name, "type": lane.kind, "display": lane.display,
-                "sensors": lane.sensors, "enabled": lane.enabled, "reasons": sorted(lane.reasons),
+                "sensors": lane.sensors, "follow_sensor": lane.follow,
+                "enabled": lane.enabled, "reasons": sorted(lane.reasons),
                 "frame": frame, "arg": arg, "green": self.active_lane == lane.id,
                 "tickets": len(self.queue.for_lane(lane.id)),
                 "hand": self.hands[lane.id].phase if lane.id in self.hands else None,
