@@ -75,7 +75,7 @@
   function kind(l) { return l.type === 'auto' ? 'auto' : (l.type === 'special' || l.mode === 'hand') ? 'special' : 'manual'; }
   function sensorsOf(l) { return (kind(l) === 'auto' ? [l.near_sensor, l.far_sensor] : [l.sensor, l.follow_sensor]).filter(Boolean); }
   const LANE_KEYS = {auto: ['auto_clear_s', 'auto_ticket_expiry_s', 'min_green_s', 'auto_far_merge_s'],
-    manual: ['manual_clear_s', 'manual_max_pending', 'min_green_s', 'follow_max_per_round', 'follow_merge_s', 'follow_arrive_s'],
+    manual: ['manual_clear_s', 'manual_max_pending', 'min_green_s', 'follow_max_per_round', 'follow_arrive_s'],
     special: ['special_green_s', 'hold_s', 'grace_ms', 'confirm_show_s', 'rearm_clear_s', 'max_pending_per_lane']};
   const validMask = (m) => Number.isInteger(m) && m >= 1 && m <= 31;
   function validate(c) {
@@ -171,7 +171,7 @@
   function evt(text) { C.events.push({t: wall(), text}); C.events = C.events.slice(-40); }
   function sensorParams(c, sid, l) {
     const own = {...(c.sensors[sid] || {})}; delete own.port;
-    const manual = l.type === 'manual' || l.type === 'special';   // stop-line, hand and follow sensors
+    const manual = (l.type === 'manual' || l.type === 'special') && sid === l.sensor;   // follow sensor keeps gap_hold_s (1.2 s)
     return {...c.sensor_defaults, ...(manual && !('gap_hold_s' in own) ? {gap_hold_s: c.sensor_defaults.manual_gap_hold_s} : {}), ...own};
   }
   function startController() {
@@ -323,7 +323,6 @@
     if (s.id === lane.follow) {   // follow sensor: never closes the lane
       if (k === 'offline') { evt(`เซนเซอร์ต่อคิว ${s.id} เสีย เลน ${lane.id} ใช้ ${lane.sensor} ตัวเดียว`); return; }
       if (k !== 'rising' || lane.reasons.size || C.state === 'STARTING') return;
-      if (s.prevClear != null && t - s.prevClear < lane.p.follow_merge_s) return;            // same vehicle (dolly gap)
       const mine = C.queue.filter((q) => q.lane === lane.id);
       if (!mine.length && C.active !== lane.id) return;                                       // lane idle: C2.1 makes the ticket
       if (lane.roundCount >= lane.p.follow_max_per_round || mine.some((q) => q.follow)) return;

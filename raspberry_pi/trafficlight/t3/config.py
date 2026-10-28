@@ -23,7 +23,7 @@ MANUAL_MODES = ("vehicle", "hand")
 LANE_PARAM_KEYS = {
     "auto": ("auto_clear_s", "auto_ticket_expiry_s", "min_green_s", "auto_far_merge_s"),
     "manual": ("manual_clear_s", "manual_max_pending", "min_green_s",
-               "follow_max_per_round", "follow_merge_s", "follow_arrive_s"),
+               "follow_max_per_round", "follow_arrive_s"),
     "special": ("special_green_s", "hold_s", "grace_ms", "confirm_show_s", "rearm_clear_s",
                 "max_pending_per_lane"),
 }
@@ -73,7 +73,7 @@ DEFAULTS: dict = {
         "auto_far_merge_s": 3.0,    # far sensor sees the same Auto again within this time after it cleared: no new ticket
         # Manual vehicle lane with a follow sensor (lane["follow_sensor"], upstream of the stop-line sensor):
         "follow_max_per_round": 2,  # vehicles one round may let through (stop-line vehicle + followers), one green each
-        "follow_merge_s": 3.0,      # follow sensor sees a vehicle again within this time after it cleared: same vehicle
+        # (one vehicle or two: the follow sensor's own gap hold decides; site C2.2 gap hold 1.2 s, user 2026-10-28)
         "follow_arrive_s": 7.0,     # follower's green ends if it has not reached the stop-line sensor within this time
         "switch_all_red_s": 1.0,
         "display_ack_timeout_s": 2.0,
@@ -141,7 +141,9 @@ def sensor_params(cfg: dict, sensor_id: str) -> dict:
     """Effective parameters of one sensor: defaults + its own overrides."""
     params = dict(cfg["sensor_defaults"])
     own = {k: v for k, v in cfg["sensors"].get(sensor_id, {}).items() if k != "port"}
-    manual = any(l.get("type") in ("manual", "special") and sensor_id in (l.get("sensor"), l.get("follow_sensor"))
+    # stop-line / hand sensor of a manual lane: manual_gap_hold_s. A follow sensor keeps gap_hold_s (1.2 s):
+    # a gap longer than that = the next vehicle (user 2026-10-28)
+    manual = any(l.get("type") in ("manual", "special") and l.get("sensor") == sensor_id
                  for l in cfg.get("lanes") or [])
     if manual and "gap_hold_s" not in own:
         params["gap_hold_s"] = params["manual_gap_hold_s"]
@@ -162,7 +164,7 @@ def lane_params(cfg: dict, lane: dict) -> dict:
     """Effective per-lane parameters: type defaults + the lane's overrides."""
     out = {k: cfg["timing"][k] for k in ("auto_clear_s", "auto_ticket_expiry_s", "min_green_s", "auto_far_merge_s",
                                          "manual_clear_s", "special_green_s", "manual_max_pending",
-                                         "follow_max_per_round", "follow_merge_s", "follow_arrive_s")}
+                                         "follow_max_per_round", "follow_arrive_s")}
     out.update(cfg["hand"])
     out.update(lane.get("params") or {})
     return out
@@ -190,7 +192,7 @@ def validate(cfg: dict) -> list[str]:
     ):
         if not _num(t.get(key)) or t.get(key) <= 0:
             errors.append(f"timing.{key} ต้องเป็นตัวเลขมากกว่า 0")
-    for key in ("min_green_s", "auto_far_merge_s", "follow_merge_s"):
+    for key in ("min_green_s", "auto_far_merge_s"):
         if not _num(t.get(key)) or t.get(key) < 0:
             errors.append(f"timing.{key} ต้องเป็นตัวเลขไม่ติดลบ")
     if not _num(t.get("follow_arrive_s")) or t.get("follow_arrive_s") <= 0:

@@ -95,7 +95,7 @@ def test_third_vehicle_waits_for_the_next_round():
     sim.on("C2.2")                                 # vehicle 2
     sim.step(0.5)
     sim.off("C2.2")
-    sim.step(4.0)                                  # (longer than follow_merge_s: a new vehicle)
+    sim.step(4.0)                                  # (gap longer than C2.2's gap hold: a new vehicle)
     sim.on("C2.2")                                 # vehicle 3
     sim.step(0.5)
     lane2 = sim.ctrl.queue.for_lane(2)
@@ -110,7 +110,7 @@ def test_follow_sensor_ignored_while_lane_idle():
     assert sim.ctrl.queue.for_lane(2) == []        # C2.1 makes the ticket when the vehicle gets there
 
 
-def test_same_vehicle_again_on_follow_sensor_is_merged():
+def test_dolly_gap_shorter_than_follow_gap_hold_is_one_vehicle():
     sim = Sim(site_config())
     sim.ready()
     sim.on("C4")
@@ -119,7 +119,7 @@ def test_same_vehicle_again_on_follow_sensor_is_merged():
     sim.step(0.5)
     sim.on("C2.2")
     sim.step(0.5)
-    sim.off("C2.2")                                # dolly gap under C2.2
+    sim.off("C2.2")                                # dolly gap under C2.2, shorter than its gap hold 1.2 s
     sim.step(1.0)
     sim.on("C2.2")
     sim.step(0.5)
@@ -171,3 +171,10 @@ def test_follow_sensor_fault_keeps_the_lane_running():
     assert sim.ctrl.lanes[2].enabled
     sim.on("C2.1")
     sim.until(lambda: sim.shown(2) == F.GO)
+
+
+def test_follow_sensor_gap_hold_defaults_to_1_2_s():
+    from trafficlight.t3.config import sensor_params
+    cfg = site_config()
+    assert sensor_params(cfg, "C2.2")["gap_hold_s"] == 1.2      # not the manual 0.2 s
+    assert sensor_params(cfg, "C2.1")["gap_hold_s"] == cfg["sensor_defaults"]["manual_gap_hold_s"]

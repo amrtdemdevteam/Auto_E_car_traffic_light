@@ -314,10 +314,7 @@ class T3Controller:
             return
         if ev.kind != "rising" or not lane.enabled or self.state == STARTING:
             return
-        last_clear = self.sensors[ev.sensor].last_clear_at
-        if last_clear is not None and now - last_clear < float(lane.p["follow_merge_s"]):
-            logger.info(f"T3 event=ticket_ignored lane={lane.id} sensor={ev.sensor} reason=follow_merge")
-            return
+        # one vehicle or two is decided by the follow sensor's gap hold (a gap shorter than it never clears)
         busy = bool(self.queue.for_lane(lane.id)) or self.active_lane == lane.id
         if not busy:   # lane idle: the stop-line sensor makes the ticket when the vehicle gets there
             logger.info(f"T3 event=ticket_ignored lane={lane.id} sensor={ev.sensor} reason=follow_lane_idle")
