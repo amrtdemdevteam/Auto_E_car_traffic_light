@@ -118,7 +118,7 @@ def test_consecutive_autos_keep_b1_green_without_red_between():
     assert len(b1) == 1                            # one continuous green, no red in between
 
 
-def test_hand_swinging_creates_no_ticket_hold_3s_creates_one():
+def test_hand_swinging_creates_no_ticket_hold_2s_creates_one():
     sim = Sim()
     sim.ready()
     for _ in range(5):                             # arm swinging through the beam
@@ -129,11 +129,11 @@ def test_hand_swinging_creates_no_ticket_hold_3s_creates_one():
     sim.on("C4")                                   # keep lane 4 busy so the ticket waits
     sim.until(lambda: sim.shown(4) == F.GO)
     sim.on("C3")
-    sim.step(1.2)
-    assert sim.shown(3) == F.HOLD                  # first half of the 3 s hold
     sim.step(0.6)
+    assert sim.shown(3) == F.HOLD                  # first half of the 2 s hold
+    sim.step(0.8)
     assert sim.shown(3) == F.HAND1                 # "1/2"
-    sim.step(1.4)
+    sim.step(1.0)
     assert sim.shown(3) == F.HANDOK
     assert len(sim.ctrl.queue.for_lane(3)) == 1
     sim.off("C3")
@@ -146,12 +146,12 @@ def test_hand_short_dropout_is_tolerated():
     sim = Sim()
     sim.ready()
     sim.on("C5")
-    sim.step(1.5)
+    sim.step(1.0)
     sim.off("C5")
     sim.step(0.15)                                 # shorter than 300 ms grace
     sim.on("C5")
-    sim.step(1.6)
-    assert len(sim.ctrl.queue.for_lane(5)) == 1
+    sim.step(1.2)                                  # 0.2 s debounce + 2 s hold, counted from the first touch
+    assert len(sim.ctrl.queue.for_lane(5)) == 1 or sim.ctrl.active_lane == 5
 
 
 def test_special_lane_fixed_green_default_3s():

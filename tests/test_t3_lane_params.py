@@ -56,7 +56,7 @@ def test_per_lane_manual_clear_time():
 def test_per_lane_hand_hold_time():
     base = Sim()
     base.ready()
-    base.pulse("C5", 1.9)               # default 3 s hold: no ticket yet
+    base.pulse("C5", 1.9)               # 0.2 s debounce + default 2 s hold: no ticket yet
     assert not base.ctrl.queue.for_lane(5) and base.ctrl.active_lane != 5
     cfg = t3_config()
     _lane(cfg, 5)["params"] = {"hold_s": 1.5}

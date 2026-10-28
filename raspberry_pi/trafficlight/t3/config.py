@@ -57,7 +57,7 @@ DEFAULTS: dict = {
     # sensor id -> {"port": "...", optional per-sensor overrides of sensor_defaults}
     "sensors": {},
     "hand": {
-        "hold_s": 3.0,
+        "hold_s": 2.0,                        # site 2026-10-28 (was 3.0)
         "grace_ms": 300,
         "confirm_show_s": 1.0,
         "rearm_clear_s": 0.5,
