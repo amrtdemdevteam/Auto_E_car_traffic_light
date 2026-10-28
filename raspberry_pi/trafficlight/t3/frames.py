@@ -34,6 +34,7 @@ GO_3WAY = "GO_3WAY"      # F31 green: one T arrow with a straight stem, straight
 ARROW = "ARROW"          # F32 green: arrow built from a direction mask (arg = "1".."31")
 
 STOP_QUEUED = "Q"        # STOP arg: the lane has a ticket and waits its turn
+MAINT_DARK = "DARK"      # MAINT arg: lane switched off in the config, panel dark (firmware t3-1.4.1+, older: LANE OFF)
 
 # Direction bits for ARROW. A lane's green_mask is the sum of the bits it shows.
 DIR_BITS = {"L": 1, "UL": 2, "U": 4, "UR": 8, "R": 16}

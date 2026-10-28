@@ -52,11 +52,12 @@ def test_follow_sensor_only_on_manual_vehicle_lanes():
     assert any("เซนเซอร์ต่อคิวใช้ได้เฉพาะ" in e for e in validate(cfg))
 
 
-def test_lane_off_shows_lane_off_and_never_goes_green():
+def test_lane_off_display_is_dark_and_never_goes_green():
     sim = Sim(site_config())
     sim.ready()
     sim.step(1)
-    assert sim.shown(3) == F.MAINT                 # LANE OFF
+    assert sim.shown(3) == F.MAINT                 # dark panel (MAINT + DARK)
+    assert sim.ctrl._frames[3] == (F.MAINT, F.MAINT_DARK)   # (test config: lane 3 on display 3)
     sim.on("C4")
     sim.until(lambda: sim.shown(4) == F.GO)
     assert 3 not in [d for _, d in sim.green_log]
@@ -83,6 +84,30 @@ def test_follower_goes_next_green_red_green_before_other_lanes():
     sim.off("C2.1")
     sim.until(lambda: sim.shown(4) == F.GO, limit=10)
     assert greens_after(sim, t0) == [2, 2, 4]
+
+
+def test_follower_reaching_the_stop_line_on_its_own_green_is_not_a_new_vehicle():
+    # site 2026-10-28: 2 vehicles gave 3 greens. Vehicle 2 drives the 7 m on its own green and
+    # reaches C2.1 then: that is the vehicle being served, not a new ticket.
+    sim = Sim(site_config())
+    sim.ready()
+    t0 = sim.now
+    sim.on("C2.1")                                 # vehicle 1
+    sim.until(lambda: sim.shown(2) == F.GO)
+    sim.on("C2.2")                                 # vehicle 2 passes the follow sensor
+    sim.step(0.5)
+    sim.off("C2.2")
+    sim.off("C2.1")                                # vehicle 1 drives off, vehicle 2 is still upstream
+    sim.until(lambda: sim.shown(2) == F.STOP, limit=6)
+    sim.until(lambda: sim.shown(2) == F.GO, limit=5)          # vehicle 2's green
+    sim.step(2.0)
+    sim.on("C2.1")                                 # vehicle 2 arrives at the stop line
+    sim.step(1.0)
+    assert sim.ctrl.queue.for_lane(2) == []
+    sim.off("C2.1")
+    sim.until(lambda: sim.shown(2) == F.STOP, limit=6)
+    sim.step(8.0)
+    assert greens_after(sim, t0) == [2, 2]
 
 
 def test_third_vehicle_waits_for_the_next_round():

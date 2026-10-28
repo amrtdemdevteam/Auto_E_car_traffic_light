@@ -295,6 +295,8 @@ void renderFrame(const String &f, const String &arg, int dots) {
     twoLine("LINK", "OK");
   } else if (f == "CONFIG") {
     twoLine("CONFIG", "ERROR");
+  } else if (f == "MAINT" && arg == "DARK") {
+    // lane switched off in the config: panel stays dark (t3-1.4.1)
   } else if (f == "MAINT") {
     border();
     for (int y = 0; y < 32; y++)

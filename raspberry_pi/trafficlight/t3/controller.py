@@ -273,7 +273,12 @@ class T3Controller:
         if ev.kind != "rising" or not lane.enabled or self.state == STARTING:
             return
         if lane.kind == "manual":
-            if len(self.queue.for_lane(lane.id)) < int(lane.p["manual_max_pending"]):
+            svc = self.service
+            if svc is not None and svc.lane == lane.id and not svc.arrived:
+                # the follower reaching the stop line on its own green: the vehicle being served, not a new one
+                svc.arrived = True
+                logger.info(f"T3 event=ticket_ignored lane={lane.id} sensor={ev.sensor} reason=follower_arrived")
+            elif len(self.queue.for_lane(lane.id)) < int(lane.p["manual_max_pending"]):
                 self.queue.add(lane.id, "manual", now, ev.sensor)
                 lane.round_count = 1          # this vehicle starts a new follow round
             else:   # the same vehicle seen again (gap in the body, trailer): no second green
@@ -532,7 +537,7 @@ class T3Controller:
                 return F.ARROW, str(lane.green_mask)
             return lane.green_frame, ""
         if "config_disabled" in lane.reasons:
-            return F.MAINT, ""            # lane switched off in the config: LANE OFF (CONFIG = real config error only)
+            return F.MAINT, F.MAINT_DARK  # lane switched off in the config: dark panel (CONFIG = real config error only)
         if "maintenance" in lane.reasons:
             return F.MAINT, ""
         bad = sorted(r.split(":", 1)[1] for r in lane.reasons if r.startswith("sensor:"))

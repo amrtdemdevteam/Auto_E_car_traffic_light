@@ -59,7 +59,7 @@
   let layout = {lanes: {}};
   let otaJobs = [];
   function blankCfg() { const c = clone(EXAMPLE); c.lanes = []; c.sensors = {}; return c; }
-  // T3 as on site since 2026-10-28: lane 3 off (display stays, LANE OFF), C2 -> C2.1, C3 -> C2.2 (lane 2 follow sensor)
+  // T3 as on site since 2026-10-28: lane 3 off (display stays, dark), C2 -> C2.1, C3 -> C2.2 (lane 2 follow sensor)
   function siteCfg() {
     const c = clone(EXAMPLE);
     c.sensors['C2.1'] = c.sensors.C2 || {}; c.sensors['C2.2'] = c.sensors.C3 || {}; delete c.sensors.C2; delete c.sensors.C3;
@@ -357,7 +357,7 @@
   function frameFor(l, t) {
     if (C.state === 'STARTING') return ['START', ''];
     if (C.state === 'GREEN' && C.active === l.id) return l.mask != null ? ['ARROW', String(l.mask)] : [l.green, ''];
-    if (l.reasons.has('config_disabled')) return ['MAINT', ''];   // lane switched off: LANE OFF
+    if (l.reasons.has('config_disabled')) return ['MAINT', 'DARK'];   // lane switched off: dark panel
     if (l.reasons.has('maintenance')) return ['MAINT', ''];
     const bad = [...l.reasons].filter((r) => r.startsWith('sensor:')).map((r) => r.slice(7)).sort();
     if (bad.length) return ['SENSOR', bad[0]];
